@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>함께 읽는 피드</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Pretendard:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error": "#ba1a1a",
+                      "on-secondary-fixed": "#001d33",
+                      "tertiary-fixed": "#b6efd1",
+                      "status-inactive": "#E2E8F0",
+                      "on-tertiary-container": "#5d9378",
+                      "primary-fixed": "#d9e2fc",
+                      "surface-container-low": "#f4f3f1",
+                      "surface-container": "#efeeeb",
+                      "surface-container-high": "#e9e8e5",
+                      "on-secondary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-highest": "#e3e2e0",
+                      "surface": "#FFFFFF",
+                      "outline": "#76777d",
+                      "surface-bright": "#faf9f6",
+                      "inverse-on-surface": "#f2f1ee",
+                      "secondary-container": "#bfddfe",
+                      "on-error-container": "#93000a",
+                      "tertiary": "#000b05",
+                      "on-primary-fixed-variant": "#3e475b",
+                      "on-secondary-container": "#45627e",
+                      "surface-dim": "#dbdad7",
+                      "on-tertiary": "#ffffff",
+                      "primary": "#01081a",
+                      "on-primary": "#ffffff",
+                      "streak-yellow": "#F2C86B",
+                      "secondary-fixed": "#cee5ff",
+                      "surface-variant": "#e3e2e0",
+                      "on-surface": "#1a1c1a",
+                      "tertiary-container": "#002618",
+                      "primary-fixed-dim": "#bdc6e0",
+                      "on-background": "#1a1c1a",
+                      "tertiary-fixed-dim": "#9bd3b5",
+                      "on-primary-fixed": "#121b2e",
+                      "secondary-fixed-dim": "#acc9ea",
+                      "on-tertiary-fixed-variant": "#19503a",
+                      "background": "#faf9f6",
+                      "outline-variant": "#c6c6cd",
+                      "inverse-surface": "#2f312f",
+                      "primary-container": "#172033",
+                      "on-primary-container": "#7f879f",
+                      "on-error": "#ffffff",
+                      "inverse-primary": "#bdc6e0",
+                      "error-container": "#ffdad6",
+                      "alert-coral": "#D98282",
+                      "on-tertiary-fixed": "#002114",
+                      "on-secondary-fixed-variant": "#2c4964",
+                      "surface-tint": "#555e74",
+                      "secondary": "#44617d",
+                      "on-surface-variant": "#45474c"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xs": "8px",
+                      "container-margin": "20px",
+                      "sm": "12px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "gutter": "16px",
+                      "xl": "32px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "section-title": [
+                              "Pretendard"
+                      ],
+                      "body-main": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Pretendard"
+                      ],
+                      "display-lg": [
+                              "Pretendard"
+                      ],
+                      "caption-caps": [
+                              "Inter"
+                      ],
+                      "display-lg-mobile": [
+                              "Pretendard"
+                      ],
+                      "data-stat": [
+                              "Pretendard"
+                      ]
+              },
+              "fontSize": {
+                      "section-title": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-main": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "40px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "caption-caps": [
+                              "13px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "data-stat": [
+                              "36px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background font-body-main antialiased min-h-screen pb-[92px]">
+<!-- TopAppBar -->
+<header class="bg-background flex justify-between items-center w-full px-container-margin py-sm max-w-[600px] mx-auto sticky top-0 z-40">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high border-2 border-surface flex-shrink-0">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A clean, minimalist user profile photo in a soft natural light setting. The background is a soft beige tone matching the modern youth Christian aesthetic, with a gentle, out-of-focus hint of a green indoor plant for vitality. The lighting is warm and calm." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcE4Y67H6_MY6PdaWndJrilyWJ9wkYCZxSMy7_mQTaPQ_RGJ6QBK4074UCginlvxFcAWJCWpM8Wb9RK_uCqmxc9MBw1ohQGkZE9YVLVZ7b2rcN8Hn_sFewKPKeOy7BISzdg5Wz6hVS3kJh8O0Tewa-flUM0-2ZK6y6Hz-Zt61EYZDLbodI99HiAQRlkXJohd93lAYUcTmKC6RT0_Q82ET509agjiwVX-gv9O3CVNWO42nizsXcN2EX"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">함께 읽는 피드</h1>
+</div>
+<button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:opacity-80 transition-opacity rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="max-w-[600px] mx-auto px-container-margin py-md flex flex-col gap-xl">
+<!-- Feed Card 1 -->
+<article class="bg-surface rounded-[20px] shadow-[0px_4px_20px_rgba(23,32,51,0.04)] overflow-hidden flex flex-col">
+<!-- Card Header -->
+<div class="p-md flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high flex-shrink-0">
+<img alt="김민수" class="w-full h-full object-cover" data-alt="A casual portrait photo of a young man, minimalist aesthetic, natural lighting, wearing a soft sage colored shirt. The background is slightly blurred and bright warm white. It feels supportive and friendly." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmtus0I-t4wChUAsBgXwFtS9fXi95Hr9tgJ4ovJ3jwaXwClIcU32GVEiDipPuH-m10QivlbWkk2It1A0lNlKj0-iOm6lEPrcffDB9lqxaiKm4B7dRrlZkhppzzkHrPPtKEK5_lW7GxXJXo7vlrClZe7azZqaicrsUeKk8jJM8mr6vXUxBeqY4VUTIdg6jPB3nppMVk7rz-bW9vLxZRwBDpHuQO59KzWUpI7DI7EuZvMyelYglSoFnz"/>
+</div>
+<div class="flex flex-col">
+<span class="font-section-title text-section-title text-on-surface">김민수 <span class="text-on-surface-variant text-sm font-normal">(2반)</span></span>
+<span class="text-xs text-on-surface-variant mt-1">8:32 PM</span>
+</div>
+</div>
+<div class="bg-tertiary-fixed-dim/20 text-on-tertiary-container px-3 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">book</span>
+<span class="font-caption-caps text-caption-caps normal-case">마태복음 12-13장</span>
+</div>
+</div>
+<!-- Card Image -->
+<div class="px-md pb-xs">
+<div class="w-full h-64 rounded-[12px] overflow-hidden bg-surface-container-lowest">
+<img alt="Bible Reading Photo" class="w-full h-full object-cover" data-alt="A warm, top-down photograph of an open Bible resting on a clean, light wood desk. Next to it is a minimalist white ceramic mug of coffee and a thin soft sage green highlighter. Natural sunlight streams from a window casting soft, comforting shadows. The aesthetic is calm, premium, and sacred pause." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzcImMJogQ62KO9nLpMSHcs9S9zp6Nnx48l2hsaPtDE-09c98msQsBfwB8ady1VxQoiQGcAJI-1LrmF53_Qo2g3bMl40d3hoFsLUM5hpJqTQbdXcUZL8uMD5do7KOP0qmdYavKDomYp6mXZg9LRESS7wRmQIFHoTi9asbo5CXC-jsrH1QX5lWFXU7RqElQZYgt1JxpW92gujxfFEICOdiNf1TEG3TMhUIM0VLaMGId-Pu6uNYRc7cd"/>
+</div>
+</div>
+<!-- Card Content & Actions -->
+<div class="p-md pt-xs flex flex-col gap-sm">
+<p class="font-body-main text-body-main text-on-surface leading-relaxed">
+                    하나님이 우리와 함께하신다는 약속이 큰 위로가 됩니다. 오늘 하루도 평안하게 마무리할 수 있음에 감사합니다.
+                </p>
+<div class="flex items-center gap-md mt-sm pt-sm border-t border-surface-container-high">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-on-tertiary-container transition-colors group" onclick="toggleReactions(this)">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 0;">front_hand</span>
+<span class="font-body-main text-body-main">🙌 응원하기</span>
+<span class="text-sm font-semibold bg-surface-container px-2 py-0.5 rounded-full">8</span>
+</button>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-on-surface transition-colors group">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 0;">chat_bubble</span>
+<span class="text-sm font-semibold">3</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Feed Card 2 (Example for scrolling context) -->
+<article class="bg-surface rounded-[20px] shadow-[0px_4px_20px_rgba(23,32,51,0.04)] overflow-hidden flex flex-col">
+<div class="p-md flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high flex-shrink-0">
+<img alt="이지은" class="w-full h-full object-cover" data-alt="A soft focus, minimalist profile picture of a young woman with a warm smile, wearing a cream sweater. The background is a clean, bright white wall with a soft, diffused lighting setup. The mood is calm and welcoming." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg86gpMPuNytHUAvUHYysyavEVUz_mrdvrw4m8ZK2OivvUZg5ltIE6k5jfIPo7xAcJvFvwmJRTgEPFERmZiw0G45aEWn4ExwvTkXpaSngwZo06_KOI1yKmBMj1owbCN6csn9tQO0KqN3Ohmv1qvbuDDYBdjfBCDcdsDiSzA_AV5UuQzw0ISvHoO4OAFx5Yfc12qVP1EtjKRmDrP_7kP9s22xhF2ndjbMp3axXpphrWR_wWEO6ir0B6"/>
+</div>
+<div class="flex flex-col">
+<span class="font-section-title text-section-title text-on-surface">이지은 <span class="text-on-surface-variant text-sm font-normal">(1반)</span></span>
+<span class="text-xs text-on-surface-variant mt-1">7:15 PM</span>
+</div>
+</div>
+<div class="bg-tertiary-fixed-dim/20 text-on-tertiary-container px-3 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">book</span>
+<span class="font-caption-caps text-caption-caps normal-case">창세기 1-3장</span>
+</div>
+</div>
+<div class="px-md pb-xs">
+<div class="w-full h-64 rounded-[12px] overflow-hidden bg-surface-container-lowest flex items-center justify-center border border-surface-container">
+<p class="text-on-surface-variant text-sm p-4 text-center">No photo uploaded today, but reading completed.</p>
+</div>
+</div>
+<div class="p-md pt-xs flex flex-col gap-sm">
+<p class="font-body-main text-body-main text-on-surface leading-relaxed">
+                    시작이 반이다! 다시 창세기부터 차근차근 읽어봅니다. 매일의 습관이 되길 기도합니다.
+                </p>
+<div class="flex items-center gap-md mt-sm pt-sm border-t border-surface-container-high">
+<button class="flex items-center gap-2 text-on-tertiary-container transition-colors group">
+<span class="material-symbols-outlined text-tertiary-fixed-dim group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 1;">front_hand</span>
+<span class="font-body-main text-body-main font-semibold">🙌 응원하기</span>
+<span class="text-sm font-semibold bg-surface-container px-2 py-0.5 rounded-full">12</span>
+</button>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-on-surface transition-colors group">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 0;">chat_bubble</span>
+<span class="text-sm font-semibold">5</span>
+</button>
+</div>
+</div>
+</article>
+</main>
+<!-- Reaction Bottom Sheet (Hidden by default, styled for overlay) -->
+<div class="fixed inset-0 z-[60] bg-primary/20 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 flex items-end sm:items-center sm:justify-center" id="reactionSheet">
+<div class="bg-surface w-full max-w-[600px] rounded-t-[24px] sm:rounded-[24px] p-lg transform translate-y-full sm:translate-y-4 sm:scale-95 transition-all duration-300 shadow-2xl" id="reactionContainer">
+<div class="w-12 h-1.5 bg-surface-container-highest rounded-full mx-auto mb-lg sm:hidden"></div>
+<h3 class="font-section-title text-section-title text-on-surface mb-md text-center">빠른 반응 보내기</h3>
+<div class="grid grid-cols-2 gap-sm">
+<button class="bg-surface-container-low hover:bg-surface-container-high text-on-surface rounded-xl p-md flex items-center justify-center gap-2 transition-colors active:scale-95">
+<span class="text-xl">🙌</span>
+<span class="font-body-main text-body-main whitespace-nowrap">같이 완주해요!</span>
+</button>
+<button class="bg-surface-container-low hover:bg-surface-container-high text-on-surface rounded-xl p-md flex items-center justify-center gap-2 transition-colors active:scale-95">
+<span class="text-xl">🔥</span>
+<span class="font-body-main text-body-main whitespace-nowrap">오늘도 화이팅!</span>
+</button>
+<button class="bg-surface-container-low hover:bg-surface-container-high text-on-surface rounded-xl p-md flex items-center justify-center gap-2 transition-colors active:scale-95">
+<span class="text-xl">❤️</span>
+<span class="font-body-main text-body-main whitespace-nowrap">은혜롭네요!</span>
+</button>
+<button class="bg-surface-container-low hover:bg-surface-container-high text-on-surface rounded-xl p-md flex items-center justify-center gap-2 transition-colors active:scale-95">
+<span class="text-xl">👏</span>
+<span class="font-body-main text-body-main whitespace-nowrap">잘했어요!</span>
+</button>
+</div>
+<button class="w-full mt-lg py-md text-on-surface-variant font-semibold hover:bg-surface-container-lowest rounded-xl transition-colors" onclick="closeReactions()">
+                닫기
+            </button>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-xs pb-safe h-[72px] bg-surface dark:bg-surface-container-highest rounded-t-xl shadow-lg md:hidden">
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-on-surface-variant opacity-60 hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors w-16 h-16 rounded-2xl group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-caption-caps text-caption-caps">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-on-surface-variant opacity-60 hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors w-16 h-16 rounded-2xl group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 0;">verified</span>
+<span class="font-caption-caps text-caption-caps">Certify</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-on-surface-variant opacity-60 hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors w-16 h-16 rounded-2xl group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 0;">group</span>
+<span class="font-caption-caps text-caption-caps">Class</span>
+</a>
+<!-- Active Tab: Feed -->
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed bg-secondary-container/30 dark:bg-primary-container rounded-full px-4 py-1 scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+<span class="font-caption-caps text-caption-caps">Feed</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-on-surface-variant opacity-60 hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors w-16 h-16 rounded-2xl group" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="font-caption-caps text-caption-caps">My</span>
+</a>
+</nav>
+<script>
+        const sheet = document.getElementById('reactionSheet');
+        const container = document.getElementById('reactionContainer');
+
+        function toggleReactions(button) {
+            // Simple animation for the sheet
+            sheet.classList.remove('opacity-0', 'pointer-events-none');
+            sheet.classList.add('opacity-100');
+            
+            setTimeout(() => {
+                container.classList.remove('translate-y-full', 'sm:translate-y-4', 'sm:scale-95');
+                container.classList.add('translate-y-0', 'sm:translate-y-0', 'sm:scale-100');
+            }, 10);
+            
+            // Add a little bounce to the button tapped
+            button.querySelector('.material-symbols-outlined').classList.add('scale-125', 'text-tertiary-fixed-dim');
+            button.querySelector('.material-symbols-outlined').style.fontVariationSettings = "'FILL' 1";
+            setTimeout(() => {
+                button.querySelector('.material-symbols-outlined').classList.remove('scale-125');
+            }, 200);
+        }
+
+        function closeReactions() {
+            container.classList.remove('translate-y-0', 'sm:translate-y-0', 'sm:scale-100');
+            container.classList.add('translate-y-full', 'sm:translate-y-4', 'sm:scale-95');
+            
+            setTimeout(() => {
+                sheet.classList.remove('opacity-100');
+                sheet.classList.add('opacity-0', 'pointer-events-none');
+            }, 300);
+        }
+
+        // Close when clicking outside the sheet
+        sheet.addEventListener('click', (e) => {
+            if (e.target === sheet) {
+                closeReactions();
+            }
+        });
+        
+        // Add click handlers to reaction buttons to close the sheet
+        document.querySelectorAll('#reactionContainer button:not(:last-child)').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Here you would normally send the reaction to a server
+                closeReactions();
+            });
+        });
+    </script>
+</body></html>

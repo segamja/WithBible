@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>with BIBLE - Student Home Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Pretendard:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed": "#001d33",
+                        "tertiary-fixed": "#b6efd1",
+                        "status-inactive": "#E2E8F0",
+                        "on-tertiary-container": "#5d9378",
+                        "primary-fixed": "#d9e2fc",
+                        "surface-container-low": "#f4f3f1",
+                        "surface-container": "#efeeeb",
+                        "surface-container-high": "#e9e8e5",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#e3e2e0",
+                        "surface": "#FFFFFF",
+                        "outline": "#76777d",
+                        "surface-bright": "#faf9f6",
+                        "inverse-on-surface": "#f2f1ee",
+                        "secondary-container": "#bfddfe",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#000b05",
+                        "on-primary-fixed-variant": "#3e475b",
+                        "on-secondary-container": "#45627e",
+                        "surface-dim": "#dbdad7",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#01081a",
+                        "on-primary": "#ffffff",
+                        "streak-yellow": "#F2C86B",
+                        "secondary-fixed": "#cee5ff",
+                        "surface-variant": "#e3e2e0",
+                        "on-surface": "#1a1c1a",
+                        "tertiary-container": "#002618",
+                        "primary-fixed-dim": "#bdc6e0",
+                        "on-background": "#1a1c1a",
+                        "tertiary-fixed-dim": "#9bd3b5",
+                        "on-primary-fixed": "#121b2e",
+                        "secondary-fixed-dim": "#acc9ea",
+                        "on-tertiary-fixed-variant": "#19503a",
+                        "background": "#faf9f6",
+                        "outline-variant": "#c6c6cd",
+                        "inverse-surface": "#2f312f",
+                        "primary-container": "#172033",
+                        "on-primary-container": "#7f879f",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#bdc6e0",
+                        "error-container": "#ffdad6",
+                        "alert-coral": "#D98282",
+                        "on-tertiary-fixed": "#002114",
+                        "on-secondary-fixed-variant": "#2c4964",
+                        "surface-tint": "#555e74",
+                        "secondary": "#44617d",
+                        "on-surface-variant": "#45474c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "1.5rem"
+                    },
+                    "spacing": {
+                        "xs": "8px",
+                        "container-margin": "20px",
+                        "sm": "12px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "section-title": [
+                            "Pretendard"
+                        ],
+                        "body-main": [
+                            "Inter"
+                        ],
+                        "headline-md": [
+                            "Pretendard"
+                        ],
+                        "display-lg": [
+                            "Pretendard"
+                        ],
+                        "caption-caps": [
+                            "Inter"
+                        ],
+                        "display-lg-mobile": [
+                            "Pretendard"
+                        ],
+                        "data-stat": [
+                            "Pretendard"
+                        ]
+                    },
+                    "fontSize": {
+                        "section-title": [
+                            "18px",
+                            {
+                                "lineHeight": "1.4",
+                                "fontWeight": "600"
+                            }
+                        ],
+                        "body-main": [
+                            "16px",
+                            {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                            }
+                        ],
+                        "headline-md": [
+                            "24px",
+                            {
+                                "lineHeight": "1.3",
+                                "fontWeight": "700"
+                            }
+                        ],
+                        "display-lg": [
+                            "40px",
+                            {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                            }
+                        ],
+                        "caption-caps": [
+                            "13px",
+                            {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                            }
+                        ],
+                        "display-lg-mobile": [
+                            "32px",
+                            {
+                                "lineHeight": "1.2",
+                                "fontWeight": "700"
+                            }
+                        ],
+                        "data-stat": [
+                            "36px",
+                            {
+                                "lineHeight": "1",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "700"
+                            }
+                        ]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #faf9f6; /* bg-background */
+            color: #1a1c1a; /* text-on-background */
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
+    </style>
+</head>
+<body class="font-body-main text-body-main antialiased pb-[90px]">
+<!-- TopAppBar (Hidden on mobile, desktop visible logic adjusted for shell) -->
+<header class="hidden md:flex justify-between items-center w-full px-container-margin py-sm max-w-[600px] mx-auto bg-background dark:bg-background sticky top-0 z-40">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden shrink-0">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A small circular avatar showing a soft, stylized portrait of a youth in a bright, modern light-mode setting. Warm, calming colors, subtle lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUefAti116lkjC0O6wkw4xG5b7d8yEu974f7cjKJR85Nh2e0KUkBW4lXRxA7WWkinDyp8cxqFJ_lUO0oQcnGJPIVBZ7UuunJirLX_XYy-3F3t9P-t2v8nmqpLED7x35FgsBdZsFoxRlIR2MAF2H95GlOZn25Ep-bsLtGyn6nH7TkFYBywuowi2YR0Wx9rbDA89E_moAVlbURjVALz8ozYQ9mgSJKDjQnHOcU2FskCyWgpbVlrVZK6c"/>
+</div>
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">with BIBLE</span>
+</div>
+<button class="w-11 h-11 flex items-center justify-center rounded-full hover:opacity-80 transition-opacity text-on-surface-variant dark:text-on-surface-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+</header>
+<main class="max-w-[600px] mx-auto px-container-margin pt-safe md:pt-md">
+<!-- Header Section -->
+<section class="mt-md mb-lg">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary mb-2">Good evening, 민수 👋</h1>
+<p class="text-on-surface-variant font-body-main text-body-main">오늘도 우리 반과 함께 말씀을 읽어볼까요?</p>
+</section>
+<!-- Hero Card: Today's Word -->
+<section class="bg-surface rounded-2xl shadow-[0px_4px_20px_rgba(23,32,51,0.04)] p-lg mb-xl relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-fixed/30 rounded-bl-[100px] -z-10"></div>
+<div class="flex justify-between items-start mb-md">
+<div class="flex items-center gap-2">
+<span class="text-xl">📖</span>
+<h2 class="font-section-title text-section-title text-on-surface">오늘의 말씀</h2>
+</div>
+<span class="bg-surface-container-high text-on-surface px-3 py-1 rounded-full font-caption-caps text-caption-caps">D-18</span>
+</div>
+<h3 class="font-display-lg-mobile text-display-lg-mobile text-primary mb-xl">마태복음 12–13장</h3>
+<button class="w-full bg-primary text-on-primary py-4 rounded-full font-section-title text-section-title flex items-center justify-center gap-2 hover:opacity-90 transition-opacity active:scale-[0.98]">
+<span>오늘 읽었어요</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check</span>
+</button>
+</section>
+<!-- Section 1: Class Progress -->
+<section class="bg-surface rounded-2xl shadow-[0px_4px_20px_rgba(23,32,51,0.04)] p-md mb-xl">
+<div class="flex items-center gap-2 mb-md">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">groups</span>
+<h2 class="font-section-title text-section-title text-on-surface">우리 반 진행률</h2>
+</div>
+<div class="flex items-end gap-sm mb-sm">
+<span class="font-data-stat text-data-stat text-primary">67%</span>
+</div>
+<!-- Progress Bar -->
+<div class="h-3 w-full bg-surface-container-highest rounded-full overflow-hidden mb-sm">
+<div class="h-full bg-tertiary-fixed-dim rounded-full" style="width: 67%;"></div>
+</div>
+<p class="text-on-surface-variant text-sm flex items-center gap-1">
+<span>👥 15명 중 12명 참여</span>
+<span class="mx-1 text-outline-variant">|</span>
+<span>🔥 오늘 8명 인증</span>
+</p>
+</section>
+<!-- Section 2 & 3 Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md mb-xl">
+<!-- Section 2: My Streak -->
+<section class="bg-surface rounded-2xl shadow-[0px_4px_20px_rgba(23,32,51,0.04)] p-md flex flex-col justify-between">
+<div>
+<h2 class="font-section-title text-section-title text-on-surface mb-1 flex items-center gap-2">
+<span class="text-streak-yellow">🔥</span>
+                        나의 Streak
+                    </h2>
+<p class="font-body-main text-body-main text-primary font-bold mb-md">7일 연속 말씀읽기</p>
+</div>
+<div class="flex justify-between items-center px-2">
+<!-- Dot Grid Logic (M-S) -->
+<div class="flex flex-col items-center gap-1">
+<div class="w-8 h-8 rounded-full bg-streak-yellow flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium">M</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-8 h-8 rounded-full bg-streak-yellow flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium">T</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-8 h-8 rounded-full bg-streak-yellow flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium">W</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center">
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium">T</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center">
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium">F</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center">
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium">S</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center">
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium">S</span>
+</div>
+</div>
+</section>
+<!-- Section 3: Friends Reading -->
+<section class="bg-surface rounded-2xl shadow-[0px_4px_20px_rgba(23,32,51,0.04)] p-md flex flex-col justify-center items-center text-center">
+<h2 class="font-section-title text-section-title text-on-surface mb-md">친구들이 함께 읽고 있어요</h2>
+<div class="flex -space-x-3 mb-sm">
+<div class="w-12 h-12 rounded-full border-2 border-surface bg-surface-container-highest overflow-hidden z-30">
+<img alt="Friend 1" class="w-full h-full object-cover" data-alt="A small circular avatar showing a soft, stylized portrait of a youth in a bright, modern light-mode setting. Warm, calming colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHatQj-pBNoD4V19SFb6g9F-Rhhzw7Qb3PJ-TkUyOiuAcmwVFO8J9j7qORhLC0mWDbe_Mxlw7wq4Nn9Ui17BokVaXxgdPHS-629V9rsuUewQn9hqeWvEG73z8q-IT-Ql0cQafx5Dc_gyFmx9vxb4-Qhi3rhqWEJvKdTarlW1fxDDTej-U6ssEf8t97ZrKVQlx3B5M0-8Php9j6Ee5QVWpbKtw_BQovnT9N2HzRdr4E_zFZRjwuA5W4"/>
+</div>
+<div class="w-12 h-12 rounded-full border-2 border-surface bg-surface-container-highest overflow-hidden z-20">
+<img alt="Friend 2" class="w-full h-full object-cover" data-alt="A small circular avatar showing a soft, stylized portrait of a youth in a bright, modern light-mode setting. Warm, calming colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8fdRHmMAvuemQVVmJpmCofZinaxV4ZwHherzPy0Lftw8kZifIu918RwoKCdSqOY8W4eJH0aaWlf92lss4DyPTloErQEHc0q4cJAQpcNsSci7-6oZsrTwX702Cf0zXf4_mSChh-UQ1WT0ve0K46y7dVMyQMHQxuKsnFg_HdryNFp2iEC2441TB3AT5Qs3QzLX2AJZkpA95kVcyVMj6AmlgAF01-fbUKgQBmpsjvUG7aH7DDkS_HclO"/>
+</div>
+<div class="w-12 h-12 rounded-full border-2 border-surface bg-surface-container-highest overflow-hidden z-10">
+<img alt="Friend 3" class="w-full h-full object-cover" data-alt="A small circular avatar showing a soft, stylized portrait of a youth in a bright, modern light-mode setting. Warm, calming colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlwCODBagZKn_eu-5r_KI2wDzwoqADAFchD3V34OKVNIr8GLyTvZMQuG9MoHUPyFelu8VVSCmHYdpFxbC0PArAVHSV20Q1SWWE7DY6vyHP1I7oZZAajPQFYEtWrJhB7CoSVyJWWXId3ar18t7aHLoJ5-SKYSqxvQ4zVS3UMJRlNSfKLnNJGNvwA_oAQ4PaJ5DMntIxRmuW64ZcoovYwHrB4HjhmI3J1tLGB7cE3jukqUe0o60Yw5oJ"/>
+</div>
+<div class="w-12 h-12 rounded-full border-2 border-surface bg-secondary-fixed-dim text-on-secondary-fixed flex items-center justify-center font-bold text-sm z-0">
+                        +2
+                    </div>
+</div>
+<p class="text-sm text-on-surface-variant">지훈, 서연 외 2명</p>
+</section>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-xs pb-safe h-[72px] bg-surface dark:bg-surface-container-highest shadow-[0px_-4px_20px_rgba(23,32,51,0.04)] rounded-t-xl md:hidden">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed bg-secondary-container/30 dark:bg-primary-container rounded-full px-4 py-1 scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-caption-caps text-caption-caps">Home</span>
+</a>
+<!-- Certify (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-on-surface-variant opacity-60 hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors w-16 h-14 rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">verified</span>
+<span class="font-caption-caps text-caption-caps">Certify</span>
+</a>
+<!-- Class (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-on-surface-variant opacity-60 hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors w-16 h-14 rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">group</span>
+<span class="font-caption-caps text-caption-caps">Class</span>
+</a>
+<!-- Feed (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-on-surface-variant opacity-60 hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors w-16 h-14 rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">auto_stories</span>
+<span class="font-caption-caps text-caption-caps">Feed</span>
+</a>
+<!-- My (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-secondary-container dark:text-on-surface-variant opacity-60 hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors w-16 h-14 rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="font-caption-caps text-caption-caps">My</span>
+</a>
+</nav>
+</body></html>

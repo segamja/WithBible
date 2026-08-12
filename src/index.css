@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-sans: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+
+  --color-navy: #172033;
+  --color-navy-deep: #01081a;
+  --color-ink: #1a1c1a;
+  --color-muted: #45474c;
+  --color-surface: #faf9f6;
+  --color-panel: #ffffff;
+  --color-line: #c6c6cd;
+  --color-sage: #6fa58a;
+  --color-sage-dark: #19503a;
+  --color-sky: #8ca9c8;
+  --color-sky-dark: #44617d;
+  --color-streak: #f2c86b;
+  --color-coral: #d98282;
+  --color-brand-50: #f4f3f1;
+  --color-brand-100: #e9e8e5;
+  --color-brand-200: #c6c6cd;
+  --color-brand-300: #8ca9c8;
+  --color-brand-400: #6fa58a;
+  --color-brand-500: #6fa58a;
+  --color-brand-600: #172033;
+  --color-brand-700: #172033;
+  --color-brand-800: #01081a;
+  --color-brand-900: #01081a;
+  --color-warn: #f2c86b;
+  --color-danger: #d98282;
+  --color-ok: #6fa58a;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background:
+      radial-gradient(ellipse 90% 50% at 0% -10%, rgba(140, 169, 200, 0.18), transparent 50%),
+      radial-gradient(ellipse 70% 40% at 100% 0%, rgba(111, 165, 138, 0.12), transparent 45%),
+      var(--color-surface);
+  }
+
+  #root {
+    min-height: 100dvh;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  .safe-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .card-soft {
+    border-radius: 1.25rem;
+    background: var(--color-panel);
+    box-shadow: 0 8px 28px rgba(23, 32, 51, 0.06);
+  }
+}
