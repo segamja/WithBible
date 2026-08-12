@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -11,18 +12,27 @@ import {
   updateClass,
   updateUserRole,
 } from '@/services/classService'
+import { listStaffCodes, upsertStaffCode, type StaffCode } from '@/services/staffCodeService'
 import type { ClassRow, Profile, UserRole } from '@/types'
 
 export function AdminClassesPage() {
   const [classes, setClasses] = useState<ClassRow[]>([])
   const [users, setUsers] = useState<Profile[]>([])
+  const [staffCodes, setStaffCodes] = useState<StaffCode[]>([])
   const [name, setName] = useState('')
   const [joinCode, setJoinCode] = useState('')
+  const [staffCodeInput, setStaffCodeInput] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const refresh = async () => {
-    setClasses(await listClasses())
-    setUsers(await listUsers())
+    const [cls, us, staff] = await Promise.all([
+      listClasses(),
+      listUsers(),
+      listStaffCodes(),
+    ])
+    setClasses(cls)
+    setUsers(us)
+    setStaffCodes(staff)
   }
 
   useEffect(() => {
@@ -41,11 +51,52 @@ export function AdminClassesPage() {
     }
   }
 
+  const onSaveStaffCode = async (e: FormEvent) => {
+    e.preventDefault()
+    try {
+      await upsertStaffCode(staffCodeInput || staffCodes[0]?.code || 'STAFF26')
+      setStaffCodeInput('')
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '임원 코드 저장 실패')
+    }
+  }
+
   const teachers = users.filter((u) => u.role === 'TEACHER' || u.role === 'ADMIN')
 
   return (
     <div className="space-y-4 px-5 py-8">
       <h1 className="font-display text-3xl text-brand-900">반 관리</h1>
+      <p className="text-sm text-muted">
+        <Link to="/admin/users" className="font-medium text-navy underline-offset-2 hover:underline">
+          사용자 관리
+        </Link>
+        에서 역할을 바꿀 수 있어요.
+      </p>
+
+      <Card className="space-y-3">
+        <h2 className="font-semibold text-navy">임원 선생님 코드</h2>
+        <p className="text-sm text-muted">
+          반이 없는 임원 선생님이 카카오/가입 시 입력하는 코드입니다. (운영자 ADMIN은 SQL로만 승격)
+        </p>
+        {staffCodes.map((s) => (
+          <p key={s.id} className="rounded-xl bg-brand-50 px-3 py-2 font-semibold tracking-wide text-navy">
+            {s.code}
+            <span className="ml-2 text-xs font-normal text-muted">· {s.label}</span>
+          </p>
+        ))}
+        <form onSubmit={onSaveStaffCode} className="flex gap-2">
+          <Input
+            value={staffCodeInput}
+            onChange={(e) => setStaffCodeInput(e.target.value.toUpperCase())}
+            placeholder="새 코드 (예: STAFF26)"
+            className="flex-1"
+          />
+          <Button type="submit" variant="secondary">
+            추가/갱신
+          </Button>
+        </form>
+      </Card>
 
       <form onSubmit={onCreate}>
         <Card className="space-y-3">

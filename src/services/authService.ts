@@ -1,6 +1,6 @@
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import { Tables } from '@/lib/tables'
-import { getClassByJoinCode } from '@/services/classService'
+import { completeJoinOnboarding } from '@/services/onboardingService'
 import type { Profile, UserRole } from '@/types'
 import { emptyToNull, isUuid } from '@/utils/uuid'
 
@@ -48,12 +48,16 @@ export async function signUp(params: {
   ensureConfigured()
 
   const joinCode = emptyToNull(params.joinCode)
+  if (!joinCode) {
+    throw new AuthError('가입코드를 입력해주세요. (반 코드 또는 임원 코드)')
+  }
+
   const meta: Record<string, string> = {
     app: 'withbible',
     name: params.name,
     role: params.role ?? 'STUDENT',
+    join_code: joinCode,
   }
-  if (joinCode) meta.join_code = joinCode
 
   const { data, error } = await supabase.auth.signUp({
     email: params.email,
@@ -66,7 +70,13 @@ export async function signUp(params: {
   }
 
   let profile = await waitForProfile(data.user.id)
-  if (profile) return profile
+  if (profile) {
+    if (authServiceNeedsOnboarding(profile)) {
+      await completeJoinOnboarding(joinCode)
+      profile = (await getProfile(data.user.id)) ?? profile
+    }
+    return profile
+  }
 
   const {
     data: { session },
@@ -77,25 +87,15 @@ export async function signUp(params: {
     )
   }
 
-  let classId: string | null = null
-  if (joinCode) {
-    const cls = await getClassByJoinCode(joinCode)
-    classId = cls?.id ?? null
-  }
+  await completeJoinOnboarding(joinCode)
+  profile = await getProfile(data.user.id)
+  if (!profile) throw new AuthError('프로필을 만들 수 없습니다. 잠시 후 다시 시도해주세요.')
+  return profile
+}
 
-  const { data: inserted, error: insertError } = await supabase
-    .from(Tables.profiles)
-    .upsert({
-      id: data.user.id,
-      name: params.name,
-      email: params.email,
-      role: params.role ?? 'STUDENT',
-      class_id: classId,
-    })
-    .select('*')
-    .single()
-  if (insertError) throw new AuthError(insertError.message)
-  return inserted as Profile
+function authServiceNeedsOnboarding(profile: Profile): boolean {
+  if (profile.role === 'ADMIN' || profile.role === 'TEACHER') return false
+  return profile.role === 'STUDENT' && !profile.class_id
 }
 
 export async function signIn(email: string, password: string): Promise<Profile> {

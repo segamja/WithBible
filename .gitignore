@@ -29,3 +29,4 @@ dist-ssr
 # Local tooling
 .cursor/
 .vercel/
+public/version.json

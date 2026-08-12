@@ -6,6 +6,7 @@ import {
   OnboardingOnly,
   RoleGuard,
 } from '@/layouts/AppShell'
+import { VersionUpdateBanner } from '@/components/VersionUpdateBanner'
 import { useAuthStore } from '@/stores/authStore'
 import { LoginPage } from '@/pages/LoginPage'
 import { LogoutPage } from '@/pages/LogoutPage'
@@ -29,10 +30,22 @@ export default function App() {
 
   useEffect(() => {
     void init()
+    // Drop cache-bust query after a successful load
+    try {
+      const url = new URL(window.location.href)
+      if (url.searchParams.has('_v')) {
+        url.searchParams.delete('_v')
+        window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+      }
+    } catch {
+      /* ignore */
+    }
   }, [init])
 
   return (
-    <Routes>
+    <>
+      <VersionUpdateBanner />
+      <Routes>
       <Route path="/logout" element={<LogoutPage />} />
 
       <Route element={<GuestOnly />}>
@@ -50,11 +63,11 @@ export default function App() {
         <Route element={<RoleGuard allow={['STUDENT']} />}>
           <Route path="/" element={<StudentHomePage />} />
           <Route path="/class" element={<ClassPage />} />
-          <Route path="/feed" element={<FeedPage scope="all" />} />
         </Route>
 
-        <Route element={<RoleGuard allow={['STUDENT', 'TEACHER']} />}>
+        <Route element={<RoleGuard allow={['STUDENT', 'TEACHER', 'ADMIN']} />}>
           <Route path="/checkin" element={<CheckinPage />} />
+          <Route path="/feed" element={<FeedPage scope="all" />} />
         </Route>
 
         <Route element={<RoleGuard allow={['TEACHER']} />}>
@@ -82,6 +95,7 @@ export default function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </>
   )
 }

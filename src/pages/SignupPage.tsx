@@ -22,7 +22,7 @@ export function SignupPage() {
         name,
         email,
         password,
-        joinCode: joinCode.trim() || undefined,
+        joinCode: joinCode.trim(),
       })
       setDone(true)
     } catch (err) {
@@ -33,7 +33,9 @@ export function SignupPage() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 py-10">
       <h1 className="font-display text-3xl text-brand-900">회원가입</h1>
-      <p className="mt-2 text-muted">반 가입 코드를 입력하면 자동으로 반에 배정됩니다.</p>
+      <p className="mt-2 text-muted">
+        가입코드가 필요합니다. 학생은 반 코드, 임원 선생님은 임원 코드를 입력하세요.
+      </p>
 
       {done ? (
         <div className="mt-8 space-y-4 rounded-2xl border border-brand-200 bg-brand-50 p-4">
@@ -71,11 +73,13 @@ export function SignupPage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm text-muted">반 가입 코드</label>
+            <label className="mb-1.5 block text-sm text-muted">가입 코드 (필수)</label>
             <Input
+              required
               value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value)}
-              placeholder="예: BIBLE26-2"
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              placeholder="BIBLE26-2 또는 STAFF26"
+              autoCapitalize="characters"
             />
           </div>
           {error ? <p className="text-sm text-danger">{error}</p> : null}

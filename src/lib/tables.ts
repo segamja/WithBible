@@ -9,4 +9,5 @@ export const Tables = {
   encouragements: 'wb_encouragements',
   announcements: 'wb_announcements',
   comments: 'wb_comments',
+  staffCodes: 'wb_staff_codes',
 } as const

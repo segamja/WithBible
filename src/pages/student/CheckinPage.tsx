@@ -32,6 +32,11 @@ export function CheckinPage() {
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
 
+  // Staff without a class: force public visibility
+  useEffect(() => {
+    if (!profile.class_id) setVisibility('public')
+  }, [profile.class_id])
+
   useEffect(() => {
     void loadForUser(profile.class_id)
   }, [profile.class_id, loadForUser])
@@ -319,13 +324,19 @@ export function CheckinPage() {
             </div>
             <div>
               <label className="mb-1.5 block text-sm text-muted">공개 범위</label>
-              <Select
-                value={visibility}
-                onChange={(e) => setVisibility(e.target.value as Visibility)}
-              >
-                <option value="public">전체 공개</option>
-                <option value="class">반 친구에게 공개</option>
-              </Select>
+              {profile.class_id ? (
+                <Select
+                  value={visibility}
+                  onChange={(e) => setVisibility(e.target.value as Visibility)}
+                >
+                  <option value="public">전체 공개</option>
+                  <option value="class">반 친구에게 공개</option>
+                </Select>
+              ) : (
+                <p className="rounded-xl border border-line bg-brand-50 px-3 py-2 text-sm text-navy">
+                  반에 소속되지 않아 전체 공개로 올라갑니다.
+                </p>
+              )}
             </div>
           </Card>
           {error ? <p className="text-sm text-danger">{error}</p> : null}

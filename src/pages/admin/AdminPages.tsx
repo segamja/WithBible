@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -60,6 +61,19 @@ export function AdminDashboardPage() {
         ) : (
           <p className="mt-2 text-muted">프로젝트를 먼저 생성해주세요.</p>
         )}
+      </div>
+
+      <div className="flex gap-2">
+        <Link to="/checkin" className="flex-1">
+          <Button className="w-full" variant="sage">
+            말씀 인증
+          </Button>
+        </Link>
+        <Link to="/admin/classes" className="flex-1">
+          <Button className="w-full" variant="outline">
+            반·임원 코드
+          </Button>
+        </Link>
       </div>
 
       <Card className="grid grid-cols-2 gap-3 text-sm">

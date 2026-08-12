@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAuthStore } from '@/stores/authStore'
@@ -6,6 +7,7 @@ import { useProjectStore } from '@/stores/projectStore'
 import { getClassById } from '@/services/classService'
 import { getClassProgress, getPersonalProgress } from '@/services/progressService'
 import { listAnnouncements } from '@/services/announcementService'
+import { roleHome } from '@/layouts/AppShell'
 import { getDDayLabel } from '@/utils/dday'
 
 export function ClassPage() {
@@ -21,6 +23,10 @@ export function ClassPage() {
   })
   const [personal, setPersonal] = useState({ covered: 0, target: 0, rate: 0, bookName: '' })
   const [anns, setAnns] = useState<{ content: string; author?: string }[]>([])
+
+  if (!profile.class_id) {
+    return <Navigate to={roleHome(profile.role)} replace />
+  }
 
   useEffect(() => {
     void loadForUser(profile.class_id)

@@ -7,7 +7,6 @@ import {
   Users,
   UserRound,
   Newspaper,
-  ChartColumn,
   SlidersHorizontal,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
@@ -27,30 +26,45 @@ const studentNav: NavItem[] = [
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
-const teacherNav: NavItem[] = [
+const teacherWithClassNav: NavItem[] = [
   { to: '/teacher', label: '홈', icon: LayoutDashboard },
-  { to: '/teacher/feed', label: '피드', icon: Newspaper },
+  { to: '/checkin', label: '인증', icon: BookOpen },
   { to: '/teacher/class', label: '우리반', icon: Users },
+  { to: '/feed', label: '피드', icon: Newspaper },
+  { to: '/me', label: '마이', icon: UserRound },
+]
+
+/** 임원 선생님: 반 없음 → 현황/우리반 대신 공지 */
+const teacherStaffNav: NavItem[] = [
+  { to: '/teacher', label: '홈', icon: Home },
+  { to: '/checkin', label: '인증', icon: BookOpen },
+  { to: '/feed', label: '피드', icon: Newspaper },
   { to: '/teacher/announce', label: '공지', icon: Megaphone },
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
 const adminNav: NavItem[] = [
   { to: '/admin', label: '현황', icon: LayoutDashboard },
+  { to: '/checkin', label: '인증', icon: BookOpen },
+  { to: '/feed', label: '피드', icon: Newspaper },
   { to: '/admin/settings', label: '설정', icon: SlidersHorizontal },
-  { to: '/progress', label: '전체', icon: ChartColumn },
-  { to: '/admin/classes', label: '반관리', icon: Users },
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
-function navForRole(role: UserRole): NavItem[] {
+function navForRole(role: UserRole, classId: string | null): NavItem[] {
   if (role === 'ADMIN') return adminNav
-  if (role === 'TEACHER') return teacherNav
+  if (role === 'TEACHER') return classId ? teacherWithClassNav : teacherStaffNav
   return studentNav
 }
 
-export function BottomNav({ role }: { role: UserRole }) {
-  const items = navForRole(role)
+export function BottomNav({
+  role,
+  classId = null,
+}: {
+  role: UserRole
+  classId?: string | null
+}) {
+  const items = navForRole(role, classId)
   const location = useLocation()
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-panel/95 backdrop-blur">
@@ -59,10 +73,9 @@ export function BottomNav({ role }: { role: UserRole }) {
           const Icon = item.icon
           const end =
             item.to === '/' || item.to === '/teacher' || item.to === '/admin'
-          const active =
-            end
-              ? location.pathname === item.to
-              : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
+          const active = end
+            ? location.pathname === item.to
+            : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
           return (
             <li key={item.to} className="flex-1">
               <NavLink

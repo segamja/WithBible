@@ -34,6 +34,7 @@ npm install
    - (사진 인증·좋아요·Realtime) `supabase/migrations/004_photo_like_realtime.sql`
    - (한 줄 댓글·관리자 리셋) `supabase/migrations/005_comments_admin_reset.sql`
    - (카카오 온보딩 RPC·가입코드 RLS) `supabase/migrations/006_kakao_onboarding_rpc.sql`
+   - (임원 선생님 코드·통합 온보딩) `supabase/migrations/007_staff_codes_and_join_onboarding.sql`
 2. Authentication → Providers에서 Email 로그인이 켜져 있는지 확인합니다.
 3. (선택) Authentication → Providers에서 "Confirm email"을 끄면 로컬 테스트가 편합니다.
 4. (카카오 로그인) 아래 **카카오 / Supabase OAuth 설정**을 완료합니다.
@@ -84,19 +85,19 @@ npm run dev
 
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_URL` 저장 후 재배포
 
-### 6. 첫 관리자 / 교사 설정
+### 6. 첫 관리자 / 임원·교사 설정
 
-1. 앱에서 회원가입합니다. (학생은 반 코드 예: `BIBLE26-2`)  
-   또는 카카오 로그인 후 온보딩에서 가입코드를 입력합니다.
-2. Supabase SQL Editor에서 관리자 승격:
+1. **학생:** 반 코드(예: `BIBLE26-2`)로 가입·카카오 온보딩  
+2. **임원 선생님(반 없음):** 임원 코드(시드 기본 `STAFF26`)로 가입 → `TEACHER`, 반 미배정. 인증·피드는 학생과 동일.  
+3. **운영자(ADMIN 1명):** 이메일 가입 후 SQL로만 승격 (공개 코드로 ADMIN 부여 안 함)
 
 ```sql
 update public.wb_profiles
-set role = 'ADMIN'
+set role = 'ADMIN', class_id = null
 where email = 'your-admin@email.com';
 ```
 
-교사 배정 예시:
+담임 교사 배정 예시:
 
 ```sql
 update public.wb_profiles
@@ -110,20 +111,24 @@ set teacher_id = (
 )
 where id = '22222222-2222-2222-2222-222222222202';
 ```
-시드에 포함된 반 코드:
 
-| 반 | 가입 코드 |
+시드 가입 코드:
+
+| 구분 | 코드 |
 |---|---|
 | 1반 | `BIBLE26-1` |
 | 2반 | `BIBLE26-2` |
 | 3반 | `BIBLE26-3` |
+| 임원 선생님 | `STAFF26` |
+
+임원 코드는 `/admin/classes`에서 추가·갱신할 수 있습니다. (`007` 마이그레이션 적용 후)
 
 ## 역할별 화면
 
 - **학생:** 홈 / 인증 / 우리반 / 피드 / 마이
-- **교사:** 대시보드 / 우리반 / 피드 / 공지 / 마이
-- **관리자:** 전체현황 / 프로젝트 / 반관리 / 사용자 / 마이
-
+- **임원 선생님(반 없음):** 홈 / 인증 / 피드 / 공지 / 마이 (반 현황 없음)
+- **담임 교사:** 홈(반 현황) / 인증 / 우리반 / 피드 / 마이
+- **운영자:** 현황 / 인증 / 피드 / 설정 / 마이 (+ 반·사용자 관리)
 ## 진행률 계산
 
 - **참여율:** 인증 경험이 있는 학생 수 / 전체 학생 수

@@ -1,13 +1,70 @@
 import path from 'node:path'
+import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 
+function readPkgVersion(): string {
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.resolve(rootDir, 'package.json'), 'utf8'),
+    ) as { version?: string }
+    return pkg.version ?? '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+}
+
+/** Build id: Vercel commit SHA, else package version + timestamp */
+function resolveAppVersion(): { version: string; builtAt: string } {
+  const builtAt = new Date().toISOString()
+  const sha = process.env.VERCEL_GIT_COMMIT_SHA?.trim()
+  const pkg = readPkgVersion()
+  if (sha) {
+    return { version: `${pkg}+${sha.slice(0, 7)}`, builtAt }
+  }
+  const stamp = builtAt.replace(/[-:TZ.]/g, '').slice(0, 14)
+  return { version: `${pkg}+${stamp}`, builtAt }
+}
+
+function appVersionPlugin(): Plugin {
+  const info = resolveAppVersion()
+  const payload = JSON.stringify(
+    { version: info.version, builtAt: info.builtAt },
+    null,
+    2,
+  )
+
+  const writeVersionFile = (dir: string) => {
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(path.join(dir, 'version.json'), `${payload}\n`, 'utf8')
+  }
+
+  return {
+    name: 'with-bible-app-version',
+    config() {
+      return {
+        define: {
+          __APP_VERSION__: JSON.stringify(info.version),
+          __APP_BUILT_AT__: JSON.stringify(info.builtAt),
+        },
+      }
+    },
+    buildStart() {
+      // Copied to dist by Vite; also useful for local preview
+      writeVersionFile(path.resolve(rootDir, 'public'))
+    },
+    closeBundle() {
+      writeVersionFile(path.resolve(rootDir, 'dist'))
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), appVersionPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(rootDir, './src'),
@@ -15,7 +72,7 @@ export default defineConfig({
   },
   server: {
     watch: {
-      ignored: ['**/imgs/**', '**/docs/**', '**/.cursor/**'],
+      ignored: ['**/imgs/**', '**/docs/**', '**/.cursor/**', '**/public/version.json'],
     },
   },
 })

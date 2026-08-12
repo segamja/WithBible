@@ -23,6 +23,57 @@ function daysSinceLast(lastReadingDate: string | null): number {
   return differenceInCalendarDays(parseISO(todayISO()), parseISO(lastReadingDate))
 }
 
+function StaffTeacherHome({
+  projectEnd,
+  recentCount,
+}: {
+  projectEnd: string | null
+  recentCount: number
+}) {
+  return (
+    <div className="space-y-4 px-5 pb-8 pt-7">
+      <div>
+        <p className="text-sm font-semibold tracking-wide text-sky-dark">with BIBLE · 임원</p>
+        <h1 className="font-display mt-1 text-3xl text-navy">함께 읽는 말씀</h1>
+        {projectEnd ? <p className="mt-2 text-muted">{getDDayLabel(projectEnd)}</p> : null}
+        <p className="mt-2 text-sm text-muted">
+          반에 소속되지 않아도 학생과 같이 읽고 인증할 수 있어요. 반별 현황은 담임 선생님 화면입니다.
+        </p>
+      </div>
+
+      <Card className="border-none bg-navy text-white">
+        <p className="text-sm text-white/70">오늘의 실천</p>
+        <p className="font-display mt-1 text-2xl">말씀을 읽고 인증해 보세요</p>
+        <Link to="/checkin" className="mt-4 block">
+          <Button variant="sage" className="w-full">
+            사진으로 인증하기
+          </Button>
+        </Link>
+      </Card>
+
+      <div className="flex gap-2">
+        <Link to="/feed" className="flex-1">
+          <Button className="w-full" variant="outline">
+            피드 보기 {recentCount > 0 ? `· ${recentCount}` : ''}
+          </Button>
+        </Link>
+        <Link to="/teacher/announce" className="flex-1">
+          <Button className="w-full" variant="secondary">
+            전교 공지
+          </Button>
+        </Link>
+      </div>
+
+      <Link to="/progress">
+        <Card className="hover:border-sage/40">
+          <p className="font-semibold text-navy">전체 반 진행 보기</p>
+          <p className="mt-1 text-sm text-muted">반별 달성률을 한눈에 확인할 수 있어요.</p>
+        </Card>
+      </Link>
+    </div>
+  )
+}
+
 export function TeacherDashboardPage() {
   const profile = useAuthStore((s) => s.profile)!
   const { project, loadForUser } = useProjectStore()
@@ -37,23 +88,34 @@ export function TeacherDashboardPage() {
   const [students, setStudents] = useState<StudentStatus[]>([])
   const [recentCount, setRecentCount] = useState(0)
 
+  const hasClass = Boolean(profile.class_id)
+
   useEffect(() => {
     void loadForUser(profile.class_id)
   }, [profile.class_id, loadForUser])
 
   useEffect(() => {
-    if (!project || !profile.class_id) return
+    if (!project) return
     const run = async () => {
-      const cls = await getClassById(profile.class_id!)
+      if (!profile.class_id) {
+        const feed = await listFeed({ projectId: project.id, limit: 10 })
+        setRecentCount(feed.length)
+        return
+      }
+      const cls = await getClassById(profile.class_id)
       setClassName(cls?.name ?? '담당 반')
-      const p = await getClassProgress(project.id, profile.class_id!, cls?.name ?? '담당 반')
+      const p = await getClassProgress(project.id, profile.class_id, cls?.name ?? '담당 반')
       setProgress(p)
-      setStudents(await getStudentStatuses(project.id, profile.class_id!))
+      setStudents(await getStudentStatuses(project.id, profile.class_id))
       const feed = await listFeed({ projectId: project.id, classId: profile.class_id, limit: 10 })
       setRecentCount(feed.length)
     }
     void run()
   }, [project, profile])
+
+  if (!hasClass) {
+    return <StaffTeacherHome projectEnd={project?.end_date ?? null} recentCount={recentCount} />
+  }
 
   const needCheer = students
     .filter((s) => daysSinceLast(s.lastReadingDate) >= 2)
@@ -66,6 +128,13 @@ export function TeacherDashboardPage() {
         <h1 className="font-display mt-1 text-3xl text-navy">{className}</h1>
         {project ? <p className="mt-2 text-muted">{getDDayLabel(project.end_date)}</p> : null}
       </div>
+
+      <Link to="/checkin">
+        <Card className="mb-1 border-sage/30 bg-sage/10">
+          <p className="font-semibold text-navy">오늘도 말씀을 읽고 인증하기</p>
+          <p className="mt-1 text-sm text-muted">학생과 같이 읽고 올릴 수 있어요.</p>
+        </Card>
+      </Link>
 
       <Card className="border-none bg-navy text-white">
         <p className="text-sm text-white/70">반 목표 달성률</p>
@@ -132,7 +201,7 @@ export function TeacherDashboardPage() {
             격려 메시지
           </Button>
         </Link>
-        <Link to="/teacher/feed" className="flex-1">
+        <Link to="/feed" className="flex-1">
           <Button className="w-full" variant="outline">
             최근 인증 {recentCount}
           </Button>

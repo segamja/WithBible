@@ -18,6 +18,8 @@ export function TeacherAnnouncePage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const hasClass = Boolean(profile.class_id)
+
   const refresh = async () => {
     if (!project) return
     const rows = await listAnnouncements({
@@ -37,12 +39,13 @@ export function TeacherAnnouncePage() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!project || !profile.class_id) return
+    if (!project) return
     setLoading(true)
     setError(null)
     try {
       await createAnnouncement({
         projectId: project.id,
+        // 임원(반 없음) → 전교 공지 (class_id null)
         classId: profile.class_id,
         authorId: profile.id,
         content: content.trim(),
@@ -58,8 +61,14 @@ export function TeacherAnnouncePage() {
 
   return (
     <div className="space-y-4 px-5 py-8">
-      <h1 className="font-display text-3xl text-brand-900">격려 공지</h1>
-      <p className="text-muted">반 전체에게 따뜻한 메시지를 남겨주세요.</p>
+      <h1 className="font-display text-3xl text-brand-900">
+        {hasClass ? '격려 공지' : '전교 공지'}
+      </h1>
+      <p className="text-muted">
+        {hasClass
+          ? '반 전체에게 따뜻한 메시지를 남겨주세요.'
+          : '모든 반 친구들에게 보이는 격려 메시지를 남겨주세요.'}
+      </p>
 
       <form onSubmit={onSubmit} className="space-y-3">
         <Card>
@@ -67,7 +76,11 @@ export function TeacherAnnouncePage() {
             required
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder={`우리 ${profile.name} 반!\n이번 주도 함께 읽어봐요.`}
+            placeholder={
+              hasClass
+                ? `우리 ${profile.name} 반!\n이번 주도 함께 읽어봐요.`
+                : '고등부 친구들, 이번 주도 말씀과 함께해요.'
+            }
           />
         </Card>
         {error ? <p className="text-sm text-danger">{error}</p> : null}

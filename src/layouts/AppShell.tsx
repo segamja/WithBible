@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { BottomNav } from '@/components/BottomNav'
+import { AppVersionBadge } from '@/components/AppVersionBadge'
 import type { UserRole } from '@/types'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { cn } from '@/utils/cn'
@@ -52,8 +53,11 @@ export function AppShell() {
 
   return (
     <div className={cn('mx-auto min-h-dvh pb-24', wide ? 'max-w-4xl' : 'max-w-lg')}>
+      <div className="flex justify-end px-5 pt-3">
+        <AppVersionBadge />
+      </div>
       <Outlet />
-      <BottomNav role={profile.role} />
+      <BottomNav role={profile.role} classId={profile.class_id} />
     </div>
   )
 }

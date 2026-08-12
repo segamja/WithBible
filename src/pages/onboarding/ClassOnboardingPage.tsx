@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { roleHome } from '@/layouts/AppShell'
 import { useAuthStore } from '@/stores/authStore'
+import type { UserRole } from '@/types'
 
 export function ClassOnboardingPage() {
   const navigate = useNavigate()
@@ -12,40 +14,50 @@ export function ClassOnboardingPage() {
   const profile = useAuthStore((s) => s.profile)
   const [joinCode, setJoinCode] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [linkedClassName, setLinkedClassName] = useState<string | null>(null)
+  const [success, setSuccess] = useState<{
+    joinKind: 'class' | 'staff'
+    displayName: string
+    role: UserRole
+  } | null>(null)
   const [switching, setSwitching] = useState(false)
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
     try {
-      const { className } = await completeOnboarding(joinCode)
-      setLinkedClassName(className)
+      const result = await completeOnboarding(joinCode)
+      setSuccess(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '반 연결 실패')
+      setError(err instanceof Error ? err.message : '가입코드 연결 실패')
     }
   }
 
   const goLogout = () => {
     setSwitching(true)
-    // Dedicated logout route: always clears session then opens /login
     window.location.assign('/logout')
   }
 
-  if (linkedClassName) {
+  if (success) {
+    const isStaff = success.joinKind === 'staff'
     return (
       <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 py-10">
         <Card className="space-y-4 border-none bg-navy text-white shadow-[0_16px_40px_rgba(23,32,51,0.28)]">
           <p className="text-3xl">🎉</p>
           <h1 className="font-display text-2xl leading-snug">
-            {linkedClassName}과 연결되었습니다!
+            {isStaff
+              ? `${success.displayName}으로 등록되었습니다!`
+              : `${success.displayName}과 연결되었습니다!`}
           </h1>
-          <p className="text-sm text-white/75">이제 우리 반과 함께 말씀을 읽어보세요.</p>
+          <p className="text-sm text-white/75">
+            {isStaff
+              ? '말씀을 읽고 인증하며, 친구들을 격려해 주세요. (반 현황은 담임 선생님 화면입니다)'
+              : '이제 우리 반과 함께 말씀을 읽어보세요.'}
+          </p>
           <Button
             variant="sage"
             size="lg"
             className="w-full"
-            onClick={() => navigate('/', { replace: true })}
+            onClick={() => navigate(roleHome(success.role), { replace: true })}
           >
             시작하기
           </Button>
@@ -62,9 +74,9 @@ export function ClassOnboardingPage() {
       </h1>
       <p className="mt-3 text-muted">안녕하세요!</p>
       <p className="mt-1 text-lg font-medium text-navy">
-        우리 반과 함께
+        가입코드를 입력하고
         <br />
-        말씀을 읽어볼까요?
+        말씀을 함께 읽어볼까요?
       </p>
       {profile?.name ? (
         <p className="mt-2 text-sm text-muted">현재 계정 · {profile.name}</p>
@@ -72,20 +84,23 @@ export function ClassOnboardingPage() {
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <Card className="space-y-3">
-          <label className="block text-sm text-muted">우리 반 가입코드를 입력해주세요.</label>
+          <label className="block text-sm text-muted">
+            반 가입코드 또는 임원 선생님 코드를 입력해주세요.
+          </label>
           <Input
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-            placeholder="BIBLE26-2"
+            placeholder="BIBLE26-2 또는 STAFF26"
             autoComplete="off"
             autoCapitalize="characters"
             spellCheck={false}
             className="font-semibold tracking-wide"
+            required
           />
           {error ? <p className="text-sm text-danger">{error}</p> : null}
         </Card>
         <Button type="submit" className="w-full" size="lg" disabled={loading || switching}>
-          {loading ? '연결 중…' : '우리 반 연결하기'}
+          {loading ? '연결 중…' : '시작하기'}
         </Button>
       </form>
 
@@ -101,7 +116,7 @@ export function ClassOnboardingPage() {
           {switching ? '이동 중…' : '로그아웃 · 다른 계정으로 로그인'}
         </Button>
         <p className="text-center text-xs text-muted">
-          관리자/교사는 로그아웃 후{' '}
+          운영자(관리자)는 로그아웃 후{' '}
           <Link to="/login" className="font-medium text-navy underline-offset-2 hover:underline">
             이메일로 로그인
           </Link>

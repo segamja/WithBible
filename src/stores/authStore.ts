@@ -19,7 +19,11 @@ interface AuthState {
     name: string
     joinCode?: string
   }) => Promise<void>
-  completeOnboarding: (joinCode: string) => Promise<{ className: string }>
+  completeOnboarding: (joinCode: string) => Promise<{
+    joinKind: 'class' | 'staff'
+    displayName: string
+    role: UserRole
+  }>
   refreshProfile: () => Promise<void>
   logout: () => Promise<void>
   setProfile: (profile: Profile | null) => void
@@ -149,7 +153,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   completeOnboarding: async (joinCode) => {
     set({ loading: true, error: null })
     try {
-      const result = await onboardingService.completeStudentOnboarding(joinCode)
+      const result = await onboardingService.completeJoinOnboarding(joinCode)
       const userId = get().sessionUserId ?? (await authService.getSessionUserId())
       if (!userId) throw new Error('로그인이 필요해요.')
       const profile = await authService.getProfile(userId)
@@ -159,11 +163,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         onboardingRequired: computeOnboarding(userId, profile),
         loading: false,
       })
-      return { className: result.class_name }
+      return {
+        joinKind: result.joinKind,
+        displayName: result.displayName,
+        role: result.role,
+      }
     } catch (e) {
       set({
         loading: false,
-        error: e instanceof Error ? e.message : '반 연결 실패',
+        error: e instanceof Error ? e.message : '가입코드 연결 실패',
       })
       throw e
     }

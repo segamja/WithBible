@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input'
 import { roleHome } from '@/layouts/AppShell'
 import { useAuthStore } from '@/stores/authStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
+import { AppVersionBadge } from '@/components/AppVersionBadge'
 
 function KakaoIcon({ className }: { className?: string }) {
   return (
@@ -68,6 +69,7 @@ export function LoginPage() {
       <p className="text-sm font-semibold tracking-wide text-sky-dark">with BIBLE</p>
       <h1 className="font-display mt-2 text-4xl text-navy">with BIBLE</h1>
       <p className="mt-3 text-muted">함께 읽는 말씀, 함께 자라는 우리</p>
+      <AppVersionBadge className="mt-3" />
 
       {!isSupabaseConfigured ? (
         <p className="mt-6 rounded-xl bg-warn/10 p-3 text-sm text-warn">
