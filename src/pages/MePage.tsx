@@ -20,7 +20,7 @@ export function MePage() {
       <Card className="space-y-2">
         <p className="text-sm text-muted">이름</p>
         <p className="text-xl font-semibold">{profile.name}</p>
-        <p className="text-sm text-muted">{profile.email}</p>
+        <p className="text-sm text-muted">{profile.email || '이메일 없음'}</p>
         <p className="pt-2 text-sm">
           역할 · <span className="font-medium">{profile.role}</span>
         </p>

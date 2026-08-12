@@ -1,9 +1,16 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { AppShell, GuestOnly, RoleGuard } from '@/layouts/AppShell'
+import {
+  AppShell,
+  GuestOnly,
+  OnboardingOnly,
+  RoleGuard,
+} from '@/layouts/AppShell'
 import { useAuthStore } from '@/stores/authStore'
 import { LoginPage } from '@/pages/LoginPage'
 import { SignupPage } from '@/pages/SignupPage'
+import { AuthCallbackPage } from '@/pages/auth/AuthCallbackPage'
+import { ClassOnboardingPage } from '@/pages/onboarding/ClassOnboardingPage'
 import { MePage } from '@/pages/MePage'
 import { StudentHomePage } from '@/pages/student/HomePage'
 import { CheckinPage } from '@/pages/student/CheckinPage'
@@ -28,6 +35,12 @@ export default function App() {
       <Route element={<GuestOnly />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+      </Route>
+
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+      <Route element={<OnboardingOnly />}>
+        <Route path="/onboarding/class" element={<ClassOnboardingPage />} />
       </Route>
 
       <Route element={<AppShell />}>

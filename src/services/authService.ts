@@ -19,6 +19,16 @@ function ensureConfigured() {
   }
 }
 
+/** Prefer VITE_APP_URL; fall back to current origin (no hardcoded hosts). */
+export function getAppOrigin(): string {
+  const fromEnv = import.meta.env.VITE_APP_URL?.trim()
+  if (fromEnv) return fromEnv.replace(/\/$/, '')
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin
+  }
+  return ''
+}
+
 async function waitForProfile(userId: string, attempts = 6): Promise<Profile | null> {
   for (let i = 0; i < attempts; i += 1) {
     const profile = await getProfile(userId)
@@ -58,7 +68,6 @@ export async function signUp(params: {
   let profile = await waitForProfile(data.user.id)
   if (profile) return profile
 
-  // Fallback when trigger is delayed / missing — only works if session exists
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -97,6 +106,37 @@ export async function signIn(email: string, password: string): Promise<Profile> 
   const profile = await getProfile(data.user.id)
   if (!profile) throw new AuthError('프로필을 찾을 수 없습니다. 관리자에게 문의해주세요.')
   return profile
+}
+
+export async function signInWithKakao(): Promise<void> {
+  ensureConfigured()
+  const origin = getAppOrigin()
+  if (!origin) {
+    throw new AuthError('앱 URL을 확인할 수 없습니다. VITE_APP_URL을 설정해주세요.')
+  }
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'kakao',
+    options: {
+      redirectTo: `${origin}/auth/callback`,
+    },
+  })
+  if (error) throw new AuthError(error.message)
+}
+
+export async function getCurrentSession() {
+  ensureConfigured()
+  // PKCE: exchange ?code= if present (OAuth redirect to /auth/callback)
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    if (code) {
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+      if (exchangeError) throw new AuthError(exchangeError.message)
+    }
+  }
+  const { data, error } = await supabase.auth.getSession()
+  if (error) throw new AuthError(error.message)
+  return data.session
 }
 
 export async function signOut(): Promise<void> {
@@ -151,4 +191,15 @@ export function onAuthStateChange(callback: (userId: string | null) => void) {
     const id = session?.user.id ?? null
     callback(isUuid(id) ? id : null)
   })
+}
+
+/** True when session exists but student profile is missing or has no class yet. */
+export function needsOnboarding(
+  sessionUserId: string | null,
+  profile: Profile | null,
+): boolean {
+  if (!sessionUserId) return false
+  if (!profile) return true
+  if (profile.role === 'STUDENT' && !profile.class_id) return true
+  return false
 }

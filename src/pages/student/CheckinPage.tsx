@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, ImagePlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -19,8 +19,9 @@ export function CheckinPage() {
   const profile = useAuthStore((s) => s.profile)!
   const { project, myProjectClass, bibleBooks, loadForUser } = useProjectStore()
   const [bookId, setBookId] = useState('')
-  const [startChapter, setStartChapter] = useState(1)
-  const [endChapter, setEndChapter] = useState(1)
+  /** Keep as string so clearing the field does not force `0`. */
+  const [startChapter, setStartChapter] = useState('1')
+  const [endChapter, setEndChapter] = useState('1')
   const [reflection, setReflection] = useState('')
   const [visibility, setVisibility] = useState<Visibility>('public')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
@@ -35,34 +36,39 @@ export function CheckinPage() {
     void loadForUser(profile.class_id)
   }, [profile.class_id, loadForUser])
 
+  // Keep bookId in sync with loaded books (Select can look selected while value is still "").
   useEffect(() => {
-    if (!project || !profile.class_id) return
+    if (bibleBooks.length === 0) return
+    setBookId((current) => {
+      if (current && bibleBooks.some((b) => b.id === current)) return current
+      const preferred = myProjectClass?.target_book_id
+      if (preferred && bibleBooks.some((b) => b.id === preferred)) return preferred
+      return bibleBooks[0]?.id ?? ''
+    })
+  }, [bibleBooks, myProjectClass?.target_book_id])
+
+  useEffect(() => {
+    if (!project) return
+    if (myProjectClass) {
+      const range = getTodayReadingRange({
+        startDate: project.start_date,
+        endDate: project.end_date,
+        targetStart: myProjectClass.target_start_chapter,
+        targetEnd: myProjectClass.target_end_chapter,
+      })
+      setStartChapter(String(range.start))
+      setEndChapter(String(range.end))
+      return
+    }
+    if (!profile.class_id) return
     const run = async () => {
-      if (myProjectClass?.target_book_id) {
-        setBookId(myProjectClass.target_book_id)
-      } else if (bibleBooks[0]) {
-        setBookId(bibleBooks[0].id)
-      }
-
-      if (myProjectClass) {
-        const range = getTodayReadingRange({
-          startDate: project.start_date,
-          endDate: project.end_date,
-          targetStart: myProjectClass.target_start_chapter,
-          targetEnd: myProjectClass.target_end_chapter,
-        })
-        setStartChapter(range.start)
-        setEndChapter(range.end)
-        return
-      }
-
       const personal = await getPersonalProgress(project.id, profile.id, profile.class_id!)
       const next = Math.min(personal.covered + 1, personal.target || 1)
-      setStartChapter(next)
-      setEndChapter(next)
+      setStartChapter(String(next))
+      setEndChapter(String(next))
     }
     void run()
-  }, [project, profile, myProjectClass, bibleBooks])
+  }, [project, profile.class_id, profile.id, myProjectClass])
 
   useEffect(() => {
     return () => {
@@ -92,14 +98,51 @@ export function CheckinPage() {
     setPhotoPreview(null)
   }
 
+  const parseChapter = (raw: string) => {
+    const n = Number(raw)
+    return Number.isInteger(n) && n >= 1 ? n : null
+  }
+
+  const onChapterChange =
+    (setter: (v: string) => void) => (e: ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value
+      if (raw === '' || /^\d+$/.test(raw)) setter(raw)
+    }
+
+  const onChapterBlur =
+    (value: string, setter: (v: string) => void) => () => {
+      if (value === '') return
+      const n = parseChapter(value)
+      if (n !== null) setter(String(n))
+    }
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!bookId) {
+    const resolvedBookId =
+      (bookId && bibleBooks.some((b) => b.id === bookId) ? bookId : null) ??
+      (myProjectClass?.target_book_id &&
+      bibleBooks.some((b) => b.id === myProjectClass.target_book_id)
+        ? myProjectClass.target_book_id
+        : null) ??
+      bibleBooks[0]?.id ??
+      ''
+    if (!resolvedBookId) {
       setError('성경을 선택해주세요.')
       return
     }
+    if (resolvedBookId !== bookId) setBookId(resolvedBookId)
     if (!photoFile) {
       setError('성경 페이지 사진을 찍어 올려주세요.')
+      return
+    }
+    const start = parseChapter(startChapter)
+    const end = parseChapter(endChapter)
+    if (start === null || end === null) {
+      setError('시작 장과 종료 장을 1 이상으로 입력해주세요.')
+      return
+    }
+    if (end < start) {
+      setError('종료 장은 시작 장보다 크거나 같아야 합니다.')
       return
     }
     if (!project) return
@@ -109,9 +152,9 @@ export function CheckinPage() {
       const imageUrl = await uploadCheckinPhoto(profile.id, photoFile)
       await createReadingLog(profile.id, {
         projectId: project.id,
-        bookId,
-        startChapter: Number(startChapter),
-        endChapter: Number(endChapter),
+        bookId: resolvedBookId,
+        startChapter: start,
+        endChapter: end,
         reflection: reflection.trim(),
         visibility,
         imageUrl,
@@ -223,33 +266,45 @@ export function CheckinPage() {
 
             <div>
               <label className="mb-1.5 block text-sm text-muted">성경</label>
-              <Select required value={bookId} onChange={(e) => setBookId(e.target.value)}>
-                {bibleBooks.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
+              <Select
+                required
+                value={bookId || bibleBooks[0]?.id || ''}
+                onChange={(e) => setBookId(e.target.value)}
+              >
+                {bibleBooks.length === 0 ? (
+                  <option value="">불러오는 중…</option>
+                ) : (
+                  bibleBooks.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))
+                )}
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1.5 block text-sm text-muted">시작 장</label>
                 <Input
-                  type="number"
-                  min={1}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   required
                   value={startChapter}
-                  onChange={(e) => setStartChapter(Number(e.target.value))}
+                  onChange={onChapterChange(setStartChapter)}
+                  onBlur={onChapterBlur(startChapter, setStartChapter)}
                 />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm text-muted">종료 장</label>
                 <Input
-                  type="number"
-                  min={startChapter}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   required
                   value={endChapter}
-                  onChange={(e) => setEndChapter(Number(e.target.value))}
+                  onChange={onChapterChange(setEndChapter)}
+                  onBlur={onChapterBlur(endChapter, setEndChapter)}
                 />
               </div>
             </div>

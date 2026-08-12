@@ -15,7 +15,7 @@ export type EncouragementType =
 export interface Profile {
   id: string
   name: string
-  email: string
+  email: string | null
   profile_image: string | null
   role: UserRole
   class_id: string | null
@@ -27,6 +27,7 @@ export interface ClassRow {
   name: string
   teacher_id: string | null
   join_code: string
+  is_active?: boolean
   created_at: string
 }
 

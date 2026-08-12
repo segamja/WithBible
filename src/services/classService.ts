@@ -20,16 +20,18 @@ export async function getClassById(id: string): Promise<ClassRow | null> {
   return data as ClassRow | null
 }
 
-export async function getClassByJoinCode(code: string): Promise<ClassRow | null> {
+export async function getClassByJoinCode(
+  code: string,
+): Promise<Pick<ClassRow, 'id' | 'name'> | null> {
   const cleaned = emptyToNull(code)
   if (!cleaned) return null
-  const { data, error } = await supabase
-    .from(Tables.classes)
-    .select('*')
-    .ilike('join_code', cleaned)
-    .maybeSingle()
+  const { data, error } = await supabase.rpc('wb_lookup_class_by_join_code', {
+    p_join_code: cleaned.toUpperCase(),
+  })
   if (error) throw new Error(error.message)
-  return data as ClassRow | null
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row?.id) return null
+  return { id: row.id as string, name: row.name as string }
 }
 
 export async function createClass(input: {

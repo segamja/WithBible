@@ -33,8 +33,10 @@ npm install
    - (이미 스키마를 적용한 뒤라면) `supabase/migrations/003_fix_signup_trigger.sql`
    - (사진 인증·좋아요·Realtime) `supabase/migrations/004_photo_like_realtime.sql`
    - (한 줄 댓글·관리자 리셋) `supabase/migrations/005_comments_admin_reset.sql`
+   - (카카오 온보딩 RPC·가입코드 RLS) `supabase/migrations/006_kakao_onboarding_rpc.sql`
 2. Authentication → Providers에서 Email 로그인이 켜져 있는지 확인합니다.
 3. (선택) Authentication → Providers에서 "Confirm email"을 끄면 로컬 테스트가 편합니다.
+4. (카카오 로그인) 아래 **카카오 / Supabase OAuth 설정**을 완료합니다.
 
 ### 3. 환경 변수
 
@@ -47,7 +49,10 @@ cp .env.example .env
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+VITE_APP_URL=http://localhost:5173
 ```
+
+프로덕션(Vercel)에서는 `VITE_APP_URL=https://with-bible.vercel.app` 로 설정합니다.
 
 ### 4. 실행
 
@@ -55,9 +60,34 @@ VITE_SUPABASE_ANON_KEY=YOUR_ANON_KEY
 npm run dev
 ```
 
-### 5. 첫 관리자 / 교사 설정
+### 5. 카카오 / Supabase OAuth 설정 (직접 설정 필요)
 
-1. 앱에서 회원가입합니다. (학생은 반 코드 예: `BIBLE26-2`)
+코드만으로는 카카오 로그인이 완성되지 않습니다. 아래를 **콘솔에서** 설정하세요.
+
+#### Kakao Developers
+
+1. [Kakao Developers](https://developers.kakao.com/)에서 애플리케이션 생성
+2. 플랫폼 / Redirect URI에 Supabase 콜백 등록:  
+   `https://YOUR_PROJECT.supabase.co/auth/v1/callback`
+3. 동의항목 최소화: 닉네임(필수 수준), 프로필 이미지(선택). 이메일은 선택
+4. REST API 키 / Client Secret 확인
+
+#### Supabase Dashboard
+
+1. Authentication → Providers → **Kakao** 활성화 후 Client ID/Secret 입력
+2. Authentication → URL Configuration → Redirect URLs에 추가:
+   - `http://localhost:5173/auth/callback`
+   - `https://with-bible.vercel.app/auth/callback`
+3. SQL Editor에서 `006_kakao_onboarding_rpc.sql` 실행 (아직 안 했다면)
+
+#### Vercel
+
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_URL` 저장 후 재배포
+
+### 6. 첫 관리자 / 교사 설정
+
+1. 앱에서 회원가입합니다. (학생은 반 코드 예: `BIBLE26-2`)  
+   또는 카카오 로그인 후 온보딩에서 가입코드를 입력합니다.
 2. Supabase SQL Editor에서 관리자 승격:
 
 ```sql
@@ -103,7 +133,7 @@ where id = '22222222-2222-2222-2222-222222222202';
 
 1. GitHub에 푸시
 2. Vercel에서 Import
-3. Environment Variables에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` 설정
+3. Environment Variables에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_URL` 설정
 4. Build Command: `npm run build` / Output: `dist`
 
 ## 폴더 구조

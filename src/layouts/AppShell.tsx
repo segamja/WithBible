@@ -5,8 +5,14 @@ import type { UserRole } from '@/types'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { cn } from '@/utils/cn'
 
+function roleHome(role: UserRole) {
+  if (role === 'ADMIN') return '/admin'
+  if (role === 'TEACHER') return '/teacher'
+  return '/'
+}
+
 export function AppShell() {
-  const { profile, initialized } = useAuthStore()
+  const { profile, sessionUserId, onboardingRequired, initialized } = useAuthStore()
   const location = useLocation()
   const wide = location.pathname.startsWith('/progress')
 
@@ -32,6 +38,14 @@ export function AppShell() {
     )
   }
 
+  if (!sessionUserId) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (onboardingRequired) {
+    return <Navigate to="/onboarding/class" replace />
+  }
+
   if (!profile) {
     return <Navigate to="/login" replace />
   }
@@ -48,20 +62,38 @@ export function RoleGuard({ allow }: { allow: UserRole[] }) {
   const profile = useAuthStore((s) => s.profile)
   if (!profile) return <Navigate to="/login" replace />
   if (!allow.includes(profile.role)) {
-    if (profile.role === 'ADMIN') return <Navigate to="/admin" replace />
-    if (profile.role === 'TEACHER') return <Navigate to="/teacher" replace />
-    return <Navigate to="/" replace />
+    return <Navigate to={roleHome(profile.role)} replace />
   }
   return <Outlet />
 }
 
 export function GuestOnly() {
-  const { profile, initialized } = useAuthStore()
+  const { profile, sessionUserId, onboardingRequired, initialized } = useAuthStore()
   if (!initialized) return null
-  if (profile) {
-    if (profile.role === 'ADMIN') return <Navigate to="/admin" replace />
-    if (profile.role === 'TEACHER') return <Navigate to="/teacher" replace />
-    return <Navigate to="/" replace />
+  if (sessionUserId && onboardingRequired) {
+    return <Navigate to="/onboarding/class" replace />
+  }
+  if (profile && !onboardingRequired) {
+    return <Navigate to={roleHome(profile.role)} replace />
+  }
+  return <Outlet />
+}
+
+/** Session required; must still complete class join. */
+export function OnboardingOnly() {
+  const { sessionUserId, onboardingRequired, profile, initialized } = useAuthStore()
+  if (!initialized) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center text-muted">
+        With Bible 불러오는 중…
+      </div>
+    )
+  }
+  if (!sessionUserId) {
+    return <Navigate to="/login" replace />
+  }
+  if (!onboardingRequired) {
+    return <Navigate to={profile ? roleHome(profile.role) : '/'} replace />
   }
   return <Outlet />
 }

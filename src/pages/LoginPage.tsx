@@ -1,16 +1,32 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAuthStore } from '@/stores/authStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
 
+function KakaoIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#191919"
+        d="M12 4C7.03 4 3 7.14 3 11c0 2.45 1.6 4.6 4.02 5.86-.13.47-.47 1.7-.54 1.97-.08.3.11.3.23.22.1-.07 1.55-1.05 2.18-1.48.68.1 1.39.15 2.11.15 4.97 0 9-3.14 9-7S16.97 4 12 4z"
+      />
+    </svg>
+  )
+}
+
 export function LoginPage() {
   const login = useAuthStore((s) => s.login)
+  const loginWithKakao = useAuthStore((s) => s.loginWithKakao)
   const loading = useAuthStore((s) => s.loading)
+  const [searchParams] = useSearchParams()
+  const [showEmail, setShowEmail] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(
+    searchParams.get('error') === 'oauth' ? '로그인에 실패했어요. 다시 시도해주세요.' : null,
+  )
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -22,11 +38,20 @@ export function LoginPage() {
     }
   }
 
+  const onKakao = async () => {
+    setError(null)
+    try {
+      await loginWithKakao()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '카카오 로그인 실패')
+    }
+  }
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 py-10">
-      <p className="text-sm font-semibold tracking-wide text-sky-dark">고등부 복음서 함께 읽기</p>
+      <p className="text-sm font-semibold tracking-wide text-sky-dark">with BIBLE</p>
       <h1 className="font-display mt-2 text-4xl text-navy">with BIBLE</h1>
-      <p className="mt-3 text-muted">함께 읽고, 함께 나누고, 함께 완주해요.</p>
+      <p className="mt-3 text-muted">함께 읽는 말씀, 함께 자라는 우리</p>
 
       {!isSupabaseConfigured ? (
         <p className="mt-6 rounded-xl bg-warn/10 p-3 text-sm text-warn">
@@ -34,39 +59,63 @@ export function LoginPage() {
         </p>
       ) : null}
 
-      <form onSubmit={onSubmit} className="mt-8 space-y-4">
-        <div>
-          <label className="mb-1.5 block text-sm text-muted">이메일</label>
-          <Input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="student@church.com"
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm text-muted">비밀번호</label>
-          <Input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        {error ? <p className="text-sm text-danger">{error}</p> : null}
-        <Button type="submit" className="w-full" size="lg" disabled={loading}>
-          {loading ? '로그인 중…' : '로그인'}
-        </Button>
-      </form>
+      <div className="mt-8 space-y-3">
+        <button
+          type="button"
+          onClick={() => void onKakao()}
+          disabled={loading || !isSupabaseConfigured}
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#FEE500] text-[15px] font-semibold text-[#191919] transition active:scale-[0.98] disabled:opacity-50"
+        >
+          <KakaoIcon className="h-5 w-5" />
+          카카오로 시작하기
+        </button>
 
-      <p className="mt-6 text-center text-sm text-muted">
-        아직 계정이 없나요?{' '}
-        <Link to="/signup" className="font-semibold text-brand-700">
-          회원가입
-        </Link>
-      </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          size="lg"
+          onClick={() => setShowEmail((v) => !v)}
+        >
+          이메일로 시작하기
+        </Button>
+      </div>
+
+      {showEmail ? (
+        <form onSubmit={onSubmit} className="mt-6 space-y-4">
+          <div>
+            <label className="mb-1.5 block text-sm text-muted">이메일</label>
+            <Input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="student@church.com"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm text-muted">비밀번호</label>
+            <Input
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            {loading ? '로그인 중…' : '로그인'}
+          </Button>
+          <p className="text-center text-sm text-muted">
+            아직 계정이 없나요?{' '}
+            <Link to="/signup" className="font-semibold text-navy">
+              회원가입
+            </Link>
+          </p>
+        </form>
+      ) : null}
+
+      {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
     </div>
   )
 }
