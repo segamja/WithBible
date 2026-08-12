@@ -28,6 +28,10 @@ export function AdminClassesPage() {
   /** Pending teacher selection per class (explicit save) */
   const [teacherDraft, setTeacherDraft] = useState<Record<string, string>>({})
   const [savingClassId, setSavingClassId] = useState<string | null>(null)
+  const [editingClassId, setEditingClassId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editJoinCode, setEditJoinCode] = useState('')
+  const [savingEditId, setSavingEditId] = useState<string | null>(null)
 
   const refresh = async () => {
     const [cls, us, staff] = await Promise.all([
@@ -95,6 +99,42 @@ export function AdminClassesPage() {
       setError(err instanceof Error ? err.message : '교사 배정 저장 실패')
     } finally {
       setSavingClassId(null)
+    }
+  }
+
+  const startEdit = (cls: ClassRow) => {
+    setEditingClassId(cls.id)
+    setEditName(cls.name)
+    setEditJoinCode(cls.join_code)
+    setError(null)
+    setMessage(null)
+  }
+
+  const cancelEdit = () => {
+    setEditingClassId(null)
+    setEditName('')
+    setEditJoinCode('')
+  }
+
+  const onSaveClassEdit = async (classId: string) => {
+    const nextName = editName.trim()
+    const nextCode = editJoinCode.trim().toUpperCase()
+    if (!nextName || !nextCode) {
+      setError('반 이름과 가입 코드를 모두 입력해주세요.')
+      return
+    }
+    setError(null)
+    setMessage(null)
+    setSavingEditId(classId)
+    try {
+      await updateClass(classId, { name: nextName, join_code: nextCode })
+      setMessage(`「${nextName}」 반 정보를 저장했습니다.`)
+      setEditingClassId(null)
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '반 수정 실패')
+    } finally {
+      setSavingEditId(null)
     }
   }
 
@@ -171,19 +211,35 @@ export function AdminClassesPage() {
         {classes.map((cls) => {
           const draft = teacherDraft[cls.id] ?? ''
           const dirty = draft !== (cls.teacher_id ?? '')
+          const isEditing = editingClassId === cls.id
           return (
             <Card key={cls.id} className="space-y-2">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold">
-                    {cls.name}
-                    {cls.is_active === false ? (
-                      <span className="ml-2 text-xs font-normal text-muted">(비활성)</span>
-                    ) : null}
-                  </p>
-                  <p className="text-xs text-muted">코드 · {cls.join_code}</p>
+                <div className="min-w-0 flex-1">
+                  {!isEditing ? (
+                    <>
+                      <p className="font-semibold">
+                        {cls.name}
+                        {cls.is_active === false ? (
+                          <span className="ml-2 text-xs font-normal text-muted">(비활성)</span>
+                        ) : null}
+                      </p>
+                      <p className="text-xs text-muted">코드 · {cls.join_code}</p>
+                    </>
+                  ) : (
+                    <p className="text-sm font-semibold text-navy">반 정보 수정</p>
+                  )}
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                  {!isEditing ? (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-navy hover:underline"
+                      onClick={() => startEdit(cls)}
+                    >
+                      수정
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="text-xs text-muted hover:text-navy"
@@ -206,7 +262,10 @@ export function AdminClassesPage() {
                       )
                       if (!ok) return
                       void deleteClass(cls.id)
-                        .then(refresh)
+                        .then(() => {
+                          if (editingClassId === cls.id) cancelEdit()
+                          return refresh()
+                        })
                         .catch((e) =>
                           setError(e instanceof Error ? e.message : '반 삭제 실패'),
                         )
@@ -216,6 +275,51 @@ export function AdminClassesPage() {
                   </button>
                 </div>
               </div>
+
+              {isEditing ? (
+                <div className="space-y-2 rounded-xl border border-line bg-brand-50/50 p-3">
+                  <div>
+                    <label className="mb-1 block text-xs text-muted">반 이름</label>
+                    <Input
+                      required
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="예: 2반"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-muted">가입 코드</label>
+                    <Input
+                      required
+                      value={editJoinCode}
+                      onChange={(e) => setEditJoinCode(e.target.value.toUpperCase())}
+                      placeholder="예: BIBLE26-2"
+                      className="font-semibold tracking-wide"
+                      autoCapitalize="characters"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      className="flex-1"
+                      disabled={savingEditId === cls.id}
+                      onClick={() => void onSaveClassEdit(cls.id)}
+                    >
+                      {savingEditId === cls.id ? '저장 중…' : '반 정보 저장'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      disabled={savingEditId === cls.id}
+                      onClick={cancelEdit}
+                    >
+                      취소
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+
               <label className="block text-xs text-muted">담당 교사</label>
               <Select
                 value={draft}
