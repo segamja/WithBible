@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
+import { clearStaleAppCaches } from '@/lib/version'
 
-/** Hard logout then land on login (clears stuck onboarding sessions). */
+/** Hard logout then land on login (clears stuck onboarding / Kakao sessions). */
 export function LogoutPage() {
   const logout = useAuthStore((s) => s.logout)
+  const [searchParams] = useSearchParams()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     const run = async () => {
       try {
+        await clearStaleAppCaches()
         await logout()
       } catch (e) {
         if (!cancelled) {
@@ -17,8 +21,11 @@ export function LogoutPage() {
         }
       } finally {
         if (!cancelled) {
-          // Full navigation so auth state cannot bounce back to onboarding
-          window.location.replace('/login')
+          const next = searchParams.get('next')
+          // Allow only same-origin relative paths
+          const target =
+            next && next.startsWith('/') && !next.startsWith('//') ? next : '/login'
+          window.location.replace(target)
         }
       }
     }
@@ -26,7 +33,7 @@ export function LogoutPage() {
     return () => {
       cancelled = true
     }
-  }, [logout])
+  }, [logout, searchParams])
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 text-muted">

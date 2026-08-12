@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -115,12 +115,21 @@ export function ClassOnboardingPage() {
         >
           {switching ? '이동 중…' : '로그아웃 · 다른 계정으로 로그인'}
         </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full"
+          size="lg"
+          disabled={switching}
+          onClick={() => {
+            setSwitching(true)
+            window.location.assign(`/logout?next=${encodeURIComponent('/login?mode=admin')}`)
+          }}
+        >
+          운영자(관리자) 이메일 로그인
+        </Button>
         <p className="text-center text-xs text-muted">
-          운영자(관리자)는 로그아웃 후{' '}
-          <Link to="/login" className="font-medium text-navy underline-offset-2 hover:underline">
-            이메일로 로그인
-          </Link>
-          하세요.
+          운영자 계정은 카카오가 아니라 이메일입니다. DB에서 role=ADMIN 이어야 /admin에 들어갑니다.
         </p>
       </div>
     </div>

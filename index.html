@@ -5,12 +5,54 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#172033" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
     />
     <title>with BIBLE</title>
+    <script>
+      // Early cache bust before React loads (helps after deploys)
+      (function () {
+        try {
+          fetch('/version.json?t=' + Date.now(), { cache: 'no-store' })
+            .then(function (r) {
+              return r.ok ? r.json() : null
+            })
+            .then(function (remote) {
+              if (!remote || !remote.version) return
+              var local = null
+              try {
+                local = localStorage.getItem('wb_app_version')
+              } catch (e) {}
+              if (local && local !== remote.version) {
+                var done = function () {
+                  try {
+                    localStorage.setItem('wb_app_version', remote.version)
+                  } catch (e) {}
+                  var u = new URL(location.href)
+                  u.searchParams.set('_v', String(Date.now()))
+                  location.replace(u.toString())
+                }
+                if (window.caches) {
+                  caches
+                    .keys()
+                    .then(function (keys) {
+                      return Promise.all(keys.map(function (k) {
+                        return caches.delete(k)
+                      }))
+                    })
+                    .finally(done)
+                } else {
+                  done()
+                }
+              }
+            })
+            .catch(function () {})
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

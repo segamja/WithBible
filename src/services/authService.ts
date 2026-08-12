@@ -100,11 +100,24 @@ function authServiceNeedsOnboarding(profile: Profile): boolean {
 
 export async function signIn(email: string, password: string): Promise<Profile> {
   ensureConfigured()
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  // Clear Kakao/student session first — otherwise admin email login feels "stuck"
+  try {
+    await supabase.auth.signOut({ scope: 'local' })
+  } catch {
+    /* ignore */
+  }
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.trim(),
+    password,
+  })
   if (error) throw new AuthError(error.message)
   if (!data.user?.id) throw new AuthError('로그인에 실패했습니다.')
   const profile = await getProfile(data.user.id)
-  if (!profile) throw new AuthError('프로필을 찾을 수 없습니다. 관리자에게 문의해주세요.')
+  if (!profile) {
+    throw new AuthError(
+      '프로필을 찾을 수 없습니다. With Bible에서 가입한 계정이 아니거나, 프로필이 없습니다.',
+    )
+  }
   return profile
 }
 

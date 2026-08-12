@@ -11,7 +11,7 @@ interface AuthState {
   error: string | null
   onboardingRequired: boolean
   init: () => Promise<void>
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<Profile>
   loginWithKakao: () => Promise<void>
   register: (input: {
     email: string
@@ -108,6 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         onboardingRequired: computeOnboarding(userId, profile),
         loading: false,
       })
+      return profile
     } catch (e) {
       set({
         loading: false,
