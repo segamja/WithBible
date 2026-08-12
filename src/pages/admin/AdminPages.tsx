@@ -143,9 +143,10 @@ export function AdminProjectsPage() {
   const [description, setDescription] = useState('함께 읽고, 함께 나누고, 함께 완주한다.')
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
   const [endDate, setEndDate] = useState('')
+  const [partyTitle, setPartyTitle] = useState('')
   const [partyDate, setPartyDate] = useState('')
-  const [partyPlace, setPartyPlace] = useState('교회 3층')
-  const [partyNote, setPartyNote] = useState('각자 함께 나눌 음식을 준비해주세요!')
+  const [partyPlace, setPartyPlace] = useState('')
+  const [partyNote, setPartyNote] = useState('')
   const [selectedProject, setSelectedProject] = useState('')
   const [classId, setClassId] = useState('')
   const [bookId, setBookId] = useState('')
@@ -177,9 +178,10 @@ export function AdminProjectsPage() {
         description,
         startDate,
         endDate,
+        partyTitle: partyTitle.trim() || null,
         partyDate: partyDate || null,
-        partyPlace,
-        partyNote,
+        partyPlace: partyPlace.trim() || null,
+        partyNote: partyNote.trim() || null,
         status: 'active',
       })
       setProjects((prev) => [project, ...prev])
@@ -221,6 +223,11 @@ export function AdminProjectsPage() {
             <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
           </div>
           <Input
+            value={partyTitle}
+            onChange={(e) => setPartyTitle(e.target.value)}
+            placeholder="마지막 보상 이름 (예: 시상식, 포트럭 파티)"
+          />
+          <Input
             type="datetime-local"
             value={partyDate}
             onChange={(e) => setPartyDate(e.target.value)}
@@ -228,12 +235,12 @@ export function AdminProjectsPage() {
           <Input
             value={partyPlace}
             onChange={(e) => setPartyPlace(e.target.value)}
-            placeholder="파티 장소"
+            placeholder="장소"
           />
           <Textarea
             value={partyNote}
             onChange={(e) => setPartyNote(e.target.value)}
-            placeholder="준비물/안내"
+            placeholder="안내 / 준비물"
           />
           <Button type="submit" className="w-full">
             프로젝트 생성

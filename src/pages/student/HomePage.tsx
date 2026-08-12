@@ -205,9 +205,14 @@ export function StudentHomePage() {
         </Card>
       ) : null}
 
-      {project?.party_date ? (
+      {project?.party_date || project?.party_title ? (
         <PartyBanner
-          dateLabel={format(parseISO(project.party_date), 'M월 d일 · a h시')}
+          title={project.party_title}
+          dateLabel={
+            project.party_date
+              ? format(parseISO(project.party_date), 'M월 d일 · a h시')
+              : null
+          }
           place={project.party_place}
           note={project.party_note}
         />

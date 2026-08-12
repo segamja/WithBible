@@ -39,6 +39,8 @@ export interface Project {
   start_date: string
   end_date: string
   status: ProjectStatus
+  /** 마지막 보상/행사 이름 (포트럭 파티, 시상식 등) */
+  party_title: string | null
   party_date: string | null
   party_place: string | null
   party_note: string | null

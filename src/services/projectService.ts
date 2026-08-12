@@ -46,6 +46,7 @@ export async function createProject(input: {
   startDate: string
   endDate: string
   status?: ProjectStatus
+  partyTitle?: string | null
   partyDate?: string | null
   partyPlace?: string | null
   partyNote?: string | null
@@ -58,6 +59,7 @@ export async function createProject(input: {
       start_date: input.startDate,
       end_date: input.endDate,
       status: input.status ?? 'active',
+      party_title: input.partyTitle ?? null,
       party_date: input.partyDate ?? null,
       party_place: input.partyPlace ?? null,
       party_note: input.partyNote ?? null,
@@ -76,6 +78,7 @@ export async function updateProject(
     start_date: string
     end_date: string
     status: ProjectStatus
+    party_title: string | null
     party_date: string | null
     party_place: string | null
     party_note: string | null

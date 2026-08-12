@@ -29,6 +29,7 @@ export function AdminSettingsPage() {
   const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [partyTitle, setPartyTitle] = useState('')
   const [partyDate, setPartyDate] = useState('')
   const [partyPlace, setPartyPlace] = useState('')
   const [partyNote, setPartyNote] = useState('')
@@ -47,6 +48,7 @@ export function AdminSettingsPage() {
     setDescription(active.description ?? '')
     setStartDate(active.start_date)
     setEndDate(active.end_date)
+    setPartyTitle(active.party_title ?? '')
     setPartyDate(toDatetimeLocal(active.party_date))
     setPartyPlace(active.party_place ?? '')
     setPartyNote(active.party_note ?? '')
@@ -69,6 +71,7 @@ export function AdminSettingsPage() {
         description: description.trim() || null,
         start_date: startDate,
         end_date: endDate,
+        party_title: partyTitle.trim() || null,
         party_date: partyDate ? new Date(partyDate).toISOString() : null,
         party_place: partyPlace.trim() || null,
         party_note: partyNote.trim() || null,
@@ -118,7 +121,7 @@ export function AdminSettingsPage() {
       <div>
         <p className="text-sm text-brand-700">관리자</p>
         <h1 className="font-display mt-1 text-3xl text-brand-900">프로젝트 설정</h1>
-        <p className="mt-2 text-sm text-muted">타이틀 · 기간 · 완주 보상(포트럭)을 관리합니다.</p>
+        <p className="mt-2 text-sm text-muted">타이틀 · 기간 · 마지막 보상을 관리합니다.</p>
       </div>
 
       <form onSubmit={onSave} className="space-y-4">
@@ -159,9 +162,20 @@ export function AdminSettingsPage() {
         </Card>
 
         <Card className="space-y-3">
-          <h2 className="font-semibold">3. 마지막 보상 (포트럭 파티)</h2>
+          <h2 className="font-semibold">3. 마지막 보상</h2>
+          <p className="text-xs text-muted">
+            포트럭 파티, 시상식, 완주 파티 등 이름을 직접 정할 수 있습니다.
+          </p>
           <div>
-            <label className="mb-1.5 block text-sm text-muted">파티 일시</label>
+            <label className="mb-1.5 block text-sm text-muted">보상 / 행사 이름</label>
+            <Input
+              value={partyTitle}
+              onChange={(e) => setPartyTitle(e.target.value)}
+              placeholder="예: 포트럭 파티, 시상식"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm text-muted">일시</label>
             <Input
               type="datetime-local"
               value={partyDate}
@@ -181,7 +195,7 @@ export function AdminSettingsPage() {
             <Textarea
               value={partyNote}
               onChange={(e) => setPartyNote(e.target.value)}
-              placeholder="각자 함께 나눌 음식을 준비해주세요!"
+              placeholder="예: 함께 나눌 음식 준비, 시상식 복장 안내 등"
             />
           </div>
         </Card>
