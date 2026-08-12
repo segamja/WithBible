@@ -193,13 +193,14 @@ export function onAuthStateChange(callback: (userId: string | null) => void) {
   })
 }
 
-/** True when session exists but student profile is missing or has no class yet. */
+/** True when a student session still needs class join. ADMIN/TEACHER never. */
 export function needsOnboarding(
   sessionUserId: string | null,
   profile: Profile | null,
 ): boolean {
   if (!sessionUserId) return false
   if (!profile) return true
+  if (profile.role === 'ADMIN' || profile.role === 'TEACHER') return false
   if (profile.role === 'STUDENT' && !profile.class_id) return true
   return false
 }

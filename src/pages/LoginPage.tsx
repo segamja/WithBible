@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { roleHome } from '@/layouts/AppShell'
 import { useAuthStore } from '@/stores/authStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
 
@@ -17,22 +18,37 @@ function KakaoIcon({ className }: { className?: string }) {
 }
 
 export function LoginPage() {
+  const navigate = useNavigate()
   const login = useAuthStore((s) => s.login)
   const loginWithKakao = useAuthStore((s) => s.loginWithKakao)
   const loading = useAuthStore((s) => s.loading)
   const [searchParams] = useSearchParams()
-  const [showEmail, setShowEmail] = useState(false)
+  const [showEmail, setShowEmail] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(
     searchParams.get('error') === 'oauth' ? '로그인에 실패했어요. 다시 시도해주세요.' : null,
   )
 
+  const goAfterAuth = () => {
+    const { profile, onboardingRequired } = useAuthStore.getState()
+    if (onboardingRequired) {
+      navigate('/onboarding/class', { replace: true })
+      return
+    }
+    if (profile) {
+      navigate(roleHome(profile.role), { replace: true })
+      return
+    }
+    navigate('/', { replace: true })
+  }
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
     try {
       await login(email, password)
+      goAfterAuth()
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인 실패')
     }
@@ -111,6 +127,9 @@ export function LoginPage() {
             <Link to="/signup" className="font-semibold text-navy">
               회원가입
             </Link>
+          </p>
+          <p className="text-center text-xs text-muted">
+            관리자·교사는 이메일로 로그인한 뒤 해당 홈으로 이동합니다.
           </p>
         </form>
       ) : null}

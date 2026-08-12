@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -8,11 +8,12 @@ import { useAuthStore } from '@/stores/authStore'
 export function ClassOnboardingPage() {
   const navigate = useNavigate()
   const completeOnboarding = useAuthStore((s) => s.completeOnboarding)
-  const logout = useAuthStore((s) => s.logout)
   const loading = useAuthStore((s) => s.loading)
+  const profile = useAuthStore((s) => s.profile)
   const [joinCode, setJoinCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [linkedClassName, setLinkedClassName] = useState<string | null>(null)
+  const [switching, setSwitching] = useState(false)
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -23,6 +24,12 @@ export function ClassOnboardingPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : '반 연결 실패')
     }
+  }
+
+  const goLogout = () => {
+    setSwitching(true)
+    // Dedicated logout route: always clears session then opens /login
+    window.location.assign('/logout')
   }
 
   if (linkedClassName) {
@@ -59,6 +66,9 @@ export function ClassOnboardingPage() {
         <br />
         말씀을 읽어볼까요?
       </p>
+      {profile?.name ? (
+        <p className="mt-2 text-sm text-muted">현재 계정 · {profile.name}</p>
+      ) : null}
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <Card className="space-y-3">
@@ -74,18 +84,30 @@ export function ClassOnboardingPage() {
           />
           {error ? <p className="text-sm text-danger">{error}</p> : null}
         </Card>
-        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+        <Button type="submit" className="w-full" size="lg" disabled={loading || switching}>
           {loading ? '연결 중…' : '우리 반 연결하기'}
         </Button>
       </form>
 
-      <button
-        type="button"
-        className="mt-6 text-sm text-muted underline-offset-2 hover:underline"
-        onClick={() => void logout().then(() => navigate('/login', { replace: true }))}
-      >
-        다른 계정으로 로그인
-      </button>
+      <div className="mt-8 space-y-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          size="lg"
+          disabled={switching}
+          onClick={goLogout}
+        >
+          {switching ? '이동 중…' : '로그아웃 · 다른 계정으로 로그인'}
+        </Button>
+        <p className="text-center text-xs text-muted">
+          관리자/교사는 로그아웃 후{' '}
+          <Link to="/login" className="font-medium text-navy underline-offset-2 hover:underline">
+            이메일로 로그인
+          </Link>
+          하세요.
+        </p>
+      </div>
     </div>
   )
 }

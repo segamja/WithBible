@@ -8,6 +8,7 @@ import {
 } from '@/layouts/AppShell'
 import { useAuthStore } from '@/stores/authStore'
 import { LoginPage } from '@/pages/LoginPage'
+import { LogoutPage } from '@/pages/LogoutPage'
 import { SignupPage } from '@/pages/SignupPage'
 import { AuthCallbackPage } from '@/pages/auth/AuthCallbackPage'
 import { ClassOnboardingPage } from '@/pages/onboarding/ClassOnboardingPage'
@@ -32,6 +33,8 @@ export default function App() {
 
   return (
     <Routes>
+      <Route path="/logout" element={<LogoutPage />} />
+
       <Route element={<GuestOnly />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />

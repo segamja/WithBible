@@ -5,7 +5,7 @@ import type { UserRole } from '@/types'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { cn } from '@/utils/cn'
 
-function roleHome(role: UserRole) {
+export function roleHome(role: UserRole) {
   if (role === 'ADMIN') return '/admin'
   if (role === 'TEACHER') return '/teacher'
   return '/'
@@ -67,12 +67,14 @@ export function RoleGuard({ allow }: { allow: UserRole[] }) {
   return <Outlet />
 }
 
+/**
+ * Login/signup pages.
+ * Do NOT bounce incomplete (onboarding) sessions back to onboarding —
+ * that trapped users who needed to switch accounts.
+ */
 export function GuestOnly() {
-  const { profile, sessionUserId, onboardingRequired, initialized } = useAuthStore()
+  const { profile, onboardingRequired, initialized } = useAuthStore()
   if (!initialized) return null
-  if (sessionUserId && onboardingRequired) {
-    return <Navigate to="/onboarding/class" replace />
-  }
   if (profile && !onboardingRequired) {
     return <Navigate to={roleHome(profile.role)} replace />
   }
