@@ -74,6 +74,11 @@ export function AdminDashboardPage() {
             반·임원 코드
           </Button>
         </Link>
+        <Link to="/admin/users" className="flex-1">
+          <Button className="w-full" variant="outline">
+            사용자·역할
+          </Button>
+        </Link>
       </div>
 
       <Card className="grid grid-cols-2 gap-3 text-sm">

@@ -24,6 +24,10 @@ export function AdminClassesPage() {
   const [joinCode, setJoinCode] = useState('')
   const [staffCodeInput, setStaffCodeInput] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  /** Pending teacher selection per class (explicit save) */
+  const [teacherDraft, setTeacherDraft] = useState<Record<string, string>>({})
+  const [savingClassId, setSavingClassId] = useState<string | null>(null)
 
   const refresh = async () => {
     const [cls, us, staff] = await Promise.all([
@@ -34,6 +38,11 @@ export function AdminClassesPage() {
     setClasses(cls)
     setUsers(us)
     setStaffCodes(staff)
+    const drafts: Record<string, string> = {}
+    for (const c of cls) {
+      drafts[c.id] = c.teacher_id ?? ''
+    }
+    setTeacherDraft(drafts)
   }
 
   useEffect(() => {
@@ -42,10 +51,13 @@ export function AdminClassesPage() {
 
   const onCreate = async (e: FormEvent) => {
     e.preventDefault()
+    setError(null)
+    setMessage(null)
     try {
       await createClass({ name, joinCode })
       setName('')
       setJoinCode('')
+      setMessage('반을 만들었습니다.')
       await refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : '반 생성 실패')
@@ -54,12 +66,35 @@ export function AdminClassesPage() {
 
   const onSaveStaffCode = async (e: FormEvent) => {
     e.preventDefault()
+    setError(null)
+    setMessage(null)
     try {
       await upsertStaffCode(staffCodeInput || staffCodes[0]?.code || 'STAFF26')
       setStaffCodeInput('')
+      setMessage('임원 코드를 저장했습니다.')
       await refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : '임원 코드 저장 실패')
+    }
+  }
+
+  const onSaveTeacher = async (classId: string, className: string) => {
+    setError(null)
+    setMessage(null)
+    setSavingClassId(classId)
+    try {
+      const teacherId = teacherDraft[classId] || null
+      await updateClass(classId, { teacher_id: teacherId })
+      // Keep teacher profile class_id in sync when assigning
+      if (teacherId) {
+        await assignUserToClass(teacherId, classId).catch(() => undefined)
+      }
+      setMessage(`${className} 담당 교사를 저장했습니다.`)
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '교사 배정 저장 실패')
+    } finally {
+      setSavingClassId(null)
     }
   }
 
@@ -69,11 +104,21 @@ export function AdminClassesPage() {
     <div className="space-y-4 px-5 py-8">
       <h1 className="font-display text-3xl text-brand-900">반 관리</h1>
       <p className="text-sm text-muted">
+        담임 교사는{' '}
         <Link to="/admin/users" className="font-medium text-navy underline-offset-2 hover:underline">
           사용자 관리
         </Link>
-        에서 역할을 바꿀 수 있어요.
+        에서 먼저 가입된 계정을 TEACHER로 바꾼 뒤, 아래에서 선택·저장하세요.
       </p>
+
+      <Card className="space-y-2 border-sage/30 bg-sage/5 text-sm">
+        <p className="font-semibold text-navy">교사 배정 순서</p>
+        <ol className="list-decimal space-y-1 pl-5 text-muted">
+          <li>선생님이 앱에 가입 (카카오 + 임원 코드, 또는 이메일)</li>
+          <li>사용자 관리에서 역할을 TEACHER로 변경</li>
+          <li>이 화면에서 반의 담당 교사를 고른 뒤 「저장」</li>
+        </ol>
+      </Card>
 
       <Card className="space-y-3">
         <h2 className="font-semibold text-navy">임원 선생님 코드</h2>
@@ -120,70 +165,89 @@ export function AdminClassesPage() {
       </form>
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {message ? <p className="text-sm text-sage-dark">{message}</p> : null}
 
       <div className="space-y-3">
-        {classes.map((cls) => (
-          <Card key={cls.id} className="space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="font-semibold">
-                  {cls.name}
-                  {cls.is_active === false ? (
-                    <span className="ml-2 text-xs font-normal text-muted">(비활성)</span>
-                  ) : null}
+        {classes.map((cls) => {
+          const draft = teacherDraft[cls.id] ?? ''
+          const dirty = draft !== (cls.teacher_id ?? '')
+          return (
+            <Card key={cls.id} className="space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-semibold">
+                    {cls.name}
+                    {cls.is_active === false ? (
+                      <span className="ml-2 text-xs font-normal text-muted">(비활성)</span>
+                    ) : null}
+                  </p>
+                  <p className="text-xs text-muted">코드 · {cls.join_code}</p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    className="text-xs text-muted hover:text-navy"
+                    onClick={() =>
+                      void updateClass(cls.id, { is_active: cls.is_active === false })
+                        .then(refresh)
+                        .catch((e) =>
+                          setError(e instanceof Error ? e.message : '반 상태 변경 실패'),
+                        )
+                    }
+                  >
+                    {cls.is_active === false ? '활성화' : '비활성'}
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-danger hover:underline"
+                    onClick={() => {
+                      const ok = window.confirm(
+                        `"${cls.name}" 반을 삭제할까요?\n소속 학생은 반 미배정이 되고, 이 반의 프로젝트 연결·공지는 함께 삭제됩니다.`,
+                      )
+                      if (!ok) return
+                      void deleteClass(cls.id)
+                        .then(refresh)
+                        .catch((e) =>
+                          setError(e instanceof Error ? e.message : '반 삭제 실패'),
+                        )
+                    }}
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
+              <label className="block text-xs text-muted">담당 교사</label>
+              <Select
+                value={draft}
+                onChange={(e) =>
+                  setTeacherDraft((prev) => ({ ...prev, [cls.id]: e.target.value }))
+                }
+              >
+                <option value="">교사 미배정</option>
+                {teachers.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                    {t.email ? ` · ${t.email}` : ''}
+                  </option>
+                ))}
+              </Select>
+              {teachers.length === 0 ? (
+                <p className="text-xs text-danger">
+                  TEACHER 역할 사용자가 없습니다. 사용자 관리에서 역할을 먼저 바꿔주세요.
                 </p>
-                <p className="text-xs text-muted">코드 · {cls.join_code}</p>
-              </div>
-              <div className="flex shrink-0 gap-2">
-                <button
-                  type="button"
-                  className="text-xs text-muted hover:text-navy"
-                  onClick={() =>
-                    void updateClass(cls.id, { is_active: cls.is_active === false })
-                      .then(refresh)
-                      .catch((e) =>
-                        setError(e instanceof Error ? e.message : '반 상태 변경 실패'),
-                      )
-                  }
-                >
-                  {cls.is_active === false ? '활성화' : '비활성'}
-                </button>
-                <button
-                  type="button"
-                  className="text-xs text-danger hover:underline"
-                  onClick={() => {
-                    const ok = window.confirm(
-                      `"${cls.name}" 반을 삭제할까요?\n소속 학생은 반 미배정이 되고, 이 반의 프로젝트 연결·공지는 함께 삭제됩니다.`,
-                    )
-                    if (!ok) return
-                    void deleteClass(cls.id)
-                      .then(refresh)
-                      .catch((e) =>
-                        setError(e instanceof Error ? e.message : '반 삭제 실패'),
-                      )
-                  }}
-                >
-                  삭제
-                </button>
-              </div>
-            </div>
-            <Select
-              value={cls.teacher_id ?? ''}
-              onChange={(e) =>
-                void updateClass(cls.id, {
-                  teacher_id: e.target.value || null,
-                }).then(refresh)
-              }
-            >
-              <option value="">교사 미배정</option>
-              {teachers.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </Select>
-          </Card>
-        ))}
+              ) : null}
+              <Button
+                type="button"
+                className="w-full"
+                variant={dirty ? 'primary' : 'outline'}
+                disabled={savingClassId === cls.id || !dirty}
+                onClick={() => void onSaveTeacher(cls.id, cls.name)}
+              >
+                {savingClassId === cls.id ? '저장 중…' : dirty ? '담당 교사 저장' : '저장됨'}
+              </Button>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )
@@ -206,7 +270,13 @@ export function AdminUsersPage() {
   return (
     <div className="space-y-4 px-5 py-8">
       <h1 className="font-display text-3xl text-brand-900">사용자</h1>
-      <p className="text-sm text-muted">역할과 반을 배정하세요. 첫 관리자는 SQL로 승격합니다.</p>
+      <p className="text-sm text-muted">
+        역할·반을 바꾸면 바로 저장됩니다. 담임 배정은{' '}
+        <Link to="/admin/classes" className="font-medium text-navy underline-offset-2 hover:underline">
+          반 관리
+        </Link>
+        에서도 「담당 교사 저장」으로 할 수 있어요.
+      </p>
       {error ? <p className="text-sm text-danger">{error}</p> : null}
 
       <div className="space-y-3">
