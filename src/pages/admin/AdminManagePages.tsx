@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/Select'
 import {
   assignUserToClass,
   createClass,
+  deleteClass,
   listClasses,
   listUsers,
   updateClass,
@@ -123,10 +124,47 @@ export function AdminClassesPage() {
       <div className="space-y-3">
         {classes.map((cls) => (
           <Card key={cls.id} className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="font-semibold">{cls.name}</p>
+                <p className="font-semibold">
+                  {cls.name}
+                  {cls.is_active === false ? (
+                    <span className="ml-2 text-xs font-normal text-muted">(비활성)</span>
+                  ) : null}
+                </p>
                 <p className="text-xs text-muted">코드 · {cls.join_code}</p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  className="text-xs text-muted hover:text-navy"
+                  onClick={() =>
+                    void updateClass(cls.id, { is_active: cls.is_active === false })
+                      .then(refresh)
+                      .catch((e) =>
+                        setError(e instanceof Error ? e.message : '반 상태 변경 실패'),
+                      )
+                  }
+                >
+                  {cls.is_active === false ? '활성화' : '비활성'}
+                </button>
+                <button
+                  type="button"
+                  className="text-xs text-danger hover:underline"
+                  onClick={() => {
+                    const ok = window.confirm(
+                      `"${cls.name}" 반을 삭제할까요?\n소속 학생은 반 미배정이 되고, 이 반의 프로젝트 연결·공지는 함께 삭제됩니다.`,
+                    )
+                    if (!ok) return
+                    void deleteClass(cls.id)
+                      .then(refresh)
+                      .catch((e) =>
+                        setError(e instanceof Error ? e.message : '반 삭제 실패'),
+                      )
+                  }}
+                >
+                  삭제
+                </button>
               </div>
             </div>
             <Select

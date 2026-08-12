@@ -54,7 +54,7 @@ export async function createClass(input: {
 
 export async function updateClass(
   id: string,
-  patch: Partial<Pick<ClassRow, 'name' | 'join_code' | 'teacher_id'>>,
+  patch: Partial<Pick<ClassRow, 'name' | 'join_code' | 'teacher_id' | 'is_active'>>,
 ): Promise<ClassRow> {
   if (!isUuid(id)) throw new Error('잘못된 반 ID입니다.')
   const cleanPatch = {
@@ -70,6 +70,13 @@ export async function updateClass(
     .single()
   if (error) throw new Error(error.message)
   return data as ClassRow
+}
+
+/** Permanently delete a class. Students' class_id become null; project links cascade. */
+export async function deleteClass(id: string): Promise<void> {
+  if (!isUuid(id)) throw new Error('잘못된 반 ID입니다.')
+  const { error } = await supabase.from(Tables.classes).delete().eq('id', id)
+  if (error) throw new Error(error.message)
 }
 
 export async function listClassStudents(classId: string): Promise<Profile[]> {
