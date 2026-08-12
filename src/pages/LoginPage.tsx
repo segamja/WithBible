@@ -6,7 +6,7 @@ import { roleHome } from '@/layouts/AppShell'
 import { useAuthStore } from '@/stores/authStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { AppVersionBadge } from '@/components/AppVersionBadge'
-import { clearStaleAppCaches } from '@/lib/version'
+import { APP_VERSION, clearStaleAppCaches } from '@/lib/version'
 import type { Profile } from '@/types'
 
 function KakaoIcon({ className }: { className?: string }) {
@@ -48,14 +48,11 @@ export function LoginPage() {
   )
 
   useEffect(() => {
-    // Persist bundle version for early cache bust on next visit
-    void import('@/lib/version').then(({ APP_VERSION }) => {
-      try {
-        localStorage.setItem('wb_app_version', APP_VERSION)
-      } catch {
-        /* ignore */
-      }
-    })
+    try {
+      localStorage.setItem('wb_app_version', APP_VERSION)
+    } catch {
+      /* ignore */
+    }
   }, [])
 
   const onSubmit = async (e: FormEvent) => {
