@@ -36,6 +36,7 @@ npm install
    - (카카오 온보딩 RPC·가입코드 RLS) `supabase/migrations/006_kakao_onboarding_rpc.sql`
    - (임원 선생님 코드·통합 온보딩) `supabase/migrations/007_staff_codes_and_join_onboarding.sql`
    - (담임: 교사코드+반코드 동시 가입) `supabase/migrations/008_teacher_class_dual_join.sql`
+   - (반별 교사 가입코드 teacher_join_code) `supabase/migrations/009_class_teacher_join_code.sql`
 2. Authentication → Providers에서 Email 로그인이 켜져 있는지 확인합니다.
 3. (선택) Authentication → Providers에서 "Confirm email"을 끄면 로컬 테스트가 편합니다.
 4. (카카오 로그인) 아래 **카카오 / Supabase OAuth 설정**을 완료합니다.
@@ -117,9 +118,12 @@ where id = '22222222-2222-2222-2222-222222222202';
 
 | 구분 | 코드 |
 |---|---|
-| 1반 | `BIBLE26-1` |
-| 2반 | `BIBLE26-2` |
-| 3반 | `BIBLE26-3` |
+| 1반 학생 | `BIBLE26-1` |
+| 1반 교사 | `T-BIBLE26-1` |
+| 2반 학생 | `BIBLE26-2` |
+| 2반 교사 | `T-BIBLE26-2` |
+| 3반 학생 | `BIBLE26-3` |
+| 3반 교사 | `T-BIBLE26-3` |
 | 임원 선생님 | `STAFF26` |
 
 임원 코드는 `/admin/classes`에서 추가·갱신할 수 있습니다. (`007` 마이그레이션 적용 후)

@@ -22,6 +22,7 @@ export function AdminClassesPage() {
   const [staffCodes, setStaffCodes] = useState<StaffCode[]>([])
   const [name, setName] = useState('')
   const [joinCode, setJoinCode] = useState('')
+  const [teacherJoinCode, setTeacherJoinCode] = useState('')
   const [staffCodeInput, setStaffCodeInput] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -31,6 +32,7 @@ export function AdminClassesPage() {
   const [editingClassId, setEditingClassId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editJoinCode, setEditJoinCode] = useState('')
+  const [editTeacherJoinCode, setEditTeacherJoinCode] = useState('')
   const [savingEditId, setSavingEditId] = useState<string | null>(null)
 
   const refresh = async () => {
@@ -58,9 +60,14 @@ export function AdminClassesPage() {
     setError(null)
     setMessage(null)
     try {
-      await createClass({ name, joinCode })
+      await createClass({
+        name,
+        joinCode,
+        teacherJoinCode: teacherJoinCode.trim() || undefined,
+      })
       setName('')
       setJoinCode('')
+      setTeacherJoinCode('')
       setMessage('반을 만들었습니다.')
       await refresh()
     } catch (err) {
@@ -106,6 +113,7 @@ export function AdminClassesPage() {
     setEditingClassId(cls.id)
     setEditName(cls.name)
     setEditJoinCode(cls.join_code)
+    setEditTeacherJoinCode(cls.teacher_join_code ?? `T-${cls.join_code}`)
     setError(null)
     setMessage(null)
   }
@@ -114,20 +122,30 @@ export function AdminClassesPage() {
     setEditingClassId(null)
     setEditName('')
     setEditJoinCode('')
+    setEditTeacherJoinCode('')
   }
 
   const onSaveClassEdit = async (classId: string) => {
     const nextName = editName.trim()
     const nextCode = editJoinCode.trim().toUpperCase()
-    if (!nextName || !nextCode) {
-      setError('반 이름과 가입 코드를 모두 입력해주세요.')
+    const nextTeacherCode = editTeacherJoinCode.trim().toUpperCase()
+    if (!nextName || !nextCode || !nextTeacherCode) {
+      setError('반 이름, 학생 코드, 교사 코드를 모두 입력해주세요.')
+      return
+    }
+    if (nextCode === nextTeacherCode) {
+      setError('학생 코드와 교사 코드는 서로 달라야 합니다.')
       return
     }
     setError(null)
     setMessage(null)
     setSavingEditId(classId)
     try {
-      await updateClass(classId, { name: nextName, join_code: nextCode })
+      await updateClass(classId, {
+        name: nextName,
+        join_code: nextCode,
+        teacher_join_code: nextTeacherCode,
+      })
       setMessage(`「${nextName}」 반 정보를 저장했습니다.`)
       setEditingClassId(null)
       await refresh()
@@ -144,20 +162,22 @@ export function AdminClassesPage() {
     <div className="space-y-4 px-5 py-8">
       <h1 className="font-display text-3xl text-brand-900">반 관리</h1>
       <p className="text-sm text-muted">
-        담임 교사는{' '}
+        반은 <span className="font-medium text-navy">학생 코드</span>와{' '}
+        <span className="font-medium text-navy">교사 코드</span>가 따로 있습니다. 임원은 아래 임원
+        코드를 쓰고, 수동 배정은{' '}
         <Link to="/admin/users" className="font-medium text-navy underline-offset-2 hover:underline">
           사용자 관리
         </Link>
-        에서 먼저 가입된 계정을 TEACHER로 바꾼 뒤, 아래에서 선택·저장하세요.
+        에서도 가능합니다.
       </p>
 
       <Card className="space-y-2 border-sage/30 bg-sage/5 text-sm">
-        <p className="font-semibold text-navy">교사 배정 순서</p>
-        <ol className="list-decimal space-y-1 pl-5 text-muted">
-          <li>선생님이 앱에 가입 (카카오 + 임원 코드, 또는 이메일)</li>
-          <li>사용자 관리에서 역할을 TEACHER로 변경</li>
-          <li>이 화면에서 반의 담당 교사를 고른 뒤 「저장」</li>
-        </ol>
+        <p className="font-semibold text-navy">코드 종류</p>
+        <ul className="list-disc space-y-1 pl-5 text-muted">
+          <li>학생 코드 → 학생으로 그 반 가입</li>
+          <li>교사 코드 → 담임 TEACHER + 그 반 (가입과 동시에 권한)</li>
+          <li>임원 코드 → 반 없는 TEACHER</li>
+        </ul>
       </Card>
 
       <Card className="space-y-3">
@@ -195,8 +215,19 @@ export function AdminClassesPage() {
           <Input
             required
             value={joinCode}
-            onChange={(e) => setJoinCode(e.target.value)}
-            placeholder="가입 코드 (예: BIBLE26-2)"
+            onChange={(e) => {
+              const v = e.target.value.toUpperCase()
+              setJoinCode(v)
+              setTeacherJoinCode((prev) =>
+                !prev || prev.startsWith('T-') ? (v ? `T-${v}` : '') : prev,
+              )
+            }}
+            placeholder="학생 가입 코드 (예: BIBLE26-2)"
+          />
+          <Input
+            value={teacherJoinCode}
+            onChange={(e) => setTeacherJoinCode(e.target.value.toUpperCase())}
+            placeholder="교사 코드 (비우면 T-학생코드)"
           />
           <Button type="submit" className="w-full">
             반 생성
@@ -224,7 +255,10 @@ export function AdminClassesPage() {
                           <span className="ml-2 text-xs font-normal text-muted">(비활성)</span>
                         ) : null}
                       </p>
-                      <p className="text-xs text-muted">코드 · {cls.join_code}</p>
+                      <p className="text-xs text-muted">학생 코드 · {cls.join_code}</p>
+                      <p className="text-xs text-muted">
+                        교사 코드 · {cls.teacher_join_code ?? `T-${cls.join_code}`}
+                      </p>
                     </>
                   ) : (
                     <p className="text-sm font-semibold text-navy">반 정보 수정</p>
@@ -288,12 +322,23 @@ export function AdminClassesPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-muted">가입 코드</label>
+                    <label className="mb-1 block text-xs text-muted">학생 가입 코드</label>
                     <Input
                       required
                       value={editJoinCode}
                       onChange={(e) => setEditJoinCode(e.target.value.toUpperCase())}
                       placeholder="예: BIBLE26-2"
+                      className="font-semibold tracking-wide"
+                      autoCapitalize="characters"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-muted">교사 코드</label>
+                    <Input
+                      required
+                      value={editTeacherJoinCode}
+                      onChange={(e) => setEditTeacherJoinCode(e.target.value.toUpperCase())}
+                      placeholder="예: T-BIBLE26-2"
                       className="font-semibold tracking-wide"
                       autoCapitalize="characters"
                     />

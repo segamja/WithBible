@@ -40,7 +40,8 @@ export function SignupPage() {
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 py-10">
       <h1 className="font-display text-3xl text-brand-900">회원가입</h1>
       <p className="mt-2 text-muted">
-        학생은 반 코드, 담임 교사는 반 코드+교사 코드, 임원은 교사 코드만 입력하세요.
+        학생 코드 / 담임 교사 코드(T-…) / 임원 코드(STAFF26) 중 하나를 입력하세요. 코드 종류에 따라
+        권한이 정해집니다.
       </p>
 
       {done ? (
@@ -79,24 +80,25 @@ export function SignupPage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm text-muted">반 가입코드</label>
+            <label className="mb-1.5 block text-sm text-muted">가입코드 (학생/교사/임원)</label>
             <Input
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              placeholder="예: BIBLE26-2"
+              placeholder="BIBLE26-2 또는 T-BIBLE26-2 또는 STAFF26"
               autoCapitalize="characters"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm text-muted">교사/임원 코드 (선택)</label>
+            <label className="mb-1.5 block text-sm text-muted">임원 코드 (선택)</label>
             <Input
               value={staffCode}
               onChange={(e) => setStaffCode(e.target.value.toUpperCase())}
-              placeholder="예: STAFF26"
+              placeholder="학생 코드와 함께 쓸 때만"
               autoCapitalize="characters"
             />
             <p className="mt-1 text-xs text-muted">
-              둘 다 넣으면 가입과 동시에 TEACHER 권한 + 해당 반 담임으로 연결됩니다.
+              담임은 교사 코드(T-…)만 넣으면 TEACHER+반이 됩니다. 관리자 수동 배정도 그대로
+              됩니다.
             </p>
           </div>
           {error ? <p className="text-sm text-danger">{error}</p> : null}

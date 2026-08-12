@@ -37,13 +37,18 @@ export async function getClassByJoinCode(
 export async function createClass(input: {
   name: string
   joinCode: string
+  teacherJoinCode?: string
   teacherId?: string | null
 }): Promise<ClassRow> {
+  const join = input.joinCode.toUpperCase().trim()
+  const teacherJoin =
+    (input.teacherJoinCode?.trim() || `T-${join}`).toUpperCase()
   const { data, error } = await supabase
     .from(Tables.classes)
     .insert({
       name: input.name,
-      join_code: input.joinCode.toUpperCase(),
+      join_code: join,
+      teacher_join_code: teacherJoin,
       teacher_id: input.teacherId ?? null,
     })
     .select('*')
@@ -54,11 +59,18 @@ export async function createClass(input: {
 
 export async function updateClass(
   id: string,
-  patch: Partial<Pick<ClassRow, 'name' | 'join_code' | 'teacher_id' | 'is_active'>>,
+  patch: Partial<
+    Pick<ClassRow, 'name' | 'join_code' | 'teacher_join_code' | 'teacher_id' | 'is_active'>
+  >,
 ): Promise<ClassRow> {
   if (!isUuid(id)) throw new Error('잘못된 반 ID입니다.')
   const cleanPatch = {
     ...patch,
+    join_code: patch.join_code === undefined ? undefined : patch.join_code.toUpperCase(),
+    teacher_join_code:
+      patch.teacher_join_code === undefined
+        ? undefined
+        : patch.teacher_join_code.toUpperCase(),
     teacher_id:
       patch.teacher_id === undefined ? undefined : emptyToNull(patch.teacher_id),
   }

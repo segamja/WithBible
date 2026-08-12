@@ -27,6 +27,7 @@ export interface ClassRow {
   name: string
   teacher_id: string | null
   join_code: string
+  teacher_join_code?: string
   is_active?: boolean
   created_at: string
 }

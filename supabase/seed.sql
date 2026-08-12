@@ -8,11 +8,12 @@ insert into public.wb_bible_books (id, name, testament, chapter_count) values
   ('11111111-1111-1111-1111-111111111104', '요한복음', 'NT', 21)
 on conflict (name) do nothing;
 
-insert into public.wb_classes (id, name, join_code) values
-  ('22222222-2222-2222-2222-222222222201', '1반', 'BIBLE26-1'),
-  ('22222222-2222-2222-2222-222222222202', '2반', 'BIBLE26-2'),
-  ('22222222-2222-2222-2222-222222222203', '3반', 'BIBLE26-3')
-on conflict (join_code) do nothing;
+insert into public.wb_classes (id, name, join_code, teacher_join_code) values
+  ('22222222-2222-2222-2222-222222222201', '1반', 'BIBLE26-1', 'T-BIBLE26-1'),
+  ('22222222-2222-2222-2222-222222222202', '2반', 'BIBLE26-2', 'T-BIBLE26-2'),
+  ('22222222-2222-2222-2222-222222222203', '3반', 'BIBLE26-3', 'T-BIBLE26-3')
+on conflict (join_code) do update
+set teacher_join_code = coalesce(public.wb_classes.teacher_join_code, excluded.teacher_join_code);
 
 insert into public.wb_projects (
   id, title, description, start_date, end_date, status,

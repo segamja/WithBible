@@ -26,7 +26,7 @@ export function ClassOnboardingPage() {
     e.preventDefault()
     setError(null)
     if (!joinCode.trim() && !staffCode.trim()) {
-      setError('반 가입코드 또는 교사 코드를 입력해주세요.')
+      setError('가입코드를 입력해주세요.')
       return
     }
     try {
@@ -51,9 +51,9 @@ export function ClassOnboardingPage() {
           : `${success.displayName}과 연결되었습니다!`
     const subtitle =
       success.joinKind === 'teacher_class'
-        ? '교사 권한과 반이 함께 연결됐어요. 학생들과 함께 말씀을 읽어보세요.'
+        ? '교사 권한과 반이 함께 연결됐어요.'
         : success.joinKind === 'staff'
-          ? '말씀을 읽고 인증하며, 친구들을 격려해 주세요. (반 현황은 담임 선생님 화면입니다)'
+          ? '임원으로 등록됐어요. 반 현황은 담임 선생님 화면입니다.'
           : '이제 우리 반과 함께 말씀을 읽어보세요.'
 
     return (
@@ -94,32 +94,37 @@ export function ClassOnboardingPage() {
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <Card className="space-y-3">
           <div>
-            <label className="mb-1.5 block text-sm text-muted">반 가입코드</label>
+            <label className="mb-1.5 block text-sm text-muted">
+              가입코드 (학생 / 담임 교사 / 임원)
+            </label>
             <Input
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              placeholder="예: BIBLE26-2"
-              autoComplete="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-              className="font-semibold tracking-wide"
-            />
-            <p className="mt-1 text-xs text-muted">학생 · 담임 교사 모두 반 코드를 넣습니다.</p>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm text-muted">교사/임원 코드 (선택)</label>
-            <Input
-              value={staffCode}
-              onChange={(e) => setStaffCode(e.target.value.toUpperCase())}
-              placeholder="예: STAFF26"
+              placeholder="BIBLE26-2 또는 T-BIBLE26-2 또는 STAFF26"
               autoComplete="off"
               autoCapitalize="characters"
               spellCheck={false}
               className="font-semibold tracking-wide"
             />
             <p className="mt-1 text-xs text-muted">
-              담임이면 반 코드 + 교사 코드를 함께 넣으면 TEACHER로 등록됩니다. 임원만이면 교사
-              코드만 넣어도 됩니다.
+              학생 코드 · 담임 교사 코드(T-…) · 임원 코드는 각각 다릅니다.
+            </p>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm text-muted">
+              임원 코드 + 학생 반 코드 (선택)
+            </label>
+            <Input
+              value={staffCode}
+              onChange={(e) => setStaffCode(e.target.value.toUpperCase())}
+              placeholder="임원 코드 STAFF26 (위에 학생 코드와 함께)"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              className="font-semibold tracking-wide"
+            />
+            <p className="mt-1 text-xs text-muted">
+              보통은 위 한 칸만 쓰면 됩니다. 담임은 교사 코드(T-…)만 넣으면 권한이 부여됩니다.
             </p>
           </div>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
@@ -153,9 +158,6 @@ export function ClassOnboardingPage() {
         >
           관리자 로그인
         </Button>
-        <p className="text-center text-xs text-muted">
-          운영자는 카카오가 아니라 관리자 로그인(이메일)을 사용하세요.
-        </p>
       </div>
     </div>
   )
