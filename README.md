@@ -35,6 +35,7 @@ npm install
    - (한 줄 댓글·관리자 리셋) `supabase/migrations/005_comments_admin_reset.sql`
    - (카카오 온보딩 RPC·가입코드 RLS) `supabase/migrations/006_kakao_onboarding_rpc.sql`
    - (임원 선생님 코드·통합 온보딩) `supabase/migrations/007_staff_codes_and_join_onboarding.sql`
+   - (담임: 교사코드+반코드 동시 가입) `supabase/migrations/008_teacher_class_dual_join.sql`
 2. Authentication → Providers에서 Email 로그인이 켜져 있는지 확인합니다.
 3. (선택) Authentication → Providers에서 "Confirm email"을 끄면 로컬 테스트가 편합니다.
 4. (카카오 로그인) 아래 **카카오 / Supabase OAuth 설정**을 완료합니다.

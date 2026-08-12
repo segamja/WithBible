@@ -18,9 +18,13 @@ interface AuthState {
     password: string
     name: string
     joinCode?: string
+    staffCode?: string
   }) => Promise<void>
-  completeOnboarding: (joinCode: string) => Promise<{
-    joinKind: 'class' | 'staff'
+  completeOnboarding: (
+    joinCode: string,
+    staffCode?: string | null,
+  ) => Promise<{
+    joinKind: 'class' | 'staff' | 'teacher_class'
     displayName: string
     role: UserRole
   }>
@@ -151,10 +155,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  completeOnboarding: async (joinCode) => {
+  completeOnboarding: async (joinCode, staffCode) => {
     set({ loading: true, error: null })
     try {
-      const result = await onboardingService.completeJoinOnboarding(joinCode)
+      const result = await onboardingService.completeJoinOnboarding(joinCode, staffCode)
       const userId = get().sessionUserId ?? (await authService.getSessionUserId())
       if (!userId) throw new Error('로그인이 필요해요.')
       const profile = await authService.getProfile(userId)

@@ -43,21 +43,24 @@ export async function signUp(params: {
   password: string
   name: string
   joinCode?: string
+  staffCode?: string
   role?: UserRole
 }): Promise<Profile> {
   ensureConfigured()
 
   const joinCode = emptyToNull(params.joinCode)
-  if (!joinCode) {
-    throw new AuthError('가입코드를 입력해주세요. (반 코드 또는 임원 코드)')
+  const staffCode = emptyToNull(params.staffCode)
+  if (!joinCode && !staffCode) {
+    throw new AuthError('반 가입코드 또는 교사 코드를 입력해주세요.')
   }
 
   const meta: Record<string, string> = {
     app: 'withbible',
     name: params.name,
     role: params.role ?? 'STUDENT',
-    join_code: joinCode,
   }
+  if (joinCode) meta.join_code = joinCode
+  if (staffCode) meta.staff_code = staffCode
 
   const { data, error } = await supabase.auth.signUp({
     email: params.email,
@@ -72,7 +75,7 @@ export async function signUp(params: {
   let profile = await waitForProfile(data.user.id)
   if (profile) {
     if (authServiceNeedsOnboarding(profile)) {
-      await completeJoinOnboarding(joinCode)
+      await completeJoinOnboarding(joinCode ?? '', staffCode)
       profile = (await getProfile(data.user.id)) ?? profile
     }
     return profile
@@ -87,7 +90,7 @@ export async function signUp(params: {
     )
   }
 
-  await completeJoinOnboarding(joinCode)
+  await completeJoinOnboarding(joinCode ?? '', staffCode)
   profile = await getProfile(data.user.id)
   if (!profile) throw new AuthError('프로필을 만들 수 없습니다. 잠시 후 다시 시도해주세요.')
   return profile

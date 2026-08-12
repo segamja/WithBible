@@ -13,9 +13,10 @@ export function ClassOnboardingPage() {
   const loading = useAuthStore((s) => s.loading)
   const profile = useAuthStore((s) => s.profile)
   const [joinCode, setJoinCode] = useState('')
+  const [staffCode, setStaffCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<{
-    joinKind: 'class' | 'staff'
+    joinKind: 'class' | 'staff' | 'teacher_class'
     displayName: string
     role: UserRole
   } | null>(null)
@@ -24,8 +25,12 @@ export function ClassOnboardingPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (!joinCode.trim() && !staffCode.trim()) {
+      setError('반 가입코드 또는 교사 코드를 입력해주세요.')
+      return
+    }
     try {
-      const result = await completeOnboarding(joinCode)
+      const result = await completeOnboarding(joinCode, staffCode.trim() || null)
       setSuccess(result)
     } catch (err) {
       setError(err instanceof Error ? err.message : '가입코드 연결 실패')
@@ -38,21 +43,25 @@ export function ClassOnboardingPage() {
   }
 
   if (success) {
-    const isStaff = success.joinKind === 'staff'
+    const title =
+      success.joinKind === 'teacher_class'
+        ? `${success.displayName} 담임 교사로 등록되었습니다!`
+        : success.joinKind === 'staff'
+          ? `${success.displayName}으로 등록되었습니다!`
+          : `${success.displayName}과 연결되었습니다!`
+    const subtitle =
+      success.joinKind === 'teacher_class'
+        ? '교사 권한과 반이 함께 연결됐어요. 학생들과 함께 말씀을 읽어보세요.'
+        : success.joinKind === 'staff'
+          ? '말씀을 읽고 인증하며, 친구들을 격려해 주세요. (반 현황은 담임 선생님 화면입니다)'
+          : '이제 우리 반과 함께 말씀을 읽어보세요.'
+
     return (
       <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 py-10">
         <Card className="space-y-4 border-none bg-navy text-white shadow-[0_16px_40px_rgba(23,32,51,0.28)]">
           <p className="text-3xl">🎉</p>
-          <h1 className="font-display text-2xl leading-snug">
-            {isStaff
-              ? `${success.displayName}으로 등록되었습니다!`
-              : `${success.displayName}과 연결되었습니다!`}
-          </h1>
-          <p className="text-sm text-white/75">
-            {isStaff
-              ? '말씀을 읽고 인증하며, 친구들을 격려해 주세요. (반 현황은 담임 선생님 화면입니다)'
-              : '이제 우리 반과 함께 말씀을 읽어보세요.'}
-          </p>
+          <h1 className="font-display text-2xl leading-snug">{title}</h1>
+          <p className="text-sm text-white/75">{subtitle}</p>
           <Button
             variant="sage"
             size="lg"
@@ -84,19 +93,35 @@ export function ClassOnboardingPage() {
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <Card className="space-y-3">
-          <label className="block text-sm text-muted">
-            반 가입코드 또는 임원 선생님 코드를 입력해주세요.
-          </label>
-          <Input
-            value={joinCode}
-            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-            placeholder="BIBLE26-2 또는 STAFF26"
-            autoComplete="off"
-            autoCapitalize="characters"
-            spellCheck={false}
-            className="font-semibold tracking-wide"
-            required
-          />
+          <div>
+            <label className="mb-1.5 block text-sm text-muted">반 가입코드</label>
+            <Input
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              placeholder="예: BIBLE26-2"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              className="font-semibold tracking-wide"
+            />
+            <p className="mt-1 text-xs text-muted">학생 · 담임 교사 모두 반 코드를 넣습니다.</p>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm text-muted">교사/임원 코드 (선택)</label>
+            <Input
+              value={staffCode}
+              onChange={(e) => setStaffCode(e.target.value.toUpperCase())}
+              placeholder="예: STAFF26"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              className="font-semibold tracking-wide"
+            />
+            <p className="mt-1 text-xs text-muted">
+              담임이면 반 코드 + 교사 코드를 함께 넣으면 TEACHER로 등록됩니다. 임원만이면 교사
+              코드만 넣어도 됩니다.
+            </p>
+          </div>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
         </Card>
         <Button type="submit" className="w-full" size="lg" disabled={loading || switching}>
