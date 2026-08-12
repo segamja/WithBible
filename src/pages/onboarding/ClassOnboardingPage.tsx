@@ -123,13 +123,13 @@ export function ClassOnboardingPage() {
           disabled={switching}
           onClick={() => {
             setSwitching(true)
-            window.location.assign(`/logout?next=${encodeURIComponent('/login?mode=admin')}`)
+            window.location.assign('/admin/login')
           }}
         >
-          운영자(관리자) 이메일 로그인
+          관리자 로그인
         </Button>
         <p className="text-center text-xs text-muted">
-          운영자 계정은 카카오가 아니라 이메일입니다. DB에서 role=ADMIN 이어야 /admin에 들어갑니다.
+          운영자는 카카오가 아니라 관리자 로그인(이메일)을 사용하세요.
         </p>
       </div>
     </div>

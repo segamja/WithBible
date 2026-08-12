@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { roleHome } from '@/layouts/AppShell'
@@ -21,7 +21,6 @@ function KakaoIcon({ className }: { className?: string }) {
 }
 
 function goAfterProfile(profile: Profile, onboardingRequired: boolean) {
-  // Full page load so onboarding/Kakao state cannot bounce the user back
   if (onboardingRequired) {
     window.location.replace('/onboarding/class')
     return
@@ -33,19 +32,10 @@ export function LoginPage() {
   const login = useAuthStore((s) => s.login)
   const loginWithKakao = useAuthStore((s) => s.loginWithKakao)
   const loading = useAuthStore((s) => s.loading)
-  const [searchParams] = useSearchParams()
-  const adminMode = searchParams.get('mode') === 'admin'
-  const [showEmail, setShowEmail] = useState(true)
+  const [showEmail, setShowEmail] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(
-    searchParams.get('error') === 'oauth' ? '로그인에 실패했어요. 다시 시도해주세요.' : null,
-  )
-  const [info, setInfo] = useState<string | null>(
-    adminMode
-      ? '운영자는 카카오가 아니라 이메일로 로그인하세요. 먼저 다른 계정 세션을 끊었습니다.'
-      : null,
-  )
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -58,20 +48,10 @@ export function LoginPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
-    setInfo(null)
     try {
       await clearStaleAppCaches()
       const profile = await login(email, password)
       const { onboardingRequired } = useAuthStore.getState()
-      if (adminMode && profile.role !== 'ADMIN') {
-        setError(
-          `이 계정 역할은 ${profile.role} 입니다. 운영자(ADMIN)가 아닙니다. Supabase에서 role을 ADMIN으로 바꾼 뒤 다시 로그인하세요.`,
-        )
-        return
-      }
-      if (onboardingRequired) {
-        setInfo('학생 온보딩으로 이동합니다. 운영자라면 로그아웃 후 ADMIN 이메일로 로그인하세요.')
-      }
       goAfterProfile(profile, onboardingRequired)
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인 실패')
@@ -87,10 +67,6 @@ export function LoginPage() {
     }
   }
 
-  const hardResetToAdminLogin = () => {
-    window.location.assign(`/logout?next=${encodeURIComponent('/login?mode=admin')}`)
-  }
-
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 py-10">
       <p className="text-sm font-semibold tracking-wide text-sky-dark">with BIBLE</p>
@@ -104,34 +80,16 @@ export function LoginPage() {
         </p>
       ) : null}
 
-      <div className="mt-6 rounded-2xl border border-line bg-brand-50/80 p-4 text-sm text-navy">
-        <p className="font-semibold">운영자(관리자) 로그인</p>
-        <p className="mt-1 text-muted">
-          카카오·학생 세션이 남아 있으면 /admin에 들어갈 수 없습니다. 아래 버튼으로 세션을 끊은 뒤
-          이메일로 로그인하세요.
-        </p>
-        <Button
-          type="button"
-          variant="secondary"
-          className="mt-3 w-full"
-          onClick={hardResetToAdminLogin}
-        >
-          세션 초기화 후 운영자 로그인
-        </Button>
-      </div>
-
       <div className="mt-8 space-y-3">
-        {!adminMode ? (
-          <button
-            type="button"
-            onClick={() => void onKakao()}
-            disabled={loading || !isSupabaseConfigured}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#FEE500] text-[15px] font-semibold text-[#191919] transition active:scale-[0.98] disabled:opacity-50"
-          >
-            <KakaoIcon className="h-5 w-5" />
-            카카오로 시작하기
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => void onKakao()}
+          disabled={loading || !isSupabaseConfigured}
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#FEE500] text-[15px] font-semibold text-[#191919] transition active:scale-[0.98] disabled:opacity-50"
+        >
+          <KakaoIcon className="h-5 w-5" />
+          카카오로 시작하기
+        </button>
 
         <Button
           type="button"
@@ -142,6 +100,13 @@ export function LoginPage() {
         >
           이메일로 시작하기
         </Button>
+
+        <Link
+          to="/admin/login"
+          className="flex h-12 w-full items-center justify-center rounded-2xl border border-navy/20 bg-navy text-[15px] font-semibold text-white transition hover:bg-navy/90 active:scale-[0.98]"
+        >
+          관리자 로그인
+        </Link>
       </div>
 
       {showEmail ? (
@@ -153,7 +118,7 @@ export function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@church.com"
+              placeholder="student@church.com"
               autoComplete="username"
             />
           </div>
@@ -169,7 +134,7 @@ export function LoginPage() {
             />
           </div>
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
-            {loading ? '로그인 중…' : adminMode ? '운영자 로그인' : '로그인'}
+            {loading ? '로그인 중…' : '로그인'}
           </Button>
           <p className="text-center text-sm text-muted">
             아직 계정이 없나요?{' '}
@@ -180,7 +145,6 @@ export function LoginPage() {
         </form>
       ) : null}
 
-      {info ? <p className="mt-4 text-sm text-sky-dark">{info}</p> : null}
       {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
     </div>
   )

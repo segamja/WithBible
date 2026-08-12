@@ -21,6 +21,7 @@ import { FeedPage } from '@/pages/student/FeedPage'
 import { ClassesOverviewPage } from '@/pages/ClassesOverviewPage'
 import { TeacherDashboardPage } from '@/pages/teacher/TeacherDashboardPage'
 import { TeacherAnnouncePage } from '@/pages/teacher/TeacherAnnouncePage'
+import { AdminLoginPage } from '@/pages/admin/AdminLoginPage'
 import { AdminDashboardPage, AdminProjectsPage } from '@/pages/admin/AdminPages'
 import { AdminClassesPage, AdminUsersPage } from '@/pages/admin/AdminManagePages'
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage'
@@ -47,6 +48,7 @@ export default function App() {
       <VersionUpdateBanner />
       <Routes>
       <Route path="/logout" element={<LogoutPage />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
 
       <Route element={<GuestOnly />}>
         <Route path="/login" element={<LoginPage />} />
