@@ -368,19 +368,19 @@ export function CheckinPage() {
               <Button
                 type="button"
                 variant="secondary"
-                className="w-full"
+                className="w-full whitespace-nowrap px-3 text-[13px]"
                 onClick={() => cameraRef.current?.click()}
               >
-                <Camera className="h-4 w-4" />
-                성경 사진 촬영
+                <Camera className="h-4 w-4 shrink-0" />
+                사진 촬영
               </Button>
               <Button
                 type="button"
                 variant="soft"
-                className="w-full"
+                className="w-full whitespace-nowrap px-3 text-[13px]"
                 onClick={() => galleryRef.current?.click()}
               >
-                <ImagePlus className="h-4 w-4" />
+                <ImagePlus className="h-4 w-4 shrink-0" />
                 사진 선택
               </Button>
             </div>

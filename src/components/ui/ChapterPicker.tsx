@@ -33,7 +33,7 @@ export function ChapterPicker({
   return (
     <div className={cn('space-y-1.5', className)}>
       <p className="text-xs font-medium text-muted">{label}</p>
-      <div className="flex gap-2">
+      <div className="grid grid-cols-[minmax(3.75rem,1fr)_minmax(4.75rem,1.1fr)] gap-1.5">
         <input
           type="text"
           inputMode="numeric"
@@ -54,16 +54,16 @@ export function ChapterPicker({
             const n = Number(value)
             if (Number.isInteger(n)) setFromNumber(n)
           }}
-          className="h-12 w-full rounded-2xl border border-line/60 bg-panel px-3 text-center text-[15px] font-semibold text-navy outline-none transition focus:border-navy focus:ring-2 focus:ring-navy/10"
+          className="h-12 min-w-0 rounded-2xl border border-line/60 bg-panel px-2 text-center text-[15px] font-semibold tabular-nums tracking-tight text-navy outline-none transition focus:border-navy focus:ring-2 focus:ring-navy/10"
         />
-        <div className="relative w-[5.5rem] shrink-0">
+        <div className="relative min-w-0">
           <select
             value={selected}
             aria-label={`${label} 목록`}
             onChange={(e) => {
               if (e.target.value) onChange(e.target.value)
             }}
-            className="h-12 w-full appearance-none rounded-2xl border border-line/60 bg-brand-50 px-3 pr-8 text-[15px] font-semibold text-navy outline-none transition focus:border-navy focus:ring-2 focus:ring-navy/10"
+            className="h-12 w-full appearance-none rounded-2xl border border-line/60 bg-brand-50 px-2 pr-7 text-[13px] font-semibold text-navy outline-none transition focus:border-navy focus:ring-2 focus:ring-navy/10"
           >
             {selected === '' ? <option value="">장</option> : null}
             {options.map((n) => (
@@ -72,7 +72,7 @@ export function ChapterPicker({
               </option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
         </div>
       </div>
     </div>
