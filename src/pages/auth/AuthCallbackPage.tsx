@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { getCurrentSession } from '@/services/authService'
 import { useAuthStore } from '@/stores/authStore'
 import { rememberAccount } from '@/lib/savedAccounts'
+import { roleHome } from '@/layouts/AppShell'
 import { Button } from '@/components/ui/Button'
 
 export function AuthCallbackPage() {
@@ -36,9 +37,7 @@ export function AuthCallbackPage() {
           navigate('/onboarding/class', { replace: true })
           return
         }
-        if (profile?.role === 'ADMIN') navigate('/admin', { replace: true })
-        else if (profile?.role === 'TEACHER') navigate('/teacher', { replace: true })
-        else navigate('/', { replace: true })
+        navigate(profile ? roleHome(profile.role) : '/', { replace: true })
       } catch {
         if (!cancelled) setError('로그인에 실패했어요. 다시 시도해주세요.')
       }

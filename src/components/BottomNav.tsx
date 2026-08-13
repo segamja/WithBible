@@ -1,9 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import {
-  BookOpen,
   Home,
   LayoutDashboard,
-  Megaphone,
   Users,
   UserRound,
   Award,
@@ -29,19 +27,20 @@ const studentNav: NavItem[] = [
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
+/** 홈은 학생과 동일(`/`), 기존 교사 대시보드는 «교사» 탭 */
 const teacherWithClassNav: NavItem[] = [
-  { to: '/teacher', label: '홈', icon: Home },
+  { to: '/', label: '홈', icon: Home },
   { to: '/checkin', label: '인증', icon: Award },
   { to: '/class', label: '우리반', icon: Users },
-  { to: '/feed', label: '피드', icon: BookOpen },
+  { to: '/teacher', label: '교사', icon: LayoutDashboard },
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
 const teacherStaffNav: NavItem[] = [
-  { to: '/teacher', label: '홈', icon: Home },
+  { to: '/', label: '홈', icon: Home },
   { to: '/checkin', label: '인증', icon: Award },
   { to: '/feed', label: '피드', icon: Newspaper },
-  { to: '/teacher/announce', label: '공지', icon: Megaphone },
+  { to: '/teacher', label: '교사', icon: LayoutDashboard },
   { to: '/me', label: '마이', icon: UserRound },
 ]
 

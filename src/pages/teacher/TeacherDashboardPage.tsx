@@ -34,23 +34,12 @@ function StaffTeacherHome({
     <div className="page pt-7">
       <div>
         <p className="caption-caps">with BIBLE · 임원</p>
-        <h1 className="page-title mt-1">함께 읽는 말씀</h1>
+        <h1 className="page-title mt-1">교사 메뉴</h1>
         {projectEnd ? <p className="mt-2 text-muted">{getDDayLabel(projectEnd)}</p> : null}
         <p className="mt-2 text-sm text-muted">
-          반에 소속되지 않아도 학생과 같이 읽고 인증할 수 있어요. 하단 «현황»에서 반별 진행을 볼 수
-          있습니다.
+          읽기와 인증은 홈 탭에서, 여기서는 공지와 반별 현황을 관리해요.
         </p>
       </div>
-
-      <Card className="border-none bg-navy text-white">
-        <p className="text-sm text-white/70">오늘의 실천</p>
-        <p className="font-display mt-1 text-2xl">말씀을 읽고 인증해 보세요</p>
-        <Link to="/checkin" className="mt-4 block">
-          <Button variant="sage" className="w-full">
-            사진으로 인증하기
-          </Button>
-        </Link>
-      </Card>
 
       <div className="flex gap-2">
         <Link to="/feed" className="flex-1">
@@ -128,14 +117,8 @@ export function TeacherDashboardPage() {
         <p className="caption-caps">with BIBLE · 교사</p>
         <h1 className="page-title mt-1">{className}</h1>
         {project ? <p className="mt-2 text-sm text-muted">{getDDayLabel(project.end_date)}</p> : null}
+        <p className="mt-1 text-sm text-muted">반 현황과 응원이 필요한 친구를 확인해요.</p>
       </div>
-
-      <Link to="/checkin">
-        <Card className="mb-1 border-sage/25 bg-sage-soft">
-          <p className="font-semibold text-navy">오늘도 말씀을 읽고 인증하기</p>
-          <p className="mt-1 text-sm text-muted">학생과 같이 읽고 올릴 수 있어요.</p>
-        </Card>
-      </Link>
 
       <Card className="border-none bg-navy text-white shadow-[0_12px_32px_rgba(23,32,51,0.22)]">
         <p className="text-sm text-white/70">반 목표 달성률</p>

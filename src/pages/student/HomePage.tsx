@@ -50,18 +50,9 @@ export function StudentHomePage() {
   }, [profile.class_id, loadForUser])
 
   useEffect(() => {
-    if (!project || !profile.class_id) return
+    if (!project) return
     const run = async () => {
-      const cls = await getClassById(profile.class_id!)
-      setClassName(cls?.name ?? '우리 반')
-      const progress = await getClassProgress(project.id, profile.class_id!, cls?.name ?? '우리 반')
-      setRate(progress.achievementRate)
-      setProgressMeta({
-        studentCount: progress.studentCount,
-        todayCheckins: progress.todayCheckins,
-        participatedCount: progress.participatedCount,
-      })
-      const me = await getPersonalProgress(project.id, profile.id, profile.class_id!)
+      const me = await getPersonalProgress(project.id, profile.id, profile.class_id)
       setPersonal({
         covered: me.covered,
         target: me.target,
@@ -88,14 +79,37 @@ export function StudentHomePage() {
         )
       }
 
-      const students = await listClassStudents(profile.class_id!)
-      const logs = await listClassLogs(
-        project.id,
-        students.map((s) => s.id),
-      )
-      const mine = logs.filter((l) => l.user_id === profile.id).map((l) => l.reading_date)
-      setMyDates(mine)
-      setPersonalStreak(calcPersonalStreak(mine))
+      if (profile.class_id) {
+        const cls = await getClassById(profile.class_id)
+        setClassName(cls?.name ?? '우리 반')
+        const progress = await getClassProgress(
+          project.id,
+          profile.class_id,
+          cls?.name ?? '우리 반',
+        )
+        setRate(progress.achievementRate)
+        setProgressMeta({
+          studentCount: progress.studentCount,
+          todayCheckins: progress.todayCheckins,
+          participatedCount: progress.participatedCount,
+        })
+        const students = await listClassStudents(profile.class_id)
+        const logs = await listClassLogs(
+          project.id,
+          students.map((s) => s.id),
+        )
+        const mine = logs.filter((l) => l.user_id === profile.id).map((l) => l.reading_date)
+        setMyDates(mine)
+        setPersonalStreak(calcPersonalStreak(mine))
+      } else {
+        setClassName('전체')
+        setRate(0)
+        setProgressMeta({ studentCount: 0, todayCheckins: 0, participatedCount: 0 })
+        const logs = await listClassLogs(project.id, [profile.id])
+        const mine = logs.map((l) => l.reading_date)
+        setMyDates(mine)
+        setPersonalStreak(calcPersonalStreak(mine))
+      }
 
       const anns = await listAnnouncements({
         projectId: project.id,
@@ -130,20 +144,27 @@ export function StudentHomePage() {
 
   return (
     <div className="page pt-4">
-      <header className="space-y-1.5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 pt-0.5">
-            <p className="caption-caps">with BIBLE</p>
-            <p className="mt-1 truncate text-base font-semibold text-navy">
-              {departmentTitleOf(project)}
-            </p>
-          </div>
+      <header className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-sm text-muted">
+            <span className="font-semibold uppercase tracking-[0.06em] text-sky-dark">
+              with BIBLE
+            </span>
+            <span className="mx-1.5 text-sky-dark/30" aria-hidden>
+              ·
+            </span>
+            <span>{departmentTitleOf(project)}</span>
+          </p>
           <ChurchLogoHeader className="shrink-0" />
         </div>
-        <h1 className="page-title">
-          {greetingForNow(profile.name)} 👋
-        </h1>
-        <p className="text-sm text-muted">오늘도 우리 반과 함께 말씀을 읽어볼까요?</p>
+        <div className="space-y-1.5">
+          <h1 className="page-title">{greetingForNow(profile.name)} 👋</h1>
+          <p className="text-sm text-muted">
+            {profile.role === 'TEACHER'
+              ? '오늘도 학생들과 함께 말씀을 읽어볼까요?'
+              : '오늘도 우리 반과 함께 말씀을 읽어볼까요?'}
+          </p>
+        </div>
       </header>
 
       {project ? (
@@ -159,7 +180,8 @@ export function StudentHomePage() {
           </div>
           <h2 className="font-display text-[1.65rem] text-navy">{todayLabel}</h2>
           <p className="text-xs text-muted">
-            {className} · {personal.readUpToLabel} · 목표 {personal.rate}%
+            {profile.class_id ? `${className} · ` : ''}
+            {personal.readUpToLabel} · 목표 {personal.rate}%
           </p>
           <Link to="/checkin" className="block">
             <Button className="w-full" size="lg">
@@ -174,7 +196,7 @@ export function StudentHomePage() {
         </Card>
       )}
 
-      {project ? (
+      {project && profile.class_id ? (
         <Card className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium text-muted">
             <Users className="h-4 w-4 text-sky-dark" />

@@ -7,7 +7,6 @@ import { cn } from '@/utils/cn'
 
 export function roleHome(role: UserRole) {
   if (role === 'ADMIN') return '/admin'
-  if (role === 'TEACHER') return '/teacher'
   return '/'
 }
 

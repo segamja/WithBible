@@ -64,7 +64,7 @@ export default function App() {
       </Route>
 
       <Route element={<AppShell />}>
-        <Route element={<RoleGuard allow={['STUDENT']} />}>
+        <Route element={<RoleGuard allow={['STUDENT', 'TEACHER']} />}>
           <Route path="/" element={<StudentHomePage />} />
         </Route>
 
