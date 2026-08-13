@@ -144,27 +144,26 @@ export function StudentHomePage() {
 
   return (
     <div className="page pt-4">
-      <header className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="min-w-0 truncate text-sm text-muted">
-            <span className="font-semibold uppercase tracking-[0.06em] text-sky-dark">
-              with BIBLE
-            </span>
-            <span className="mx-1.5 text-sky-dark/30" aria-hidden>
-              ·
-            </span>
-            <span>{departmentTitleOf(project)}</span>
-          </p>
-          <ChurchLogoHeader className="shrink-0" />
-        </div>
-        <div className="space-y-1.5">
-          <h1 className="page-title">{greetingForNow(profile.name)} 👋</h1>
-          <p className="text-sm text-muted">
-            {profile.role === 'TEACHER'
-              ? '오늘도 학생들과 함께 말씀을 읽어볼까요?'
-              : '오늘도 우리 반과 함께 말씀을 읽어볼까요?'}
-          </p>
-        </div>
+      <header>
+        <Card className="space-y-5 !shadow-none">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 space-y-1">
+              <p className="caption-caps">with BIBLE</p>
+              <p className="truncate text-sm font-medium text-navy">
+                {departmentTitleOf(project)}
+              </p>
+            </div>
+            <ChurchLogoHeader className="h-6 max-w-[8.5rem] shrink-0 sm:h-7 sm:max-w-[10rem]" />
+          </div>
+          <div className="space-y-1.5 border-t border-line/40 pt-5">
+            <h1 className="page-title">{greetingForNow(profile.name)} 👋</h1>
+            <p className="text-sm leading-relaxed text-muted">
+              {profile.role === 'TEACHER'
+                ? '오늘도 학생들과 함께 말씀을 읽어볼까요?'
+                : '오늘도 우리 반과 함께 말씀을 읽어볼까요?'}
+            </p>
+          </div>
+        </Card>
       </header>
 
       {project ? (

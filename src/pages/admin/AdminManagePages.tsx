@@ -13,7 +13,15 @@ import {
   updateClass,
   updateUserRole,
 } from '@/services/classService'
+import {
+  deleteAdminUser,
+  generateTempPassword,
+  listAdminUsers,
+  resetAdminUserPassword,
+  type AdminUserRow,
+} from '@/services/adminUserService'
 import { listStaffCodes, upsertStaffCode, type StaffCode } from '@/services/staffCodeService'
+import { useAuthStore } from '@/stores/authStore'
 import type { ClassRow, Profile, UserRole } from '@/types'
 
 export function AdminClassesPage() {
@@ -415,18 +423,88 @@ export function AdminClassesPage() {
 }
 
 export function AdminUsersPage() {
-  const [users, setUsers] = useState<Profile[]>([])
+  const meId = useAuthStore((s) => s.profile?.id)
+  const [users, setUsers] = useState<AdminUserRow[]>([])
   const [classes, setClasses] = useState<ClassRow[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  const [ghostOnly, setGhostOnly] = useState(false)
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [customPw, setCustomPw] = useState<Record<string, string>>({})
 
   const refresh = async () => {
-    setUsers(await listUsers())
-    setClasses(await listClasses())
+    const cls = await listClasses()
+    setClasses(cls)
+    try {
+      setUsers(await listAdminUsers())
+    } catch {
+      // Migration 016 전이면 기본 목록으로 폴백
+      const basic = await listUsers()
+      setUsers(
+        basic.map((u) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          class_id: u.class_id,
+          created_at: u.created_at,
+          has_email_login: Boolean(u.email),
+          reading_log_count: 0,
+          is_ghost: u.role === 'STUDENT' && !u.class_id,
+        })),
+      )
+    }
   }
 
   useEffect(() => {
     void refresh().catch((e) => setError(e instanceof Error ? e.message : '로드 실패'))
   }, [])
+
+  const visible = ghostOnly ? users.filter((u) => u.is_ghost) : users
+  const ghostCount = users.filter((u) => u.is_ghost).length
+
+  const onDelete = async (user: AdminUserRow) => {
+    if (user.id === meId) {
+      setError('본인 계정은 삭제할 수 없습니다.')
+      return
+    }
+    const ok = window.confirm(
+      `"${user.name}" 계정을 삭제할까요?\n인증 기록·댓글 등 관련 데이터도 함께 삭제됩니다.`,
+    )
+    if (!ok) return
+    setError(null)
+    setMessage(null)
+    setBusyId(user.id)
+    try {
+      await deleteAdminUser(user.id)
+      setMessage(`「${user.name}」 계정을 삭제했습니다.`)
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '삭제 실패')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const onResetPassword = async (user: AdminUserRow) => {
+    const next = customPw[user.id]?.trim() || generateTempPassword()
+    const ok = window.confirm(
+      `"${user.name}" 비밀번호를 초기화할까요?\n새 비밀번호: ${next}\n\n확인 후 사용자에게 전달해 주세요.`,
+    )
+    if (!ok) return
+    setError(null)
+    setMessage(null)
+    setBusyId(user.id)
+    try {
+      await resetAdminUserPassword(user.id, next)
+      setMessage(`「${user.name}」 새 비밀번호: ${next}`)
+      setCustomPw((prev) => ({ ...prev, [user.id]: '' }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '비밀번호 초기화 실패')
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   return (
     <div className="page">
@@ -448,45 +526,123 @@ export function AdminUsersPage() {
         </div>
       </div>
       <p className="text-sm text-muted">
-        역할·반을 바꾸면 바로 저장됩니다. 담임 배정은 반·임원 코드에서도 「담당 교사 저장」으로 할 수
-        있어요.
+        역할·반은 바로 저장됩니다. 유령 계정(반 미배정·인증 없음 학생) 삭제와 비밀번호 초기화도 할 수
+        있어요. Supabase에 migration 016을 적용해야 삭제·초기화가 동작합니다.
       </p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={ghostOnly ? 'primary' : 'outline'}
+          onClick={() => setGhostOnly((v) => !v)}
+        >
+          유령만 보기 {ghostCount > 0 ? `(${ghostCount})` : ''}
+        </Button>
+        <span className="text-xs text-muted">전체 {users.length}명</span>
+      </div>
+
       {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {message ? (
+        <p className="rounded-xl bg-sage-soft px-3 py-2 text-sm font-medium text-navy">{message}</p>
+      ) : null}
 
       <div className="space-y-3">
-        {users.map((user) => (
-          <Card key={user.id} className="space-y-2">
-            <div>
-              <p className="font-semibold">{user.name}</p>
-              <p className="text-xs text-muted">{user.email}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Select
-                value={user.role}
-                onChange={(e) =>
-                  void updateUserRole(user.id, e.target.value as UserRole).then(refresh)
-                }
-              >
-                <option value="STUDENT">STUDENT</option>
-                <option value="TEACHER">TEACHER</option>
-                <option value="ADMIN">ADMIN</option>
-              </Select>
-              <Select
-                value={user.class_id ?? ''}
-                onChange={(e) =>
-                  void assignUserToClass(user.id, e.target.value || null).then(refresh)
-                }
-              >
-                <option value="">반 미배정</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
+        {visible.length === 0 ? (
+          <Card>
+            <p className="text-sm text-muted">
+              {ghostOnly ? '유령 계정이 없습니다.' : '사용자가 없습니다.'}
+            </p>
           </Card>
-        ))}
+        ) : (
+          visible.map((user) => (
+            <Card key={user.id} className="space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold text-navy">{user.name}</p>
+                    {user.is_ghost ? (
+                      <span className="rounded-full bg-coral/15 px-2 py-0.5 text-[11px] font-semibold text-coral">
+                        유령
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="truncate text-xs text-muted">{user.email || '이메일 없음'}</p>
+                  <p className="mt-0.5 text-[11px] text-muted">
+                    인증 {user.reading_log_count}회
+                    {user.has_email_login ? ' · 이메일 로그인' : ' · 소셜 로그인'}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Select
+                  value={user.role}
+                  onChange={(e) =>
+                    void updateUserRole(user.id, e.target.value as UserRole)
+                      .then(refresh)
+                      .catch((err) =>
+                        setError(err instanceof Error ? err.message : '역할 변경 실패'),
+                      )
+                  }
+                >
+                  <option value="STUDENT">STUDENT</option>
+                  <option value="TEACHER">TEACHER</option>
+                  <option value="ADMIN">ADMIN</option>
+                </Select>
+                <Select
+                  value={user.class_id ?? ''}
+                  onChange={(e) =>
+                    void assignUserToClass(user.id, e.target.value || null)
+                      .then(refresh)
+                      .catch((err) =>
+                        setError(err instanceof Error ? err.message : '반 배정 실패'),
+                      )
+                  }
+                >
+                  <option value="">반 미배정</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="space-y-2 border-t border-line/30 pt-3">
+                <div className="flex gap-2">
+                  <Input
+                    className="flex-1"
+                    placeholder="새 비밀번호 (비우면 자동 생성)"
+                    value={customPw[user.id] ?? ''}
+                    onChange={(e) =>
+                      setCustomPw((prev) => ({ ...prev, [user.id]: e.target.value }))
+                    }
+                    autoComplete="new-password"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={busyId === user.id}
+                    onClick={() => void onResetPassword(user)}
+                  >
+                    비번 초기화
+                  </Button>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="w-full border-coral/40 text-coral hover:bg-coral/10"
+                  disabled={busyId === user.id || user.id === meId}
+                  onClick={() => void onDelete(user)}
+                >
+                  {user.is_ghost ? '유령 계정 삭제' : '계정 삭제'}
+                </Button>
+              </div>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   )
