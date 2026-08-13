@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BookOpen, Check, Users } from 'lucide-react'
+import { ChurchLogoHeader } from '@/components/ChurchLogoHeader'
 import { PartyBanner } from '@/components/PartyBanner'
 import { CompletionBanner } from '@/components/CompletionBanner'
 import { WeekStreak } from '@/components/WeekStreak'
@@ -127,7 +128,8 @@ export function StudentHomePage() {
     }))
 
   return (
-    <div className="page pt-6">
+    <div className="page pt-4">
+      <ChurchLogoHeader />
       <header className="space-y-1.5">
         <p className="caption-caps">with BIBLE</p>
         <h1 className="page-title">

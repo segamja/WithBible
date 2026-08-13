@@ -10,6 +10,7 @@ import {
   Newspaper,
   ChartColumn,
 } from 'lucide-react'
+import { AppVersionBadge } from '@/components/AppVersionBadge'
 import { cn } from '@/utils/cn'
 import type { UserRole } from '@/types'
 
@@ -69,7 +70,13 @@ export function BottomNav({
   const location = useLocation()
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line/25 bg-panel/90 backdrop-blur-xl">
-      <ul className="mx-auto flex max-w-lg items-stretch justify-between gap-0.5 px-2 pt-1.5">
+      <div className="mx-auto flex max-w-lg justify-center px-3 pt-1.5">
+        <AppVersionBadge
+          align="center"
+          className="border-0 bg-transparent px-1 py-0 text-[10px] font-medium text-muted shadow-none"
+        />
+      </div>
+      <ul className="mx-auto flex max-w-lg items-stretch justify-between gap-0.5 px-2 pb-0.5 pt-0.5">
         {items.map((item) => {
           const Icon = item.icon
           const end =
