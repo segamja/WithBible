@@ -87,7 +87,7 @@ export function InstallAppBanner() {
           <p className="mt-0.5 text-xs leading-relaxed text-muted">
             {showIosHint
               ? 'Safari 공유 버튼 → 「홈 화면에 추가」로 앱처럼 설치할 수 있어요.'
-              : 'with BIBLE을 앱처럼 설치해 바로 열어보세요.'}
+              : '위드바이블을 앱처럼 설치해 바로 열어보세요.'}
           </p>
           {!showIosHint && deferred ? (
             <Button size="sm" className="mt-2" onClick={() => void install()}>

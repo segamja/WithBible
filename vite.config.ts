@@ -80,8 +80,8 @@ export default defineConfig({
         'icons/apple-touch-icon.png',
       ],
       manifest: {
-        name: 'with BIBLE',
-        short_name: 'with BIBLE',
+        name: '위드바이블',
+        short_name: '위드바이블',
         description: '함께 읽는 말씀, 함께 자라는 우리',
         lang: 'ko',
         id: '/',
