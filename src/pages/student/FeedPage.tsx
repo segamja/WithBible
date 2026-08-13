@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ReadingFeedCard } from '@/components/ReadingFeedCard'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
@@ -18,12 +18,17 @@ import type { EncouragementType, FeedComment, ReadingLogWithMeta } from '@/types
 
 export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
   const profile = useAuthStore((s) => s.profile)!
-  const { project, loadForUser } = useProjectStore()
+  const { project, classes, loadForUser } = useProjectStore()
   const [feed, setFeed] = useState<ReadingLogWithMeta[]>([])
   const [myEnc, setMyEnc] = useState<Record<string, EncouragementType>>({})
   const [commentsByLog, setCommentsByLog] = useState<Record<string, FeedComment[]>>({})
   const [error, setError] = useState<string | null>(null)
-  const [live, setLive] = useState(false)
+
+  const classNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const c of classes) map.set(c.id, c.name)
+    return map
+  }, [classes])
 
   const refresh = useCallback(async () => {
     if (!project) return
@@ -47,52 +52,53 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
 
   useEffect(() => {
     if (!project) return
-    setLive(true)
     const unsubscribe = subscribeFeedChanges(project.id, () => {
       void refresh()
     })
-    return () => {
-      unsubscribe()
-      setLive(false)
-    }
+    return () => unsubscribe()
   }, [project, refresh])
 
   return (
-    <div className="space-y-4 px-5 py-8">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl text-brand-900">인증 피드</h1>
-          <p className="mt-2 text-muted">사진 인증에 좋아요와 한 줄 댓글을 남겨요.</p>
-        </div>
-        {live ? (
-          <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-medium text-brand-800">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-600" />
-            LIVE
-          </span>
-        ) : null}
-      </div>
+    <div className="space-y-4 px-5 pb-8 pt-5">
+      <header className="flex items-center justify-between gap-3">
+        {profile.profile_image ? (
+          <img
+            src={profile.profile_image}
+            alt=""
+            className="h-9 w-9 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky/25 text-sm font-semibold text-sky-dark">
+            {profile.name.slice(0, 1)}
+          </div>
+        )}
+        <h1 className="font-display text-lg text-navy">함께 읽는 피드</h1>
+        <span className="w-9" aria-hidden />
+      </header>
+
       {error ? <p className="text-sm text-danger">{error}</p> : null}
       {feed.length === 0 ? (
-        <p className="text-sm text-muted">아직 게시된 인증이 없습니다.</p>
+        <p className="py-10 text-center text-sm text-muted">아직 게시된 인증이 없습니다.</p>
       ) : (
         feed.map((log) => (
           <ReadingFeedCard
             key={log.id}
             log={log}
+            classLabel={
+              log.profiles?.class_id
+                ? classNameById.get(log.profiles.class_id) ?? null
+                : null
+            }
             liked={Boolean(myEnc[log.id])}
             comments={commentsByLog[log.id] ?? []}
             currentUserId={profile.id}
-            onDelete={async (id) => {
-              await deleteReadingLog(id, profile.id)
-              setFeed((prev) => prev.filter((item) => item.id !== id))
-            }}
-            onLike={async (logId, currentlyLiked) => {
-              const next = await toggleLike(logId, profile.id, currentlyLiked)
+            onLike={async (logId, liked) => {
+              await toggleLike(logId, profile.id, liked)
               setMyEnc((prev) => {
-                const copy = { ...prev }
-                if (next) copy[logId] = 'like'
-                else delete copy[logId]
-                return copy
+                const next = { ...prev }
+                if (liked) delete next[logId]
+                else next[logId] = 'like'
+                return next
               })
               setFeed((prev) =>
                 prev.map((item) =>
@@ -101,7 +107,7 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
                         ...item,
                         encouragement_count: Math.max(
                           0,
-                          (item.encouragement_count ?? 0) + (next ? 1 : -1),
+                          (item.encouragement_count ?? 0) + (liked ? -1 : 1),
                         ),
                       }
                     : item,
@@ -109,22 +115,26 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
               )
             }}
             onComment={async (logId, content) => {
-              const created = await addComment({
+              const row = await addComment({
                 readingLogId: logId,
                 userId: profile.id,
                 content,
               })
               setCommentsByLog((prev) => ({
                 ...prev,
-                [logId]: [...(prev[logId] ?? []), created],
+                [logId]: [...(prev[logId] ?? []), row],
               }))
+            }}
+            onDelete={async (logId) => {
+              await deleteReadingLog(logId, profile.id)
+              setFeed((prev) => prev.filter((item) => item.id !== logId))
             }}
             onDeleteComment={async (commentId) => {
               await deleteComment(commentId, profile.id)
               setCommentsByLog((prev) => {
                 const next: Record<string, FeedComment[]> = {}
-                for (const [key, list] of Object.entries(prev)) {
-                  next[key] = list.filter((c) => c.id !== commentId)
+                for (const [logId, list] of Object.entries(prev)) {
+                  next[logId] = list.filter((c) => c.id !== commentId)
                 }
                 return next
               })

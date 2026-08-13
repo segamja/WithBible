@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { format, parseISO, differenceInCalendarDays } from 'date-fns'
+import { BookOpen, Check, Users } from 'lucide-react'
 import { PartyBanner } from '@/components/PartyBanner'
 import { CompletionBanner } from '@/components/CompletionBanner'
-import { ReadingFeedCard } from '@/components/ReadingFeedCard'
+import { WeekStreak } from '@/components/WeekStreak'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -11,26 +11,12 @@ import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { getClassProgress, getPersonalProgress } from '@/services/progressService'
 import { listAnnouncements } from '@/services/announcementService'
-import {
-  getMyEncouragements,
-  listClassLogs,
-  listFeed,
-  toggleLike,
-} from '@/services/readingService'
-import {
-  addComment,
-  deleteComment,
-  listCommentsForLogs,
-} from '@/services/commentService'
+import { listClassLogs, listFeed } from '@/services/readingService'
 import { getClassById, listClassStudents } from '@/services/classService'
-import type { EncouragementType, FeedComment, ReadingLogWithMeta } from '@/types'
+import type { ReadingLogWithMeta } from '@/types'
 import { getDDayLabel } from '@/utils/dday'
-import {
-  calcClassStreak,
-  calcPersonalStreak,
-  getTodayReadingRange,
-  greetingForNow,
-} from '@/utils/schedule'
+import { calcPersonalStreak, getTodayReadingRange, greetingForNow } from '@/utils/schedule'
+import { differenceInCalendarDays, parseISO } from 'date-fns'
 
 export function StudentHomePage() {
   const profile = useAuthStore((s) => s.profile)!
@@ -51,12 +37,11 @@ export function StudentHomePage() {
   })
   const [announcement, setAnnouncement] = useState<string | null>(null)
   const [feed, setFeed] = useState<ReadingLogWithMeta[]>([])
-  const [myEnc, setMyEnc] = useState<Record<string, EncouragementType>>({})
-  const [commentsByLog, setCommentsByLog] = useState<Record<string, FeedComment[]>>({})
   const [className, setClassName] = useState('우리 반')
   const [personalStreak, setPersonalStreak] = useState(0)
-  const [classStreak, setClassStreak] = useState(0)
+  const [myDates, setMyDates] = useState<string[]>([])
   const [todayRange, setTodayRange] = useState({ start: 1, end: 1 })
+  const [todayBookName, setTodayBookName] = useState('복음서')
 
   useEffect(() => {
     void loadForUser(profile.class_id)
@@ -87,8 +72,10 @@ export function StudentHomePage() {
       const currentBook = me.byBook.find((b) => b.covered < b.target) ?? me.byBook[0]
       if (currentBook) {
         const nextChapter = Math.min(currentBook.covered + 1, currentBook.endChapter)
+        setTodayBookName(currentBook.bookName)
         setTodayRange({ start: nextChapter, end: nextChapter })
       } else if (myProjectClass) {
+        setTodayBookName(myProjectClass.bible_books?.name ?? '복음서')
         setTodayRange(
           getTodayReadingRange({
             startDate: project.start_date,
@@ -104,25 +91,20 @@ export function StudentHomePage() {
         project.id,
         students.map((s) => s.id),
       )
-      const myDates = logs.filter((l) => l.user_id === profile.id).map((l) => l.reading_date)
-      const classDates = [...new Set(logs.map((l) => l.reading_date))]
-      setPersonalStreak(calcPersonalStreak(myDates))
-      setClassStreak(calcClassStreak(classDates))
+      const mine = logs.filter((l) => l.user_id === profile.id).map((l) => l.reading_date)
+      setMyDates(mine)
+      setPersonalStreak(calcPersonalStreak(mine))
 
       const anns = await listAnnouncements({
         projectId: project.id,
         classId: profile.class_id,
       })
       setAnnouncement(anns[0]?.content ?? null)
-      const feedLogs = await listFeed({ projectId: project.id, limit: 5 })
-      setFeed(feedLogs)
-      setMyEnc(await getMyEncouragements(profile.id, feedLogs.map((l) => l.id)))
-      setCommentsByLog(await listCommentsForLogs(feedLogs.map((l) => l.id)))
+      setFeed(await listFeed({ projectId: project.id, limit: 8 }))
     }
     void run()
   }, [project, profile, myProjectClass])
 
-  const bookName = personal.goalLabel || myProjectClass?.bible_books?.name || personal.bookName || '복음서'
   const completed = personal.rate >= 100
   const days = project
     ? Math.max(
@@ -131,37 +113,47 @@ export function StudentHomePage() {
       )
     : 0
 
+  const todayLabel = `${todayBookName} ${todayRange.start}${
+    todayRange.end !== todayRange.start ? `–${todayRange.end}` : ''
+  }장`
+
+  const friendAvatars = feed
+    .filter((f) => f.user_id !== profile.id)
+    .slice(0, 5)
+    .map((f) => ({
+      id: f.user_id,
+      name: f.profiles?.name ?? '?',
+      image: f.profiles?.profile_image,
+    }))
+
   return (
-    <div className="space-y-4 px-5 pb-8 pt-7">
+    <div className="space-y-4 px-5 pb-8 pt-6">
       <header>
-        <p className="text-sm font-semibold tracking-wide text-sky-dark">with BIBLE</p>
-        <h1 className="font-display mt-1 text-[1.85rem] leading-tight text-navy">
-          {greetingForNow(profile.name)}
+        <h1 className="font-display text-[1.85rem] leading-tight text-navy">
+          {greetingForNow(profile.name)} 👋
         </h1>
         <p className="mt-2 text-sm text-muted">오늘도 우리 반과 함께 말씀을 읽어볼까요?</p>
       </header>
 
       {project ? (
-        <Card className="space-y-4 border-none bg-navy text-white shadow-[0_16px_40px_rgba(23,32,51,0.28)]">
+        <Card className="space-y-4">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/70">
-                오늘의 말씀
-              </p>
-              <h2 className="font-display mt-2 text-2xl leading-snug">
-                {bookName} {todayRange.start}
-                {todayRange.end !== todayRange.start ? `–${todayRange.end}` : ''}장
-              </h2>
+            <div className="flex items-center gap-2 text-sm font-medium text-muted">
+              <BookOpen className="h-4 w-4 text-sky-dark" />
+              오늘의 말씀
             </div>
-            <div className="rounded-2xl bg-streak px-3 py-2 text-center text-navy">
-              <p className="text-[10px] font-bold uppercase tracking-wide opacity-80">완주</p>
-              <p className="font-display text-lg">{getDDayLabel(project.end_date)}</p>
-            </div>
+            <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-muted">
+              {getDDayLabel(project.end_date)}
+            </span>
           </div>
-          <p className="text-sm text-white/75">{className}</p>
+          <h2 className="font-display text-2xl text-navy">{todayLabel}</h2>
+          <p className="text-xs text-muted">
+            {className} · {personal.readUpToLabel} · 목표 {personal.rate}%
+          </p>
           <Link to="/checkin" className="block">
-            <Button variant="sage" className="w-full" size="lg">
-              오늘 읽었어요 ✓
+            <Button className="w-full" size="lg">
+              <Check className="h-4 w-4" />
+              오늘 읽었어요
             </Button>
           </Link>
         </Card>
@@ -173,65 +165,78 @@ export function StudentHomePage() {
 
       {project ? (
         <Card className="space-y-3">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-sky-dark">나의 진행</p>
-              <h3 className="font-display mt-1 text-xl text-navy">
-                {personal.readUpToLabel}
-              </h3>
-              <p className="mt-1 text-xs text-muted">목표 · {personal.goalLabel || bookName}</p>
-            </div>
-            <p className="font-display text-3xl text-sage-dark">{personal.rate}%</p>
+          <div className="flex items-center gap-2 text-sm font-medium text-muted">
+            <Users className="h-4 w-4 text-sky-dark" />
+            우리 반 진행률
           </div>
-          <ProgressBar value={personal.rate} />
-          <p className="text-sm text-muted">
-            목표 대비 {personal.covered} / {personal.target}장 달성
+          <p className="font-display text-4xl text-navy">{rate}%</p>
+          <ProgressBar value={rate} className="h-2.5" />
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+            <span>
+              👥 {progressMeta.studentCount}명 중 {progressMeta.participatedCount}명 참여
+            </span>
+            <span className="text-line">|</span>
+            <span>🔥 오늘 {progressMeta.todayCheckins}명 인증</span>
+          </div>
+          <p className="text-xs text-muted">
+            나의 목표 진행 {personal.covered}/{personal.target}장 · {personal.rate}%
           </p>
         </Card>
       ) : null}
 
+      <Card className="space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-muted">
+          <span aria-hidden>🔥</span>
+          나의 Streak
+        </div>
+        <p className="font-semibold text-navy">
+          {personalStreak > 0 ? `${personalStreak}일 연속 말씀읽기` : '오늘부터 연속 읽기를 시작해요'}
+        </p>
+        <WeekStreak readingDates={myDates} />
+      </Card>
+
       {completed && project ? (
-        <CompletionBanner bookName={bookName} friendCount={feed.length} days={days} />
+        <CompletionBanner
+          bookName={personal.goalLabel || todayBookName}
+          friendCount={feed.length}
+          days={days}
+        />
       ) : null}
 
-      <Card className="space-y-3">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-sky-dark">우리 반 복음서 여행</p>
-            <h3 className="font-display mt-1 text-xl text-navy">우리 반 진행</h3>
+      {friendAvatars.length > 0 ? (
+        <Card className="space-y-3">
+          <p className="text-center text-sm font-medium text-navy">친구들이 함께 읽고 있어요</p>
+          <div className="flex items-center justify-center">
+            <div className="flex -space-x-2">
+              {friendAvatars.map((f) =>
+                f.image ? (
+                  <img
+                    key={f.id}
+                    src={f.image}
+                    alt={f.name}
+                    className="h-10 w-10 rounded-full border-2 border-panel object-cover"
+                  />
+                ) : (
+                  <div
+                    key={f.id}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-panel bg-sky/30 text-xs font-semibold text-sky-dark"
+                  >
+                    {f.name.slice(0, 1)}
+                  </div>
+                ),
+              )}
+              {feed.length > friendAvatars.length + 1 ? (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-panel bg-sky text-xs font-semibold text-white">
+                  +{Math.min(9, feed.length - friendAvatars.length - 1)}
+                </div>
+              ) : null}
+            </div>
           </div>
-          <p className="font-display text-3xl text-sage-dark">{rate}%</p>
-        </div>
-        <ProgressBar value={rate} />
-        <div className="grid grid-cols-3 gap-2 text-center text-xs text-muted">
-          <div className="rounded-xl bg-brand-50 px-2 py-2">
-            <p className="font-semibold text-navy">
-              {progressMeta.participatedCount}/{progressMeta.studentCount}
-            </p>
-            <p>참여</p>
-          </div>
-          <div className="rounded-xl bg-brand-50 px-2 py-2">
-            <p className="font-semibold text-navy">{progressMeta.todayCheckins}명</p>
-            <p>오늘 인증</p>
-          </div>
-          <div className="rounded-xl bg-streak/30 px-2 py-2">
-            <p className="font-semibold text-navy">🔥 {classStreak}일</p>
-            <p>반 Streak</p>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="flex items-center justify-between gap-3 border-streak/40 bg-streak/15">
-        <div>
-          <p className="text-sm font-medium text-navy">나의 연속 읽기</p>
-          <p className="mt-1 text-sm text-muted">
-            {personalStreak > 0
-              ? `${personalStreak}일 연속 말씀읽기`
-              : '오늘 다시 시작해볼까요?'}
-          </p>
-        </div>
-        <p className="font-display text-3xl text-navy">🔥 {personalStreak}</p>
-      </Card>
+          <Link to="/feed" className="block text-center text-sm font-medium text-sky-dark">
+            피드 보기
+          </Link>
+        </Card>
+      ) : null}
 
       {announcement ? (
         <Card>
@@ -245,80 +250,18 @@ export function StudentHomePage() {
           title={project.party_title}
           dateLabel={
             project.party_date
-              ? format(parseISO(project.party_date), 'M월 d일 · a h시')
+              ? new Date(project.party_date).toLocaleString('ko-KR', {
+                  month: 'long',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })
               : null
           }
           place={project.party_place}
           note={project.party_note}
         />
       ) : null}
-
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-semibold text-navy">친구 활동</h3>
-          <Link to="/feed" className="text-sm font-medium text-sky-dark">
-            전체 보기
-          </Link>
-        </div>
-        <div className="space-y-3">
-          {feed.length === 0 ? (
-            <p className="text-sm text-muted">아직 인증이 없습니다. 첫 인증의 주인공이 되어보세요.</p>
-          ) : (
-            feed.map((log) => (
-              <ReadingFeedCard
-                key={log.id}
-                log={log}
-                liked={Boolean(myEnc[log.id])}
-                comments={commentsByLog[log.id] ?? []}
-                currentUserId={profile.id}
-                onLike={async (logId, currentlyLiked) => {
-                  const next = await toggleLike(logId, profile.id, currentlyLiked)
-                  setMyEnc((prev) => {
-                    const copy = { ...prev }
-                    if (next) copy[logId] = 'like'
-                    else delete copy[logId]
-                    return copy
-                  })
-                  setFeed((prev) =>
-                    prev.map((item) =>
-                      item.id === logId
-                        ? {
-                            ...item,
-                            encouragement_count: Math.max(
-                              0,
-                              (item.encouragement_count ?? 0) + (next ? 1 : -1),
-                            ),
-                          }
-                        : item,
-                    ),
-                  )
-                }}
-                onComment={async (logId, content) => {
-                  const created = await addComment({
-                    readingLogId: logId,
-                    userId: profile.id,
-                    content,
-                  })
-                  setCommentsByLog((prev) => ({
-                    ...prev,
-                    [logId]: [...(prev[logId] ?? []), created],
-                  }))
-                }}
-                onDeleteComment={async (commentId) => {
-                  await deleteComment(commentId, profile.id)
-                  setCommentsByLog((prev) => {
-                    const next: Record<string, FeedComment[]> = {}
-                    for (const [key, list] of Object.entries(prev)) {
-                      next[key] = list.filter((c) => c.id !== commentId)
-                    }
-                    return next
-                  })
-                }}
-              />
-            ))
-          )}
-        </div>
-      </div>
     </div>
   )
 }

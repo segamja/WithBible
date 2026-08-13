@@ -46,10 +46,7 @@
     min-height: 100dvh;
     font-family: var(--font-sans);
     color: var(--color-ink);
-    background:
-      radial-gradient(ellipse 90% 50% at 0% -10%, rgba(140, 169, 200, 0.18), transparent 50%),
-      radial-gradient(ellipse 70% 40% at 100% 0%, rgba(111, 165, 138, 0.12), transparent 45%),
-      var(--color-surface);
+    background: var(--color-surface);
   }
 
   #root {
