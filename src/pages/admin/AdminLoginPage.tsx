@@ -7,7 +7,11 @@ import { AppVersionBadge } from '@/components/AppVersionBadge'
 import { useAuthStore } from '@/stores/authStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { APP_VERSION, clearStaleAppCaches } from '@/lib/version'
-import type { SavedAccount } from '@/lib/savedAccounts'
+import {
+  getSavedPassword,
+  rememberAccount,
+  type SavedAccount,
+} from '@/lib/savedAccounts'
 
 /**
  * Dedicated operator login (MyLevelUp `/admin/auth` style).
@@ -19,8 +23,11 @@ export function AdminLoginPage() {
   const loading = useAuthStore((s) => s.loading)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [savePassword, setSavePassword] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hint, setHint] = useState<string | null>(null)
   const [preparing, setPreparing] = useState(true)
+  const [listKey, setListKey] = useState(0)
   const passwordRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -50,14 +57,42 @@ export function AdminLoginPage() {
     }
   }, [logout])
 
+  const finishAdminLogin = async (mail: string, pass: string, persistPassword: boolean) => {
+    const profile = await login(mail, pass)
+    if (profile.role !== 'ADMIN') {
+      await logout().catch(() => undefined)
+      throw new Error(
+        `이 계정은 ${profile.role} 입니다. 운영자(ADMIN)만 이 화면으로 로그인할 수 있어요.`,
+      )
+    }
+    rememberAccount(profile, 'email', persistPassword ? pass : null)
+    window.location.replace('/admin')
+  }
+
   const pickAccount = (account: SavedAccount) => {
     if (!account.email) {
       setError('이 계정은 이메일이 없어 관리자 로그인에 쓸 수 없습니다.')
       return
     }
+    setError(null)
+    const saved = getSavedPassword(account.id)
+    if (saved) {
+      setHint(`${account.name} · 저장된 비밀번호로 로그인 중…`)
+      void finishAdminLogin(account.email, saved, true).catch((err) => {
+        setEmail(account.email!)
+        setPassword('')
+        setSavePassword(true)
+        setHint('저장된 비밀번호로 실패했어요. 다시 입력해주세요.')
+        setError(err instanceof Error ? err.message : '로그인 실패')
+        setListKey((k) => k + 1)
+        window.setTimeout(() => passwordRef.current?.focus(), 50)
+      })
+      return
+    }
     setEmail(account.email)
     setPassword('')
-    setError(null)
+    setSavePassword(true)
+    setHint(`${account.name} · 비밀번호를 입력하세요.`)
     window.setTimeout(() => passwordRef.current?.focus(), 50)
   }
 
@@ -65,15 +100,7 @@ export function AdminLoginPage() {
     e.preventDefault()
     setError(null)
     try {
-      const profile = await login(email, password)
-      if (profile.role !== 'ADMIN') {
-        setError(
-          `이 계정은 ${profile.role} 입니다. 운영자(ADMIN)만 이 화면으로 로그인할 수 있어요.`,
-        )
-        await logout().catch(() => undefined)
-        return
-      }
-      window.location.replace('/admin')
+      await finishAdminLogin(email, password, savePassword)
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인 실패')
     }
@@ -97,12 +124,15 @@ export function AdminLoginPage() {
       ) : (
         <>
           <SavedAccountList
+            key={listKey}
             className="mt-6"
             title="관리자 계정 선택"
-            hint="관리자로 로그인한 적 있는 계정을 고르고 비밀번호만 입력하세요."
+            hint="비밀번호를 기억해 둔 계정은 「바로 로그인」으로 한 번에 들어갑니다."
             filter={(a) => a.role === 'ADMIN' && Boolean(a.email)}
             onPick={pickAccount}
           />
+
+          {hint ? <p className="mt-3 text-sm text-sky-dark">{hint}</p> : null}
 
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div>
@@ -129,6 +159,20 @@ export function AdminLoginPage() {
                 autoComplete="current-password"
               />
             </div>
+            <label className="flex items-start gap-2.5 rounded-2xl bg-brand-50 px-3 py-3 text-sm text-navy">
+              <input
+                type="checkbox"
+                checked={savePassword}
+                onChange={(e) => setSavePassword(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-navy"
+              />
+              <span>
+                <span className="font-semibold">이 기기에 비밀번호 기억</span>
+                <span className="mt-0.5 block text-xs text-muted">
+                  공용 기기에서는 끄세요.
+                </span>
+              </span>
+            </label>
             {error ? <p className="text-sm text-danger">{error}</p> : null}
             <Button
               type="submit"

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { KeyRound, X } from 'lucide-react'
 import {
   listSavedAccounts,
   removeSavedAccount,
@@ -53,11 +53,17 @@ export function SavedAccountList({
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <p className="truncate font-semibold text-navy">{account.name}</p>
                     <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-muted">
                       {roleLabel(account.role)}
                     </span>
+                    {account.hasPassword ? (
+                      <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-sage-soft px-2 py-0.5 text-[11px] font-semibold text-sage-dark">
+                        <KeyRound className="h-3 w-3" />
+                        바로 로그인
+                      </span>
+                    ) : null}
                   </div>
                   <p className="mt-0.5 truncate text-xs text-muted">
                     {account.email ||

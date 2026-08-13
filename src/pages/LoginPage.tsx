@@ -8,7 +8,11 @@ import { useAuthStore } from '@/stores/authStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { AppVersionBadge } from '@/components/AppVersionBadge'
 import { APP_VERSION, clearStaleAppCaches } from '@/lib/version'
-import type { SavedAccount } from '@/lib/savedAccounts'
+import {
+  getSavedPassword,
+  rememberAccount,
+  type SavedAccount,
+} from '@/lib/savedAccounts'
 import type { Profile } from '@/types'
 
 function KakaoIcon({ className }: { className?: string }) {
@@ -39,10 +43,12 @@ export function LoginPage() {
   const [showEmail, setShowEmail] = useState(switching)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [savePassword, setSavePassword] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hint, setHint] = useState<string | null>(
-    switching ? '전환할 계정을 고른 뒤 비밀번호를 입력하세요.' : null,
+    switching ? '전환할 계정을 고르세요. 비밀번호가 저장된 계정은 바로 들어갑니다.' : null,
   )
+  const [listKey, setListKey] = useState(0)
   const passwordRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -53,19 +59,46 @@ export function LoginPage() {
     }
   }, [])
 
+  const finishLogin = async (mail: string, pass: string, persistPassword: boolean) => {
+    await clearStaleAppCaches()
+    const profile = await login(mail, pass)
+    rememberAccount(profile, 'email', persistPassword ? pass : null)
+    const { onboardingRequired } = useAuthStore.getState()
+    goAfterProfile(profile, onboardingRequired)
+  }
+
   const pickAccount = (account: SavedAccount) => {
     setError(null)
-    setPassword('')
     if (account.provider === 'kakao' || !account.email) {
       setShowEmail(false)
+      setPassword('')
       setHint(
-        `${account.name}(${account.role === 'ADMIN' ? '관리자' : account.role === 'TEACHER' ? '교사' : '학생'})는 카카오 로그인으로 들어오세요.`,
+        `${account.name}는 카카오 로그인으로 들어오세요.`,
       )
       return
     }
+
+    const saved = getSavedPassword(account.id)
+    if (saved) {
+      setHint(`${account.name} · 저장된 비밀번호로 로그인 중…`)
+      void finishLogin(account.email, saved, true).catch((err) => {
+        setEmail(account.email!)
+        setPassword('')
+        setSavePassword(true)
+        setShowEmail(true)
+        setHint('저장된 비밀번호로 로그인하지 못했어요. 비밀번호를 다시 입력해주세요.')
+        setError(err instanceof Error ? err.message : '로그인 실패')
+        setListKey((k) => k + 1)
+        window.setTimeout(() => passwordRef.current?.focus(), 50)
+      })
+      return
+    }
+
     setEmail(account.email)
+    setPassword('')
+    setSavePassword(true)
     setShowEmail(true)
-    setHint(`${account.name} 계정 · 비밀번호만 입력하면 됩니다.`)
+    setHint(`${account.name} 계정 · 비밀번호를 입력하면 이 기기에 기억할 수 있어요.`)
     window.setTimeout(() => passwordRef.current?.focus(), 50)
   }
 
@@ -73,10 +106,7 @@ export function LoginPage() {
     e.preventDefault()
     setError(null)
     try {
-      await clearStaleAppCaches()
-      const profile = await login(email, password)
-      const { onboardingRequired } = useAuthStore.getState()
-      goAfterProfile(profile, onboardingRequired)
+      await finishLogin(email, password, savePassword)
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인 실패')
     }
@@ -113,9 +143,10 @@ export function LoginPage() {
       ) : null}
 
       <SavedAccountList
+        key={listKey}
         className="mt-6"
         title="계정 선택"
-        hint="한 번 로그인한 계정이 이 기기에 기억됩니다. (비밀번호는 저장하지 않아요)"
+        hint="「바로 로그인」이 붙은 계정은 탭 한 번으로 들어갑니다. 개인 폰에서만 비밀번호 기억을 켜 주세요."
         onPick={pickAccount}
       />
 
@@ -175,6 +206,20 @@ export function LoginPage() {
               autoComplete="current-password"
             />
           </div>
+          <label className="flex items-start gap-2.5 rounded-2xl bg-brand-50 px-3 py-3 text-sm text-navy">
+            <input
+              type="checkbox"
+              checked={savePassword}
+              onChange={(e) => setSavePassword(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-navy"
+            />
+            <span>
+              <span className="font-semibold">이 기기에 비밀번호 기억</span>
+              <span className="mt-0.5 block text-xs text-muted">
+                다음에 계정만 선택하면 바로 로그인됩니다. 공용 기기에서는 끄세요.
+              </span>
+            </span>
+          </label>
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
             {loading ? '로그인 중…' : '로그인'}
           </Button>
