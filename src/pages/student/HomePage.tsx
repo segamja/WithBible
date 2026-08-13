@@ -129,9 +129,11 @@ export function StudentHomePage() {
 
   return (
     <div className="page pt-4">
-      <ChurchLogoHeader />
       <header className="space-y-1.5">
-        <p className="caption-caps">with BIBLE</p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="caption-caps pt-1">with BIBLE</p>
+          <ChurchLogoHeader className="shrink-0" />
+        </div>
         <h1 className="page-title">
           {greetingForNow(profile.name)} 👋
         </h1>
