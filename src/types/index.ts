@@ -39,6 +39,8 @@ export interface Project {
   start_date: string
   end_date: string
   status: ProjectStatus
+  /** 홈에 표시하는 부서/사역 이름 (예: 주고받고 고등부) */
+  department_title: string | null
   /** 마지막 보상/행사 이름 (포트럭 파티, 시상식 등) */
   party_title: string | null
   party_date: string | null

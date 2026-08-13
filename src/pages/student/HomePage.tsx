@@ -15,6 +15,7 @@ import { listAnnouncements } from '@/services/announcementService'
 import { listClassLogs, listFeed } from '@/services/readingService'
 import { getClassById, listClassStudents } from '@/services/classService'
 import type { ReadingLogWithMeta } from '@/types'
+import { departmentTitleOf } from '@/lib/branding'
 import { getDDayLabel } from '@/utils/dday'
 import { calcPersonalStreak, getTodayReadingRange, greetingForNow } from '@/utils/schedule'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
@@ -131,7 +132,12 @@ export function StudentHomePage() {
     <div className="page pt-4">
       <header className="space-y-1.5">
         <div className="flex items-start justify-between gap-3">
-          <p className="caption-caps pt-1">with BIBLE</p>
+          <div className="min-w-0 pt-0.5">
+            <p className="caption-caps">with BIBLE</p>
+            <p className="mt-1 truncate text-base font-semibold text-navy">
+              {departmentTitleOf(project)}
+            </p>
+          </div>
           <ChurchLogoHeader className="shrink-0" />
         </div>
         <h1 className="page-title">

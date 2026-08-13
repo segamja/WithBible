@@ -15,6 +15,7 @@ import {
   resetProjectActivity,
   updateProject,
 } from '@/services/projectService'
+import { DEFAULT_DEPARTMENT_TITLE } from '@/lib/branding'
 import type { BibleBook, Project } from '@/types'
 
 function toDatetimeLocal(value: string | null): string {
@@ -30,6 +31,7 @@ export function AdminSettingsPage() {
   const { bibleBooks, loadForUser, refreshProjects } = useProjectStore()
   const [project, setProject] = useState<Project | null>(null)
   const [title, setTitle] = useState('')
+  const [departmentTitle, setDepartmentTitle] = useState(DEFAULT_DEPARTMENT_TITLE)
   const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -56,6 +58,7 @@ export function AdminSettingsPage() {
     setProject(active)
     if (!active) return
     setTitle(active.title)
+    setDepartmentTitle(active.department_title?.trim() || DEFAULT_DEPARTMENT_TITLE)
     setDescription(active.description ?? '')
     setStartDate(active.start_date)
     setEndDate(active.end_date)
@@ -97,6 +100,7 @@ export function AdminSettingsPage() {
     try {
       const updated = await updateProject(project.id, {
         title: title.trim(),
+        department_title: departmentTitle.trim() || DEFAULT_DEPARTMENT_TITLE,
         description: description.trim() || null,
         start_date: startDate,
         end_date: endDate,
@@ -172,7 +176,7 @@ export function AdminSettingsPage() {
       <PageHeader
         eyebrow="관리자"
         title="프로젝트 설정"
-        description="타이틀 · 기간 · 읽기 목표 · 마지막 보상을 한곳에서 관리합니다."
+        description="부서 타이틀 · 프로젝트 · 기간 · 읽기 목표 · 마지막 보상을 한곳에서 관리합니다."
       />
 
       <form onSubmit={onSave} className="space-y-4">
@@ -181,6 +185,16 @@ export function AdminSettingsPage() {
             <p className="caption-caps">Section 01</p>
             <h2 className="section-title mt-1">타이틀</h2>
           </div>
+          <Field
+            label="부서 타이틀 (홈 표시)"
+            hint={`홈 화면 상단에 보입니다. 비우면 기본값 「${DEFAULT_DEPARTMENT_TITLE}」이 사용됩니다.`}
+          >
+            <Input
+              value={departmentTitle}
+              onChange={(e) => setDepartmentTitle(e.target.value)}
+              placeholder={DEFAULT_DEPARTMENT_TITLE}
+            />
+          </Field>
           <Field label="프로젝트명">
             <Input required value={title} onChange={(e) => setTitle(e.target.value)} />
           </Field>
