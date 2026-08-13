@@ -76,9 +76,9 @@ export function ClassOnboardingPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 py-10">
-      <p className="text-sm font-semibold tracking-wide text-sky-dark">with BIBLE</p>
-      <h1 className="font-display mt-2 text-[1.85rem] leading-tight text-navy">
+    <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center bg-surface px-6 py-10">
+      <p className="caption-caps">with BIBLE</p>
+      <h1 className="page-title mt-2">
         Welcome to with BIBLE 👋
       </h1>
       <p className="mt-3 text-muted">안녕하세요!</p>

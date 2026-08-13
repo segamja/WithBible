@@ -68,14 +68,16 @@ export function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 py-10">
-      <p className="text-sm font-semibold tracking-wide text-sky-dark">with BIBLE</p>
-      <h1 className="font-display mt-2 text-4xl text-navy">with BIBLE</h1>
-      <p className="mt-3 text-muted">함께 읽는 말씀, 함께 자라는 우리</p>
+    <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center bg-surface px-6 py-10">
+      <p className="caption-caps">Modern Christian Youth</p>
+      <h1 className="font-display mt-2 text-[2.4rem] leading-none text-navy">with BIBLE</h1>
+      <p className="mt-3 text-[15px] leading-relaxed text-muted">
+        함께 읽는 말씀, 함께 자라는 우리
+      </p>
       <AppVersionBadge className="mt-3" />
 
       {!isSupabaseConfigured ? (
-        <p className="mt-6 rounded-xl bg-warn/10 p-3 text-sm text-warn">
+        <p className="mt-6 rounded-2xl bg-streak/20 px-4 py-3 text-sm text-navy">
           Supabase 환경변수를 먼저 설정해주세요.
         </p>
       ) : null}
@@ -85,7 +87,7 @@ export function LoginPage() {
           type="button"
           onClick={() => void onKakao()}
           disabled={loading || !isSupabaseConfigured}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#FEE500] text-[15px] font-semibold text-[#191919] transition active:scale-[0.98] disabled:opacity-50"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#FEE500] text-[15px] font-semibold text-[#191919] shadow-[0_4px_14px_rgba(254,229,0,0.35)] transition active:scale-[0.98] disabled:opacity-50"
         >
           <KakaoIcon className="h-5 w-5" />
           카카오로 시작하기
@@ -103,7 +105,7 @@ export function LoginPage() {
 
         <Link
           to="/admin/login"
-          className="flex h-12 w-full items-center justify-center rounded-2xl border border-navy/20 bg-navy text-[15px] font-semibold text-white transition hover:bg-navy/90 active:scale-[0.98]"
+          className="flex h-12 w-full items-center justify-center rounded-full bg-navy text-[15px] font-semibold text-white shadow-[0_4px_14px_rgba(23,32,51,0.18)] transition hover:bg-navy-deep active:scale-[0.98]"
         >
           관리자 로그인
         </Link>

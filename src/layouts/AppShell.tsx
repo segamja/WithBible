@@ -19,8 +19,9 @@ export function AppShell() {
 
   if (!initialized) {
     return (
-      <div className="flex min-h-dvh items-center justify-center text-muted">
-        With Bible 불러오는 중…
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-2 bg-surface text-muted">
+        <p className="caption-caps">with BIBLE</p>
+        <p className="text-sm">불러오는 중…</p>
       </div>
     )
   }
@@ -28,11 +29,12 @@ export function AppShell() {
   if (!isSupabaseConfigured) {
     return (
       <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 px-6">
-        <h1 className="font-display text-3xl text-brand-800">With Bible</h1>
-        <p className="text-muted">
+        <p className="caption-caps">with BIBLE</p>
+        <h1 className="page-title">환경 설정이 필요해요</h1>
+        <p className="text-sm leading-relaxed text-muted">
           `.env`에 `VITE_SUPABASE_URL`과 `VITE_SUPABASE_ANON_KEY`를 설정한 뒤 다시 실행해주세요.
         </p>
-        <p className="text-sm text-muted">
+        <p className="text-sm leading-relaxed text-muted">
           Supabase SQL Editor에서 `supabase/migrations`와 `seed.sql`을 실행하세요.
         </p>
       </div>
@@ -52,7 +54,12 @@ export function AppShell() {
   }
 
   return (
-    <div className={cn('mx-auto min-h-dvh pb-24', wide ? 'max-w-4xl' : 'max-w-lg')}>
+    <div
+      className={cn(
+        'mx-auto min-h-dvh bg-surface pb-24',
+        wide ? 'max-w-4xl' : 'max-w-lg',
+      )}
+    >
       <div className="flex justify-end px-5 pt-3">
         <AppVersionBadge />
       </div>

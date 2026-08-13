@@ -159,13 +159,16 @@ export function AdminClassesPage() {
   const teachers = users.filter((u) => u.role === 'TEACHER' || u.role === 'ADMIN')
 
   return (
-    <div className="space-y-4 px-5 py-8">
+    <div className="page">
       <div>
-        <Link to="/admin" className="text-sm font-medium text-brand-700">
+        <Link to="/admin" className="text-sm font-medium text-sky-dark hover:text-navy">
           ← 현황
         </Link>
         <div className="mt-1 flex items-end justify-between gap-3">
-          <h1 className="font-display text-3xl text-brand-900">반 관리</h1>
+          <div>
+            <p className="caption-caps">관리자</p>
+            <h1 className="page-title mt-1">반 관리</h1>
+          </div>
           <Link
             to="/admin/users"
             className="shrink-0 pb-1 text-sm font-medium text-navy underline-offset-2 hover:underline"
@@ -180,7 +183,7 @@ export function AdminClassesPage() {
         코드를 쓰고, 수동 배정은 사용자·역할에서도 가능합니다.
       </p>
 
-      <Card className="space-y-2 border-sage/30 bg-sage/5 text-sm">
+      <Card className="space-y-2 border-sage/25 bg-sage-soft text-sm">
         <p className="font-semibold text-navy">코드 종류</p>
         <ul className="list-disc space-y-1 pl-5 text-muted">
           <li>학생 코드 → 학생으로 그 반 가입</li>
@@ -426,13 +429,16 @@ export function AdminUsersPage() {
   }, [])
 
   return (
-    <div className="space-y-4 px-5 py-8">
+    <div className="page">
       <div>
-        <Link to="/admin" className="text-sm font-medium text-brand-700">
+        <Link to="/admin" className="text-sm font-medium text-sky-dark hover:text-navy">
           ← 현황
         </Link>
         <div className="mt-1 flex items-end justify-between gap-3">
-          <h1 className="font-display text-3xl text-brand-900">사용자</h1>
+          <div>
+            <p className="caption-caps">관리자</p>
+            <h1 className="page-title mt-1">사용자</h1>
+          </div>
           <Link
             to="/admin/classes"
             className="shrink-0 pb-1 text-sm font-medium text-navy underline-offset-2 hover:underline"

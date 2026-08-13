@@ -60,15 +60,16 @@ export function TeacherAnnouncePage() {
   }
 
   return (
-    <div className="space-y-4 px-5 py-8">
-      <h1 className="font-display text-3xl text-brand-900">
-        {hasClass ? '격려 공지' : '전교 공지'}
-      </h1>
-      <p className="text-muted">
-        {hasClass
-          ? '반 전체에게 따뜻한 메시지를 남겨주세요.'
-          : '모든 반 친구들에게 보이는 격려 메시지를 남겨주세요.'}
-      </p>
+    <div className="page">
+      <div>
+        <p className="caption-caps">Teacher</p>
+        <h1 className="page-title mt-1">{hasClass ? '격려 공지' : '전교 공지'}</h1>
+        <p className="mt-2 text-sm text-muted">
+          {hasClass
+            ? '반 전체에게 따뜻한 메시지를 남겨주세요.'
+            : '모든 반 친구들에게 보이는 격려 메시지를 남겨주세요.'}
+        </p>
+      </div>
 
       <form onSubmit={onSubmit} className="space-y-3">
         <Card>

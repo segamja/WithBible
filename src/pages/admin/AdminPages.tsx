@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Chip } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
@@ -49,60 +50,58 @@ export function AdminDashboardPage() {
   }, [])
 
   return (
-    <div className="space-y-4 px-5 py-8">
-      <div>
-        <p className="text-sm text-brand-700">관리자</p>
-        <h1 className="font-display mt-1 text-3xl text-brand-900">전체 현황</h1>
+    <div className="page">
+      <div className="space-y-1.5">
+        <p className="caption-caps">관리자</p>
+        <h1 className="page-title">전체 현황</h1>
         {project ? (
           <>
-            <p className="mt-2 font-medium">{project.title}</p>
-            <p className="text-muted">{getDDayLabel(project.end_date)}</p>
+            <p className="font-medium text-navy">{project.title}</p>
+            <p className="text-sm text-muted">{getDDayLabel(project.end_date)}</p>
           </>
         ) : (
-          <p className="mt-2 text-muted">프로젝트를 먼저 생성해주세요.</p>
+          <p className="text-sm text-muted">프로젝트를 먼저 생성해주세요.</p>
         )}
       </div>
 
-      <div className="flex gap-2">
-        <Link to="/checkin" className="flex-1">
-          <Button className="w-full" variant="sage">
-            말씀 인증
+      <div className="grid grid-cols-3 gap-2">
+        <Link to="/checkin">
+          <Button className="w-full" variant="sage" size="sm">
+            인증
           </Button>
         </Link>
-        <Link to="/admin/classes" className="flex-1">
-          <Button className="w-full" variant="outline">
-            반·임원 코드
+        <Link to="/admin/classes">
+          <Button className="w-full" variant="outline" size="sm">
+            반·코드
           </Button>
         </Link>
-        <Link to="/admin/users" className="flex-1">
-          <Button className="w-full" variant="outline">
-            사용자·역할
+        <Link to="/admin/users">
+          <Button className="w-full" variant="outline" size="sm">
+            사용자
           </Button>
         </Link>
       </div>
 
-      <Card className="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <p className="text-muted">전체 반</p>
-          <p className="text-xl font-semibold">{overview.classCount}개</p>
-        </div>
-        <div>
-          <p className="text-muted">전체 학생</p>
-          <p className="text-xl font-semibold">{overview.studentCount}명</p>
-        </div>
-        <div>
-          <p className="text-muted">오늘 인증</p>
-          <p className="text-xl font-semibold">{overview.todayCheckins}명</p>
-        </div>
-        <div>
-          <p className="text-muted">전체 참여율</p>
-          <p className="text-xl font-semibold">{overview.avgParticipation}%</p>
-        </div>
+      <Card className="grid grid-cols-2 gap-3">
+        {[
+          ['전체 반', `${overview.classCount}개`],
+          ['전체 학생', `${overview.studentCount}명`],
+          ['오늘 인증', `${overview.todayCheckins}명`],
+          ['전체 참여율', `${overview.avgParticipation}%`],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-2xl bg-brand-50 px-3 py-3">
+            <p className="text-xs text-muted">{label}</p>
+            <p className="mt-1 text-lg font-semibold text-navy">{value}</p>
+          </div>
+        ))}
       </Card>
 
       <Card>
-        <p className="text-sm text-muted">평균 진행률</p>
-        <p className="font-display text-4xl text-brand-700">{overview.avgAchievement}%</p>
+        <p className="caption-caps">Average Progress</p>
+        <p className="stat-number mt-2">
+          {overview.avgAchievement}
+          <span className="ml-0.5 text-2xl">%</span>
+        </p>
         <ProgressBar value={overview.avgAchievement} className="mt-3" />
       </Card>
 
@@ -244,8 +243,11 @@ export function AdminProjectsPage() {
   }
 
   return (
-    <div className="space-y-6 px-5 py-8">
-      <h1 className="font-display text-3xl text-brand-900">프로젝트</h1>
+    <div className="page">
+      <div>
+        <p className="caption-caps">관리자</p>
+        <h1 className="page-title mt-1">프로젝트</h1>
+      </div>
 
       <form onSubmit={create} className="space-y-3">
         <Card className="space-y-3">
@@ -370,23 +372,16 @@ function BookPickSection({
 }) {
   if (books.length === 0) return null
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       <p className="text-sm font-semibold text-navy">{title}</p>
-      <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-line/70 p-2">
+      <div className="flex max-h-52 flex-wrap gap-2 overflow-y-auto rounded-2xl bg-brand-50/80 p-3">
         {books.map((b) => (
-          <label
-            key={b.id}
-            className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-brand-50"
-          >
-            <input
-              type="checkbox"
-              checked={selected.has(b.id)}
-              onChange={() => onToggle(b.id)}
-              className="accent-navy"
-            />
-            <span className="flex-1">{b.name}</span>
-            <span className="text-xs text-muted">{b.chapter_count}장</span>
-          </label>
+          <Chip key={b.id} selected={selected.has(b.id)} onClick={() => onToggle(b.id)}>
+            {b.name}
+            <span className={selected.has(b.id) ? 'text-white/70' : 'text-muted'}>
+              {b.chapter_count}
+            </span>
+          </Chip>
         ))}
       </div>
     </div>

@@ -66,10 +66,10 @@ export function AdminLoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 py-10">
-      <p className="text-sm font-semibold tracking-wide text-sky-dark">with BIBLE · 운영</p>
-      <h1 className="font-display mt-2 text-3xl text-navy">관리자 로그인</h1>
-      <p className="mt-2 text-muted">운영자 전용 · 이메일 계정으로 입장합니다.</p>
+    <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center bg-surface px-6 py-10">
+      <p className="caption-caps">with BIBLE · 운영</p>
+      <h1 className="page-title mt-2">관리자 로그인</h1>
+      <p className="mt-2 text-sm text-muted">운영자 전용 · 이메일 계정으로 입장합니다.</p>
       <AppVersionBadge className="mt-3" />
 
       {!isSupabaseConfigured ? (

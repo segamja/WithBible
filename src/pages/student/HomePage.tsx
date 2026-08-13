@@ -127,12 +127,13 @@ export function StudentHomePage() {
     }))
 
   return (
-    <div className="space-y-4 px-5 pb-8 pt-6">
-      <header>
-        <h1 className="font-display text-[1.85rem] leading-tight text-navy">
+    <div className="page pt-6">
+      <header className="space-y-1.5">
+        <p className="caption-caps">with BIBLE</p>
+        <h1 className="page-title">
           {greetingForNow(profile.name)} 👋
         </h1>
-        <p className="mt-2 text-sm text-muted">오늘도 우리 반과 함께 말씀을 읽어볼까요?</p>
+        <p className="text-sm text-muted">오늘도 우리 반과 함께 말씀을 읽어볼까요?</p>
       </header>
 
       {project ? (
@@ -142,11 +143,11 @@ export function StudentHomePage() {
               <BookOpen className="h-4 w-4 text-sky-dark" />
               오늘의 말씀
             </div>
-            <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-muted">
+            <span className="rounded-full bg-sky-soft px-2.5 py-1 text-xs font-semibold text-sky-dark">
               {getDDayLabel(project.end_date)}
             </span>
           </div>
-          <h2 className="font-display text-2xl text-navy">{todayLabel}</h2>
+          <h2 className="font-display text-[1.65rem] text-navy">{todayLabel}</h2>
           <p className="text-xs text-muted">
             {className} · {personal.readUpToLabel} · 목표 {personal.rate}%
           </p>
@@ -169,8 +170,11 @@ export function StudentHomePage() {
             <Users className="h-4 w-4 text-sky-dark" />
             우리 반 진행률
           </div>
-          <p className="font-display text-4xl text-navy">{rate}%</p>
-          <ProgressBar value={rate} className="h-2.5" />
+          <p className="stat-number">
+            {rate}
+            <span className="ml-0.5 text-2xl">%</span>
+          </p>
+          <ProgressBar value={rate} />
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
             <span>
               👥 {progressMeta.studentCount}명 중 {progressMeta.participatedCount}명 참여

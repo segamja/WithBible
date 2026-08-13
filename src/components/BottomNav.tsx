@@ -8,7 +8,7 @@ import {
   UserRound,
   Award,
   Newspaper,
-  SlidersHorizontal,
+  Settings2,
   ChartColumn,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
@@ -49,7 +49,7 @@ const adminNav: NavItem[] = [
   { to: '/admin', label: '현황', icon: LayoutDashboard },
   { to: '/checkin', label: '인증', icon: Award },
   { to: '/progress', label: '반현황', icon: ChartColumn },
-  { to: '/admin/settings', label: '설정', icon: SlidersHorizontal },
+  { to: '/admin/settings', label: '설정', icon: Settings2 },
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
@@ -69,8 +69,8 @@ export function BottomNav({
   const items = navForRole(role, classId)
   const location = useLocation()
   return (
-    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line/40 bg-panel/95 backdrop-blur">
-      <ul className="mx-auto flex max-w-lg items-stretch justify-between px-1 pt-1">
+    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line/25 bg-panel/90 backdrop-blur-xl">
+      <ul className="mx-auto flex max-w-lg items-stretch justify-between gap-0.5 px-2 pt-1.5">
         {items.map((item) => {
           const Icon = item.icon
           const end =
@@ -92,18 +92,11 @@ export function BottomNav({
                 to={item.to}
                 end={end}
                 className={cn(
-                  'flex flex-col items-center gap-0.5 px-1 py-1.5 text-[11px] font-medium transition',
-                  active ? 'text-navy' : 'text-muted hover:text-ink',
+                  'flex flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 text-[11px] font-semibold transition',
+                  active ? 'bg-sky-soft text-navy' : 'text-muted hover:text-ink',
                 )}
               >
-                <span
-                  className={cn(
-                    'flex h-9 w-9 items-center justify-center rounded-full transition',
-                    active ? 'bg-sky/30' : 'bg-transparent',
-                  )}
-                >
-                  <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
-                </span>
+                <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 1.9} />
                 <span>{item.label}</span>
               </NavLink>
             </li>

@@ -2,7 +2,7 @@
 
 @theme {
   --font-display: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-  --font-sans: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-sans: "Pretendard", "Inter", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 
   --color-navy: #172033;
   --color-navy-deep: #01081a;
@@ -11,10 +11,13 @@
   --color-surface: #faf9f6;
   --color-panel: #ffffff;
   --color-line: #c6c6cd;
+  --color-outline: #76777d;
   --color-sage: #6fa58a;
   --color-sage-dark: #19503a;
+  --color-sage-soft: #e8f3ee;
   --color-sky: #8ca9c8;
   --color-sky-dark: #44617d;
+  --color-sky-soft: #e8f2fb;
   --color-streak: #f2c86b;
   --color-coral: #d98282;
   --color-brand-50: #f4f3f1;
@@ -30,6 +33,10 @@
   --color-warn: #f2c86b;
   --color-danger: #d98282;
   --color-ok: #6fa58a;
+
+  --shadow-card: 0 4px 20px rgba(23, 32, 51, 0.04);
+  --shadow-card-lift: 0 8px 28px rgba(23, 32, 51, 0.07);
+  --radius-card: 1.5rem;
 }
 
 @layer base {
@@ -47,6 +54,8 @@
     font-family: var(--font-sans);
     color: var(--color-ink);
     background: var(--color-surface);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
   }
 
   #root {
@@ -65,6 +74,45 @@
   .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .caption-caps {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-sky-dark);
+  }
+
+  .page {
+    padding: 1.25rem 1.25rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .page-title {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    line-height: 1.25;
+    font-size: 1.65rem;
+    color: var(--color-navy);
+  }
+
+  @media (min-width: 640px) {
+    .page-title {
+      font-size: 1.85rem;
+    }
+  }
+
+  .section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--color-navy);
   }
 
   .safe-bottom {
@@ -72,8 +120,17 @@
   }
 
   .card-soft {
-    border-radius: 1.25rem;
+    border-radius: var(--radius-card);
     background: var(--color-panel);
-    box-shadow: 0 8px 28px rgba(23, 32, 51, 0.06);
+    box-shadow: var(--shadow-card);
+  }
+
+  .stat-number {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    line-height: 1;
+    font-size: 2.25rem;
+    color: var(--color-navy);
   }
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ReadingFeedCard } from '@/components/ReadingFeedCard'
+import { Card } from '@/components/ui/Card'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import {
@@ -59,26 +60,26 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
   }, [project, refresh])
 
   return (
-    <div className="space-y-4 px-5 pb-8 pt-5">
+    <div className="page">
       <header className="flex items-center justify-between gap-3">
         {profile.profile_image ? (
           <img
             src={profile.profile_image}
             alt=""
-            className="h-9 w-9 rounded-full object-cover"
+            className="h-10 w-10 rounded-full object-cover ring-2 ring-panel"
           />
         ) : (
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky/25 text-sm font-semibold text-sky-dark">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-soft text-sm font-semibold text-sky-dark">
             {profile.name.slice(0, 1)}
           </div>
         )}
         <h1 className="font-display text-lg text-navy">함께 읽는 피드</h1>
-        <span className="w-9" aria-hidden />
+        <span className="w-10" aria-hidden />
       </header>
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}
       {feed.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted">아직 게시된 인증이 없습니다.</p>
+        <CardEmpty />
       ) : (
         feed.map((log) => (
           <ReadingFeedCard
@@ -143,5 +144,14 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
         ))
       )}
     </div>
+  )
+}
+
+function CardEmpty() {
+  return (
+    <Card className="py-12 text-center">
+      <p className="font-medium text-navy">아직 게시된 인증이 없어요</p>
+      <p className="mt-1 text-sm text-muted">오늘 말씀을 읽고 첫 피드를 남겨볼까요?</p>
+    </Card>
   )
 }

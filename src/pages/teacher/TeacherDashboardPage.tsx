@@ -31,10 +31,10 @@ function StaffTeacherHome({
   recentCount: number
 }) {
   return (
-    <div className="space-y-4 px-5 pb-8 pt-7">
+    <div className="page pt-7">
       <div>
-        <p className="text-sm font-semibold tracking-wide text-sky-dark">with BIBLE · 임원</p>
-        <h1 className="font-display mt-1 text-3xl text-navy">함께 읽는 말씀</h1>
+        <p className="caption-caps">with BIBLE · 임원</p>
+        <h1 className="page-title mt-1">함께 읽는 말씀</h1>
         {projectEnd ? <p className="mt-2 text-muted">{getDDayLabel(projectEnd)}</p> : null}
         <p className="mt-2 text-sm text-muted">
           반에 소속되지 않아도 학생과 같이 읽고 인증할 수 있어요. 하단 «현황»에서 반별 진행을 볼 수
@@ -123,47 +123,47 @@ export function TeacherDashboardPage() {
     .sort((a, b) => daysSinceLast(b.lastReadingDate) - daysSinceLast(a.lastReadingDate))
 
   return (
-    <div className="space-y-4 px-5 pb-8 pt-7">
+    <div className="page pt-7">
       <div>
-        <p className="text-sm font-semibold tracking-wide text-sky-dark">with BIBLE · 교사</p>
-        <h1 className="font-display mt-1 text-3xl text-navy">{className}</h1>
-        {project ? <p className="mt-2 text-muted">{getDDayLabel(project.end_date)}</p> : null}
+        <p className="caption-caps">with BIBLE · 교사</p>
+        <h1 className="page-title mt-1">{className}</h1>
+        {project ? <p className="mt-2 text-sm text-muted">{getDDayLabel(project.end_date)}</p> : null}
       </div>
 
       <Link to="/checkin">
-        <Card className="mb-1 border-sage/30 bg-sage/10">
+        <Card className="mb-1 border-sage/25 bg-sage-soft">
           <p className="font-semibold text-navy">오늘도 말씀을 읽고 인증하기</p>
           <p className="mt-1 text-sm text-muted">학생과 같이 읽고 올릴 수 있어요.</p>
         </Card>
       </Link>
 
-      <Card className="border-none bg-navy text-white">
+      <Card className="border-none bg-navy text-white shadow-[0_12px_32px_rgba(23,32,51,0.22)]">
         <p className="text-sm text-white/70">반 목표 달성률</p>
-        <p className="font-display mt-1 text-5xl">{progress.achievementRate}%</p>
+        <p className="font-display mt-1 text-5xl tracking-tight">{progress.achievementRate}%</p>
         <ProgressBar value={progress.achievementRate} className="mt-3 bg-white/15" />
       </Card>
 
-      <Card className="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <p className="text-muted">전체 학생</p>
-          <p className="text-xl font-semibold text-navy">{progress.studentCount}명</p>
+      <Card className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl bg-brand-50 px-3 py-3">
+          <p className="text-xs text-muted">전체 학생</p>
+          <p className="mt-1 text-xl font-semibold text-navy">{progress.studentCount}명</p>
         </div>
-        <div>
-          <p className="text-muted">오늘 인증</p>
-          <p className="text-xl font-semibold text-navy">{progress.todayCheckins}명</p>
+        <div className="rounded-2xl bg-brand-50 px-3 py-3">
+          <p className="text-xs text-muted">오늘 인증</p>
+          <p className="mt-1 text-xl font-semibold text-navy">{progress.todayCheckins}명</p>
         </div>
-        <div>
-          <p className="text-muted">이번 주 참여</p>
-          <p className="text-xl font-semibold text-navy">{progress.weekCheckins}명</p>
+        <div className="rounded-2xl bg-brand-50 px-3 py-3">
+          <p className="text-xs text-muted">이번 주 참여</p>
+          <p className="mt-1 text-xl font-semibold text-navy">{progress.weekCheckins}명</p>
         </div>
-        <div>
-          <p className="text-muted">참여율</p>
-          <p className="text-xl font-semibold text-navy">{progress.participationRate}%</p>
+        <div className="rounded-2xl bg-brand-50 px-3 py-3">
+          <p className="text-xs text-muted">참여율</p>
+          <p className="mt-1 text-xl font-semibold text-navy">{progress.participationRate}%</p>
         </div>
       </Card>
 
-      <Card className="border-coral/30 bg-coral/10">
-        <h2 className="font-semibold text-navy">응원이 필요한 친구</h2>
+      <Card className="border-coral/25 bg-coral/10">
+        <h2 className="section-title text-base">응원이 필요한 친구</h2>
         <p className="mt-1 text-xs text-muted">2일 이상 미인증 · 학생 화면에는 표시되지 않습니다.</p>
         <div className="mt-3 space-y-2">
           {needCheer.length === 0 ? (

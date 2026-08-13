@@ -37,20 +37,21 @@ export function SignupPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 py-10">
-      <h1 className="font-display text-3xl text-brand-900">회원가입</h1>
-      <p className="mt-2 text-muted">
+    <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center bg-surface px-6 py-10">
+      <p className="caption-caps">with BIBLE</p>
+      <h1 className="page-title mt-1">회원가입</h1>
+      <p className="mt-2 text-sm leading-relaxed text-muted">
         학생 코드 / 담임 교사 코드(T-…) / 임원 코드(STAFF26) 중 하나를 입력하세요. 코드 종류에 따라
         권한이 정해집니다.
       </p>
 
       {done ? (
-        <div className="mt-8 space-y-4 rounded-2xl border border-brand-200 bg-brand-50 p-4">
-          <p className="font-medium text-brand-800">가입이 완료되었습니다.</p>
+        <div className="mt-8 space-y-4 rounded-[1.5rem] border border-sage/25 bg-sage-soft p-5">
+          <p className="font-medium text-sage-dark">가입이 완료되었습니다.</p>
           <p className="text-sm text-muted">
             이메일 확인이 켜져 있다면 메일함을 확인해주세요. 바로 로그인되면 홈으로 이동합니다.
           </p>
-          <Link to="/" className="font-semibold text-brand-700">
+          <Link to="/" className="font-semibold text-navy">
             홈으로
           </Link>
         </div>

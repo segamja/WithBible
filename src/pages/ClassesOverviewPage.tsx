@@ -45,25 +45,26 @@ export function ClassesOverviewPage() {
   }, [project])
 
   return (
-    <div className="min-h-dvh px-4 py-6 sm:px-6">
+    <div className="min-h-dvh bg-surface px-4 py-6 sm:px-6">
       <div className="mx-auto max-w-4xl space-y-5">
         <header>
-          <p className="text-sm font-medium text-brand-700">With Bible</p>
-          <h1 className="font-display mt-1 text-3xl text-brand-900 sm:text-4xl">
-            반별 진행 현황
-          </h1>
+          <p className="caption-caps">with BIBLE</p>
+          <h1 className="page-title mt-1 sm:text-4xl">반별 진행 현황</h1>
           {project ? (
-            <p className="mt-2 text-muted">
+            <p className="mt-2 text-sm text-muted">
               {project.title} · {getDDayLabel(project.end_date)}
             </p>
           ) : (
-            <p className="mt-2 text-muted">활성 프로젝트가 없습니다.</p>
+            <p className="mt-2 text-sm text-muted">활성 프로젝트가 없습니다.</p>
           )}
         </header>
 
-        <Card className="border-brand-200 bg-brand-50">
-          <p className="text-sm text-muted">전체 평균 진행률</p>
-          <p className="font-display text-5xl text-brand-700">{avg}%</p>
+        <Card className="bg-sage-soft/70">
+          <p className="caption-caps">Average</p>
+          <p className="stat-number mt-2">
+            {avg}
+            <span className="ml-0.5 text-2xl">%</span>
+          </p>
           <ProgressBar value={avg} className="mt-3" />
         </Card>
 
@@ -73,15 +74,15 @@ export function ClassesOverviewPage() {
           {classes.map((c) => {
             const tone =
               c.achievementRate >= 70
-                ? 'border-brand-200 bg-panel'
+                ? 'border-sage/20'
                 : c.achievementRate >= 40
-                  ? 'border-warn/30 bg-panel'
-                  : 'border-danger/20 bg-panel'
+                  ? 'border-streak/40'
+                  : 'border-coral/25'
             return (
               <Card key={c.classId} className={tone}>
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-display text-2xl text-brand-900">{c.className}</h2>
-                  <span className="font-display text-2xl text-brand-700">
+                  <h2 className="font-display text-xl text-navy">{c.className}</h2>
+                  <span className="font-display text-2xl text-sage-dark">
                     {c.achievementRate}%
                   </span>
                 </div>

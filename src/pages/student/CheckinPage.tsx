@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Camera, ImagePlus, X } from 'lucide-react'
+import { Camera, ImagePlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { useAuthStore } from '@/stores/authStore'
@@ -188,36 +190,25 @@ export function CheckinPage() {
 
   if (!project) {
     return (
-      <div className="px-5 py-8">
-        <h1 className="font-display text-2xl text-navy">오늘의 말씀 인증</h1>
-        <p className="mt-2 text-muted">활성 프로젝트가 없습니다.</p>
+      <div className="page">
+        <PageHeader title="오늘의 말씀 인증" description="활성 프로젝트가 없습니다." />
       </div>
     )
   }
 
   return (
-    <div className="px-5 pb-8 pt-5">
-      <header className="relative mb-5 flex items-center justify-center">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="absolute left-0 rounded-full p-2 text-navy hover:bg-brand-50"
-          aria-label="뒤로"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <h1 className="font-display text-xl text-navy">오늘의 말씀 인증</h1>
-      </header>
+    <div className="page">
+      <PageHeader title="오늘의 말씀 인증" centered onBack={() => navigate(-1)} />
 
       {done ? (
-        <Card className="border-sage/30 bg-sage/10">
+        <Card className="border-sage/25 bg-sage-soft">
           <p className="font-medium text-sage-dark">인증 완료! 피드에서 바로 확인할 수 있어요.</p>
         </Card>
       ) : (
         <form onSubmit={onSubmit} className="space-y-4">
-          <Card className="space-y-2">
-            <p className="font-semibold text-navy">오늘 읽은 말씀</p>
-            <p className="font-display text-xl text-ink">{rangeLabel}</p>
+          <Card className="space-y-3">
+            <p className="caption-caps">Today&apos;s Reading</p>
+            <p className="font-display text-xl text-navy">{rangeLabel}</p>
             <div className="grid grid-cols-3 gap-2 pt-1">
               <Select
                 required
@@ -260,7 +251,7 @@ export function CheckinPage() {
             </div>
           </Card>
 
-          <div className="rounded-[1.4rem] border border-dashed border-line bg-panel/60 px-4 py-6">
+          <div className="rounded-[1.5rem] border border-dashed border-line/70 bg-panel px-4 py-6 shadow-[0_4px_20px_rgba(23,32,51,0.03)]">
             {photoPreview ? (
               <div className="relative overflow-hidden rounded-2xl">
                 <img
@@ -324,22 +315,17 @@ export function CheckinPage() {
             />
           </div>
 
-          <div className="space-y-2">
-            <p className="font-semibold text-navy">✍️ 오늘 마음에 남은 한 줄</p>
-            <Card className="p-0">
-              <Textarea
-                required
-                value={reflection}
-                onChange={(e) => setReflection(e.target.value)}
-                placeholder="오늘 말씀에서 가장 기억에 남은 것은?"
-                className="min-h-28 border-0 bg-transparent shadow-none"
-              />
-            </Card>
-          </div>
+          <Field label="오늘 마음에 남은 한 줄">
+            <Textarea
+              required
+              value={reflection}
+              onChange={(e) => setReflection(e.target.value)}
+              placeholder="오늘 말씀에서 가장 기억에 남은 것은?"
+            />
+          </Field>
 
           {profile.class_id ? (
-            <div>
-              <label className="mb-1.5 block text-sm text-muted">공개 범위</label>
+            <Field label="공개 범위">
               <Select
                 value={visibility}
                 onChange={(e) => setVisibility(e.target.value as Visibility)}
@@ -347,9 +333,9 @@ export function CheckinPage() {
                 <option value="public">전체 공개</option>
                 <option value="class">반 친구에게 공개</option>
               </Select>
-            </div>
+            </Field>
           ) : (
-            <p className="rounded-2xl bg-brand-50 px-3 py-2 text-sm text-navy">
+            <p className="rounded-2xl bg-brand-50 px-4 py-3 text-sm text-navy">
               반에 소속되지 않아 전체 공개로 올라갑니다.
             </p>
           )}

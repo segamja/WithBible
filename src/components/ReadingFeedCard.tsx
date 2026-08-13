@@ -116,26 +116,30 @@ export function ReadingFeedCard({
         <p className="text-sm leading-relaxed text-ink/90">{log.reflection}</p>
       ) : null}
 
-      <div className="flex items-center gap-4 pt-1">
+      <div className="flex items-center gap-3 border-t border-line/30 pt-3">
         <button
           type="button"
           disabled={busy}
           onClick={() => void handleLike()}
           className={cn(
-            'inline-flex items-center gap-1.5 text-sm font-medium transition',
-            liked ? 'text-sage-dark' : 'text-muted hover:text-sage-dark',
+            'inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition',
+            liked
+              ? 'bg-sage-soft text-sage-dark'
+              : 'bg-brand-50 text-muted hover:bg-sky-soft hover:text-sky-dark',
           )}
         >
-          <Hand className={cn('h-5 w-5', liked && 'fill-sage/30')} />
+          <Hand className={cn('h-4 w-4', liked && 'fill-sage/40')} />
           응원하기
-          <span className="tabular-nums">{log.encouragement_count ?? 0}</span>
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-panel px-1.5 text-xs tabular-nums">
+            {log.encouragement_count ?? 0}
+          </span>
         </button>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-navy"
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-muted hover:bg-brand-50 hover:text-navy"
           onClick={() => setShowComments((v) => !v)}
         >
-          <MessageCircle className="h-5 w-5" />
+          <MessageCircle className="h-4 w-4" />
           <span className="tabular-nums">{comments.length}</span>
         </button>
         {currentUserId === log.user_id && onDelete ? (
