@@ -79,37 +79,41 @@ export function ChapterPicker({
   )
 }
 
-/** Horizontal quick picks around the suggested chapter */
-export function ChapterQuickPicks({
-  center,
-  min,
-  max,
-  selected,
+/** Quick pick: how many chapters from the current start chapter (1장=그날 1장, 2장=시작~시작+1) */
+export function ChapterSpanPicks({
+  startChapter,
+  maxChapter,
+  selectedCount,
   onPick,
 }: {
-  center: number
-  min: number
-  max: number
-  selected?: number | null
-  onPick: (chapter: number) => void
+  startChapter: number
+  maxChapter: number
+  selectedCount?: number | null
+  onPick: (count: number) => void
 }) {
-  const safeMax = Math.max(min, max)
-  const start = clampChapter(center - 2, min, safeMax)
-  const picks: number[] = []
-  for (let n = start; n <= safeMax && picks.length < 5; n += 1) picks.push(n)
+  const remaining = Math.max(0, maxChapter - startChapter + 1)
+  const picks = [1, 2, 3, 4, 5].filter((n) => n <= remaining || n === 1)
   if (picks.length === 0) return null
 
   return (
     <div className="flex flex-wrap gap-1.5">
       {picks.map((n) => {
-        const active = selected === n
+        const active = selectedCount === n
+        const end = Math.min(startChapter + n - 1, maxChapter)
+        const disabled = startChapter > maxChapter
         return (
           <button
             key={n}
             type="button"
+            disabled={disabled}
+            title={
+              n === 1
+                ? `${startChapter}장만`
+                : `${startChapter}–${end}장 (${n}장)`
+            }
             onClick={() => onPick(n)}
             className={cn(
-              'inline-flex min-h-9 items-center rounded-full border px-3 text-sm font-semibold transition',
+              'inline-flex min-h-9 items-center rounded-full border px-3 text-sm font-semibold transition disabled:opacity-40',
               active
                 ? 'border-navy bg-navy text-white'
                 : 'border-line/50 bg-panel text-navy hover:bg-sky-soft',

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Camera, ImagePlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { ChapterPicker, ChapterQuickPicks } from '@/components/ui/ChapterPicker'
+import { ChapterPicker, ChapterSpanPicks } from '@/components/ui/ChapterPicker'
 import { Field } from '@/components/ui/Field'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Select } from '@/components/ui/Select'
@@ -42,7 +42,8 @@ export function CheckinPage() {
   const [done, setDone] = useState(false)
   const [goalBooks, setGoalBooks] = useState<BibleBook[]>([])
   const [bookRanges, setBookRanges] = useState<Record<string, BookRange>>({})
-  const [suggestedChapter, setSuggestedChapter] = useState(1)
+  /** 책별 이어서 읽을 시작 장 (마지막 인증 장의 다음) */
+  const [resumeByBook, setResumeByBook] = useState<Record<string, number>>({})
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
 
@@ -90,34 +91,30 @@ export function CheckinPage() {
       }
 
       const personal = await getPersonalProgress(project.id, profile.id, profile.class_id)
+      const resume: Record<string, number> = {}
+      for (const b of personal.byBook) {
+        const range = ranges[b.bookId] ?? { start: b.startChapter, end: b.endChapter }
+        resume[b.bookId] = clampToRange(b.nextChapter, range)
+      }
+      for (const b of books) {
+        if (resume[b.id] == null) {
+          resume[b.id] = ranges[b.id]?.start ?? 1
+        }
+      }
+      setResumeByBook(resume)
+
       const nextBook = personal.byBook.find((b) => b.covered < b.target) ?? personal.byBook[0]
       const preferred =
         nextBook?.bookId ?? targets[0]?.bookId ?? books[0]?.id ?? ''
 
       const resolvedBookId =
         preferred && books.some((b) => b.id === preferred) ? preferred : books[0].id
-      setBookId((current) => {
-        if (current && books.some((b) => b.id === current)) return current
-        return resolvedBookId
-      })
+      setBookId(resolvedBookId)
       setError(null)
 
-      if (nextBook) {
-        const range = ranges[nextBook.bookId] ?? {
-          start: nextBook.startChapter,
-          end: nextBook.endChapter,
-        }
-        const next = clampToRange(nextBook.covered + 1, range)
-        setSuggestedChapter(next)
-        setStartChapter(String(next))
-        setEndChapter(String(next))
-      } else {
-        const range = ranges[resolvedBookId]
-        const next = range?.start ?? 1
-        setSuggestedChapter(next)
-        setStartChapter(String(next))
-        setEndChapter(String(next))
-      }
+      const next = resume[resolvedBookId] ?? ranges[resolvedBookId]?.start ?? 1
+      setStartChapter(String(next))
+      setEndChapter(String(next))
     }
     void run().catch((e) => setError(e instanceof Error ? e.message : '목표 성경 로드 실패'))
   }, [project, profile.class_id, profile.id, bibleBooks])
@@ -157,19 +154,17 @@ export function CheckinPage() {
       start: 1,
       end: goalBooks.find((b) => b.id === nextBookId)?.chapter_count ?? 1,
     }
-    const start = parseChapter(startChapter)
-    const end = parseChapter(endChapter)
-    const nextStart = clampToRange(start ?? range.start, range)
-    const nextEnd = clampToRange(Math.max(end ?? nextStart, nextStart), range)
+    const nextStart = clampToRange(resumeByBook[nextBookId] ?? range.start, range)
     setStartChapter(String(nextStart))
-    setEndChapter(String(nextEnd))
-    setSuggestedChapter(nextStart)
+    setEndChapter(String(nextStart))
   }
 
-  const pickSingleChapter = (chapter: number) => {
-    const n = clampToRange(chapter, activeRange)
-    setStartChapter(String(n))
-    setEndChapter(String(n))
+  /** 빠른 선택: 시작 장부터 N장 → 종료 장 = 시작 + N - 1 */
+  const pickChapterSpan = (count: number) => {
+    const start = clampToRange(parseChapter(startChapter) ?? activeRange.start, activeRange)
+    const end = clampToRange(start + count - 1, activeRange)
+    setStartChapter(String(start))
+    setEndChapter(String(end))
   }
 
   const pickFile = (file: File | undefined) => {
@@ -252,6 +247,14 @@ export function CheckinPage() {
     endChapter !== startChapter ? `-${endChapter}` : ''
   }장`
   const startNum = parseChapter(startChapter)
+  const endNum = parseChapter(endChapter)
+  const spanCount =
+    startNum !== null && endNum !== null && endNum >= startNum ? endNum - startNum + 1 : null
+  const resumeAt = bookId ? resumeByBook[bookId] : null
+  const resumeHint =
+    resumeAt != null && resumeAt > (bookRanges[bookId]?.start ?? 1)
+      ? `이어서 읽기 · 지난번 다음인 ${resumeAt}장부터 자동 선택됨`
+      : null
 
   if (!project) {
     return (
@@ -293,6 +296,12 @@ export function CheckinPage() {
               )}
             </Select>
 
+            {resumeHint ? (
+              <p className="rounded-2xl bg-sky-soft px-3 py-2 text-xs font-medium text-sky-dark">
+                {resumeHint}
+              </p>
+            ) : null}
+
             <div className="grid grid-cols-2 gap-3">
               <ChapterPicker
                 label="시작 장"
@@ -311,21 +320,20 @@ export function CheckinPage() {
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted">빠른 선택 · 한 장만</p>
-              <ChapterQuickPicks
-                center={suggestedChapter}
-                min={activeRange.start}
-                max={activeRange.end}
-                selected={
-                  startNum !== null && startChapter === endChapter ? startNum : null
-                }
-                onPick={pickSingleChapter}
+              <p className="text-xs font-medium text-muted">
+                빠른 선택 · 시작 장부터 몇 장?
+              </p>
+              <ChapterSpanPicks
+                startChapter={startNum ?? activeRange.start}
+                maxChapter={activeRange.end}
+                selectedCount={spanCount}
+                onPick={pickChapterSpan}
               />
             </div>
 
             <p className="text-xs text-muted">
-              직접 숫자를 치거나 오른쪽 목록에서 {activeRange.start}–{activeRange.end}장을 고르세요.
-              여러 장을 읽었다면 종료 장만 늘리면 됩니다.
+              시작 장은 내가 읽은 다음 장으로 자동 선택됩니다. 빠른 선택의 「2장」은 시작 장부터
+              2장(예: 10→종료 11)입니다.
             </p>
           </Card>
 

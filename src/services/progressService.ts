@@ -146,24 +146,39 @@ export async function getPersonalProgress(
   bookName: string
   goalLabel: string
   readUpToLabel: string
-  byBook: ReturnType<typeof progressAgainstTargets>['byBook']
+  byBook: Array<
+    ReturnType<typeof progressAgainstTargets>['byBook'][number] & {
+      maxChapter: number
+      nextChapter: number
+    }
+  >
 }> {
   const targets = await getReadingTargets(projectId, classId)
   const logs = await listClassLogs(projectId, [userId])
   const prog = progressAgainstTargets(logs, targets)
 
-  // Exact "read up to" from max end_chapter per target book
-  const readParts = prog.byBook
+  // Exact "read up to" / resume chapter from max end_chapter per target book
+  const byBook = prog.byBook.map((b) => {
+    let maxCh = 0
+    for (const log of logs) {
+      if (log.book_id !== b.bookId) continue
+      const to = Math.min(log.end_chapter, b.endChapter)
+      if (to >= b.startChapter) maxCh = Math.max(maxCh, to)
+    }
+    const nextChapter =
+      maxCh === 0
+        ? b.startChapter
+        : maxCh >= b.endChapter
+          ? b.endChapter
+          : maxCh + 1
+    return { ...b, maxChapter: maxCh, nextChapter }
+  })
+
+  const readParts = byBook
     .map((b) => {
-      let maxCh = 0
-      for (const log of logs) {
-        if (log.book_id !== b.bookId) continue
-        const to = Math.min(log.end_chapter, b.endChapter)
-        if (to >= b.startChapter) maxCh = Math.max(maxCh, to)
-      }
-      if (maxCh === 0) return null
+      if (b.maxChapter === 0) return null
       if (b.covered >= b.target) return `${b.bookName} 완료`
-      return `${b.bookName} ${maxCh}장까지`
+      return `${b.bookName} ${b.maxChapter}장까지`
     })
     .filter((x): x is string => Boolean(x))
 
@@ -175,7 +190,7 @@ export async function getPersonalProgress(
     goalLabel: prog.goalLabel,
     readUpToLabel:
       readParts.length === 0 ? '아직 인증한 장이 없어요' : readParts.join(' · '),
-    byBook: prog.byBook,
+    byBook,
   }
 }
 
