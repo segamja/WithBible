@@ -60,13 +60,8 @@ export async function clearStaleAppCaches(): Promise<void> {
     )
   }
 
-  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-    tasks.push(
-      navigator.serviceWorker.getRegistrations().then((regs) =>
-        Promise.all(regs.map((reg) => reg.unregister())),
-      ),
-    )
-  }
+  // Keep service worker registration so the installed PWA stays available.
+  // Workbox autoUpdate picks up the new shell after reload.
 
   // In-memory / tab session leftovers (not auth tokens)
   try {

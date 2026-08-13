@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 
@@ -64,7 +65,70 @@ function appVersionPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), appVersionPlugin()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    appVersionPlugin(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: [
+        'favicon.svg',
+        'icons/app-icon.svg',
+        'icons/icon-192.png',
+        'icons/icon-512.png',
+        'icons/icon-512-maskable.png',
+        'icons/apple-touch-icon.png',
+      ],
+      manifest: {
+        name: 'with BIBLE',
+        short_name: 'with BIBLE',
+        description: '함께 읽는 말씀, 함께 자라는 우리',
+        lang: 'ko',
+        id: '/',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        orientation: 'portrait-primary',
+        background_color: '#FAF9F6',
+        theme_color: '#172033',
+        categories: ['education', 'lifestyle'],
+        icons: [
+          {
+            src: '/icons/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icons/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icons/icon-512-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        navigateFallback: '/index.html',
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
+        navigateFallbackDenylist: [/version\.json$/],
+        runtimeCaching: [
+          {
+            urlPattern: /\/version\.json$/i,
+            handler: 'NetworkOnly',
+          },
+        ],
+      },
+      devOptions: {
+        enabled: false,
+      },
+    }),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(rootDir, './src'),

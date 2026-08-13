@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="112" fill="#172033"/>
+  <!-- open book -->
+  <path
+    d="M96 150c48 28 96 28 160 0v232c-64 28-112 28-160 0V150zm320 0c-48 28-96 28-160 0v232c64 28 112 28 160 0V150z"
+    fill="#FAF9F6"
+  />
+  <path
+    d="M256 150v232"
+    stroke="#6FA58A"
+    stroke-width="18"
+    stroke-linecap="round"
+  />
+</svg>

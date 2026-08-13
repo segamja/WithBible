@@ -7,6 +7,7 @@ import {
   RoleGuard,
 } from '@/layouts/AppShell'
 import { VersionUpdateBanner } from '@/components/VersionUpdateBanner'
+import { InstallAppBanner } from '@/components/InstallAppBanner'
 import { useAuthStore } from '@/stores/authStore'
 import { LoginPage } from '@/pages/LoginPage'
 import { LogoutPage } from '@/pages/LogoutPage'
@@ -46,6 +47,7 @@ export default function App() {
   return (
     <>
       <VersionUpdateBanner />
+      <InstallAppBanner />
       <Routes>
       <Route path="/logout" element={<LogoutPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
