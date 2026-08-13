@@ -11,7 +11,7 @@ import { useProjectStore } from '@/stores/projectStore'
 import { createReadingLog } from '@/services/readingService'
 import { uploadCheckinPhoto } from '@/services/storageService'
 import { getPersonalProgress, getReadingTargets } from '@/services/progressService'
-import type { Visibility } from '@/types'
+import type { BibleBook, Visibility } from '@/types'
 
 export function CheckinPage() {
   const navigate = useNavigate()
@@ -27,6 +27,8 @@ export function CheckinPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  /** Only books set as project reading goals (설정) */
+  const [goalBooks, setGoalBooks] = useState<BibleBook[]>([])
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
 
@@ -39,24 +41,42 @@ export function CheckinPage() {
   }, [profile.class_id, loadForUser])
 
   useEffect(() => {
-    if (!project || bibleBooks.length === 0) return
+    if (!project) return
     const run = async () => {
+      const targets = await getReadingTargets(project.id, profile.class_id)
+      const books: BibleBook[] = targets.map((t) => {
+        const full = bibleBooks.find((b) => b.id === t.bookId)
+        return (
+          full ?? {
+            id: t.bookId,
+            name: t.bookName,
+            testament: 'NT',
+            chapter_count: t.endChapter,
+            sort_order: t.sortOrder,
+          }
+        )
+      })
+      setGoalBooks(books)
+
+      if (books.length === 0) {
+        setBookId('')
+        setError('관리자가 설정한 읽기 목표 성경이 없습니다. 설정에서 목표 책을 저장해주세요.')
+        return
+      }
+
       const personal = await getPersonalProgress(project.id, profile.id, profile.class_id)
       const nextBook = personal.byBook.find((b) => b.covered < b.target) ?? personal.byBook[0]
-      const targets = await getReadingTargets(project.id, profile.class_id)
       const preferred =
         nextBook?.bookId ??
         targets[0]?.bookId ??
-        myProjectClass?.target_book_id ??
-        bibleBooks[0]?.id ??
+        books[0]?.id ??
         ''
 
       setBookId((current) => {
-        if (current && bibleBooks.some((b) => b.id === current)) return current
-        return preferred && bibleBooks.some((b) => b.id === preferred)
-          ? preferred
-          : (bibleBooks[0]?.id ?? '')
+        if (current && books.some((b) => b.id === current)) return current
+        return preferred && books.some((b) => b.id === preferred) ? preferred : books[0].id
       })
+      setError(null)
 
       if (nextBook) {
         const next = Math.min(nextBook.covered + 1, nextBook.endChapter)
@@ -64,8 +84,8 @@ export function CheckinPage() {
         setEndChapter(String(next))
       }
     }
-    void run()
-  }, [project, profile.class_id, profile.id, bibleBooks, myProjectClass?.target_book_id])
+    void run().catch((e) => setError(e instanceof Error ? e.message : '목표 성경 로드 실패'))
+  }, [project, profile.class_id, profile.id, bibleBooks])
 
   useEffect(() => {
     return () => {
@@ -115,15 +135,9 @@ export function CheckinPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     const resolvedBookId =
-      (bookId && bibleBooks.some((b) => b.id === bookId) ? bookId : null) ??
-      (myProjectClass?.target_book_id &&
-      bibleBooks.some((b) => b.id === myProjectClass.target_book_id)
-        ? myProjectClass.target_book_id
-        : null) ??
-      bibleBooks[0]?.id ??
-      ''
+      (bookId && goalBooks.some((b) => b.id === bookId) ? bookId : null) ?? goalBooks[0]?.id ?? ''
     if (!resolvedBookId) {
-      setError('성경을 선택해주세요.')
+      setError('목표로 설정된 성경이 없습니다. 관리자 설정에서 읽기 목표를 저장해주세요.')
       return
     }
     if (resolvedBookId !== bookId) setBookId(resolvedBookId)
@@ -165,7 +179,7 @@ export function CheckinPage() {
   }
 
   const bookName =
-    bibleBooks.find((b) => b.id === bookId)?.name ??
+    goalBooks.find((b) => b.id === bookId)?.name ??
     myProjectClass?.bible_books?.name ??
     '복음서'
   const rangeLabel = `${bookName} ${startChapter}${
@@ -207,15 +221,20 @@ export function CheckinPage() {
             <div className="grid grid-cols-3 gap-2 pt-1">
               <Select
                 required
-                value={bookId || bibleBooks[0]?.id || ''}
+                value={bookId || goalBooks[0]?.id || ''}
                 onChange={(e) => setBookId(e.target.value)}
                 className="col-span-3"
+                disabled={goalBooks.length === 0}
               >
-                {bibleBooks.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
+                {goalBooks.length === 0 ? (
+                  <option value="">목표 성경 없음</option>
+                ) : (
+                  goalBooks.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))
+                )}
               </Select>
               <Input
                 type="text"
@@ -336,7 +355,12 @@ export function CheckinPage() {
           )}
 
           {error ? <p className="text-sm text-danger">{error}</p> : null}
-          <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={loading || goalBooks.length === 0}
+          >
             {loading ? '업로드 중…' : '말씀 인증하기'}
           </Button>
         </form>

@@ -286,8 +286,8 @@ export function AdminProjectsPage() {
         <Card className="space-y-3">
           <h2 className="font-semibold">읽기 목표 (성경 선택)</h2>
           <p className="text-sm text-muted">
-            구약·신약 66권 중 읽을 책을 고르세요. 선택한 책의 전체 장이 목표가 됩니다. (예: 4복음서 =
-            마태·마가·누가·요한)
+            활성 프로젝트는 <span className="font-medium text-navy">설정</span> 메뉴에서도 동일하게
+            저장할 수 있습니다. 선택한 책만 인증 목록·진행률 %에 사용됩니다.
           </p>
           <Select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}>
             {projects.map((p) => (
