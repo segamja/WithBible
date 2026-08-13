@@ -20,14 +20,28 @@ export function ClassesOverviewPage() {
 
   useEffect(() => {
     if (!project) return
-    void getAdminOverview(project.id)
-      .then((overview) => {
-        setClasses(
-          [...overview.classes].sort((a, b) => b.achievementRate - a.achievementRate),
-        )
-        setAvg(overview.avgAchievement)
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : '현황 로드 실패'))
+    let cancelled = false
+    const load = () => {
+      void getAdminOverview(project.id)
+        .then((overview) => {
+          if (cancelled) return
+          setClasses(
+            [...overview.classes].sort((a, b) => b.achievementRate - a.achievementRate),
+          )
+          setAvg(overview.avgAchievement)
+          setError(null)
+        })
+        .catch((e) => {
+          if (!cancelled) setError(e instanceof Error ? e.message : '현황 로드 실패')
+        })
+    }
+    load()
+    const onFocus = () => load()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      cancelled = true
+      window.removeEventListener('focus', onFocus)
+    }
   }, [project])
 
   return (

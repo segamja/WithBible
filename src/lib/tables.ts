@@ -4,6 +4,7 @@ export const Tables = {
   classes: 'wb_classes',
   projects: 'wb_projects',
   projectClasses: 'wb_project_classes',
+  projectTargets: 'wb_project_targets',
   bibleBooks: 'wb_bible_books',
   readingLogs: 'wb_reading_logs',
   encouragements: 'wb_encouragements',

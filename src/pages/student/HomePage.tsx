@@ -41,7 +41,14 @@ export function StudentHomePage() {
     todayCheckins: 0,
     participatedCount: 0,
   })
-  const [personal, setPersonal] = useState({ covered: 0, target: 0, rate: 0, bookName: '' })
+  const [personal, setPersonal] = useState({
+    covered: 0,
+    target: 0,
+    rate: 0,
+    bookName: '',
+    goalLabel: '',
+    readUpToLabel: '아직 인증한 장이 없어요',
+  })
   const [announcement, setAnnouncement] = useState<string | null>(null)
   const [feed, setFeed] = useState<ReadingLogWithMeta[]>([])
   const [myEnc, setMyEnc] = useState<Record<string, EncouragementType>>({})
@@ -68,17 +75,26 @@ export function StudentHomePage() {
         participatedCount: progress.participatedCount,
       })
       const me = await getPersonalProgress(project.id, profile.id, profile.class_id!)
-      setPersonal(me)
+      setPersonal({
+        covered: me.covered,
+        target: me.target,
+        rate: me.rate,
+        bookName: me.bookName,
+        goalLabel: me.goalLabel,
+        readUpToLabel: me.readUpToLabel,
+      })
 
-      const targetStart = myProjectClass?.target_start_chapter ?? 1
-      const targetEnd = myProjectClass?.target_end_chapter ?? (me.target || 1)
-      if (myProjectClass) {
+      const currentBook = me.byBook.find((b) => b.covered < b.target) ?? me.byBook[0]
+      if (currentBook) {
+        const nextChapter = Math.min(currentBook.covered + 1, currentBook.endChapter)
+        setTodayRange({ start: nextChapter, end: nextChapter })
+      } else if (myProjectClass) {
         setTodayRange(
           getTodayReadingRange({
             startDate: project.start_date,
             endDate: project.end_date,
-            targetStart,
-            targetEnd,
+            targetStart: myProjectClass.target_start_chapter,
+            targetEnd: myProjectClass.target_end_chapter,
           }),
         )
       }
@@ -106,8 +122,8 @@ export function StudentHomePage() {
     void run()
   }, [project, profile, myProjectClass])
 
-  const bookName = myProjectClass?.bible_books?.name ?? personal.bookName ?? '복음서'
-  const completed = rate >= 100
+  const bookName = personal.goalLabel || myProjectClass?.bible_books?.name || personal.bookName || '복음서'
+  const completed = personal.rate >= 100
   const days = project
     ? Math.max(
         1,
@@ -142,7 +158,7 @@ export function StudentHomePage() {
               <p className="font-display text-lg">{getDDayLabel(project.end_date)}</p>
             </div>
           </div>
-          <p className="text-sm text-white/75">{className} · 나의 진행 {personal.rate}%</p>
+          <p className="text-sm text-white/75">{className}</p>
           <Link to="/checkin" className="block">
             <Button variant="sage" className="w-full" size="lg">
               오늘 읽었어요 ✓
@@ -155,6 +171,25 @@ export function StudentHomePage() {
         </Card>
       )}
 
+      {project ? (
+        <Card className="space-y-3">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-sky-dark">나의 진행</p>
+              <h3 className="font-display mt-1 text-xl text-navy">
+                {personal.readUpToLabel}
+              </h3>
+              <p className="mt-1 text-xs text-muted">목표 · {personal.goalLabel || bookName}</p>
+            </div>
+            <p className="font-display text-3xl text-sage-dark">{personal.rate}%</p>
+          </div>
+          <ProgressBar value={personal.rate} />
+          <p className="text-sm text-muted">
+            목표 대비 {personal.covered} / {personal.target}장 달성
+          </p>
+        </Card>
+      ) : null}
+
       {completed && project ? (
         <CompletionBanner bookName={bookName} friendCount={feed.length} days={days} />
       ) : null}
@@ -163,7 +198,7 @@ export function StudentHomePage() {
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-sky-dark">우리 반 복음서 여행</p>
-            <h3 className="font-display mt-1 text-xl text-navy">{bookName} 완독까지</h3>
+            <h3 className="font-display mt-1 text-xl text-navy">우리 반 진행</h3>
           </div>
           <p className="font-display text-3xl text-sage-dark">{rate}%</p>
         </div>

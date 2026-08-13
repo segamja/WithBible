@@ -1,12 +1,77 @@
 import { supabase } from '@/lib/supabase'
 import { Tables } from '@/lib/tables'
-import type { BibleBook, Project, ProjectClass, ProjectStatus } from '@/types'
+import type { BibleBook, Project, ProjectClass, ProjectStatus, ProjectTarget } from '@/types'
 import { isUuid, requireUuid } from '@/utils/uuid'
 
 export async function listBibleBooks(): Promise<BibleBook[]> {
+  const ordered = await supabase
+    .from(Tables.bibleBooks)
+    .select('*')
+    .order('sort_order', { ascending: true })
+  if (!ordered.error) return (ordered.data ?? []) as BibleBook[]
+
+  // sort_order column may not exist until migration 013
   const { data, error } = await supabase.from(Tables.bibleBooks).select('*').order('name')
   if (error) throw new Error(error.message)
   return (data ?? []) as BibleBook[]
+}
+
+export async function listProjectTargets(
+  projectId: string,
+): Promise<(ProjectTarget & { bible_books?: BibleBook })[]> {
+  if (!isUuid(projectId)) return []
+  const { data, error } = await supabase
+    .from(Tables.projectTargets)
+    .select('*, bible_books:wb_bible_books(*)')
+    .eq('project_id', projectId)
+    .order('sort_order', { ascending: true })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as (ProjectTarget & { bible_books?: BibleBook })[]
+}
+
+/** Replace project reading targets (multi-book). Also links all active classes. */
+export async function replaceProjectTargets(
+  projectId: string,
+  targets: { bookId: string; startChapter: number; endChapter: number; sortOrder: number }[],
+): Promise<void> {
+  const pid = requireUuid(projectId, 'projectId')
+  const { error: delErr } = await supabase.from(Tables.projectTargets).delete().eq('project_id', pid)
+  if (delErr) throw new Error(delErr.message)
+
+  if (targets.length > 0) {
+    const { error: insErr } = await supabase.from(Tables.projectTargets).insert(
+      targets.map((t) => ({
+        project_id: pid,
+        book_id: requireUuid(t.bookId, 'bookId'),
+        start_chapter: t.startChapter,
+        end_chapter: t.endChapter,
+        sort_order: t.sortOrder,
+      })),
+    )
+    if (insErr) throw new Error(insErr.message)
+  }
+
+  // Keep project_classes in sync so every active class is enrolled (legacy fields = first book)
+  const { data: classes, error: classErr } = await supabase.from(Tables.classes).select('id, is_active')
+  if (classErr) throw new Error(classErr.message)
+
+  const first = targets[0]
+  const activeClasses = (classes ?? []).filter((c) => c.is_active !== false)
+  if (!first || activeClasses.length === 0) return
+
+  for (const cls of activeClasses) {
+    const { error: upErr } = await supabase.from(Tables.projectClasses).upsert(
+      {
+        project_id: pid,
+        class_id: cls.id,
+        target_book_id: first.bookId,
+        target_start_chapter: first.startChapter,
+        target_end_chapter: first.endChapter,
+      },
+      { onConflict: 'project_id,class_id' },
+    )
+    if (upErr) throw new Error(upErr.message)
+  }
 }
 
 export async function listProjects(): Promise<Project[]> {

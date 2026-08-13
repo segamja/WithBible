@@ -64,18 +64,19 @@ export default function App() {
       <Route element={<AppShell />}>
         <Route element={<RoleGuard allow={['STUDENT']} />}>
           <Route path="/" element={<StudentHomePage />} />
-          <Route path="/class" element={<ClassPage />} />
         </Route>
 
         <Route element={<RoleGuard allow={['STUDENT', 'TEACHER', 'ADMIN']} />}>
           <Route path="/checkin" element={<CheckinPage />} />
           <Route path="/feed" element={<FeedPage scope="all" />} />
+          <Route path="/class" element={<ClassPage />} />
+          <Route path="/progress" element={<ClassesOverviewPage />} />
         </Route>
 
         <Route element={<RoleGuard allow={['TEACHER']} />}>
           <Route path="/teacher" element={<TeacherDashboardPage />} />
-          <Route path="/teacher/class" element={<ClassPage />} />
-          <Route path="/teacher/feed" element={<FeedPage scope="all" />} />
+          <Route path="/teacher/class" element={<Navigate to="/class" replace />} />
+          <Route path="/teacher/feed" element={<Navigate to="/feed" replace />} />
           <Route path="/teacher/announce" element={<TeacherAnnouncePage />} />
         </Route>
 
@@ -85,12 +86,6 @@ export default function App() {
           <Route path="/admin/projects" element={<AdminProjectsPage />} />
           <Route path="/admin/classes" element={<AdminClassesPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
-        </Route>
-
-        <Route
-          element={<RoleGuard allow={['STUDENT', 'TEACHER', 'ADMIN']} />}
-        >
-          <Route path="/progress" element={<ClassesOverviewPage />} />
         </Route>
 
         <Route path="/me" element={<MePage />} />

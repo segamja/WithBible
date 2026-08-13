@@ -160,15 +160,24 @@ export function AdminClassesPage() {
 
   return (
     <div className="space-y-4 px-5 py-8">
-      <h1 className="font-display text-3xl text-brand-900">반 관리</h1>
+      <div>
+        <Link to="/admin" className="text-sm font-medium text-brand-700">
+          ← 현황
+        </Link>
+        <div className="mt-1 flex items-end justify-between gap-3">
+          <h1 className="font-display text-3xl text-brand-900">반 관리</h1>
+          <Link
+            to="/admin/users"
+            className="shrink-0 pb-1 text-sm font-medium text-navy underline-offset-2 hover:underline"
+          >
+            사용자·역할
+          </Link>
+        </div>
+      </div>
       <p className="text-sm text-muted">
         반은 <span className="font-medium text-navy">학생 코드</span>와{' '}
         <span className="font-medium text-navy">교사 코드</span>가 따로 있습니다. 임원은 아래 임원
-        코드를 쓰고, 수동 배정은{' '}
-        <Link to="/admin/users" className="font-medium text-navy underline-offset-2 hover:underline">
-          사용자 관리
-        </Link>
-        에서도 가능합니다.
+        코드를 쓰고, 수동 배정은 사용자·역할에서도 가능합니다.
       </p>
 
       <Card className="space-y-2 border-sage/30 bg-sage/5 text-sm">
@@ -418,13 +427,23 @@ export function AdminUsersPage() {
 
   return (
     <div className="space-y-4 px-5 py-8">
-      <h1 className="font-display text-3xl text-brand-900">사용자</h1>
-      <p className="text-sm text-muted">
-        역할·반을 바꾸면 바로 저장됩니다. 담임 배정은{' '}
-        <Link to="/admin/classes" className="font-medium text-navy underline-offset-2 hover:underline">
-          반 관리
+      <div>
+        <Link to="/admin" className="text-sm font-medium text-brand-700">
+          ← 현황
         </Link>
-        에서도 「담당 교사 저장」으로 할 수 있어요.
+        <div className="mt-1 flex items-end justify-between gap-3">
+          <h1 className="font-display text-3xl text-brand-900">사용자</h1>
+          <Link
+            to="/admin/classes"
+            className="shrink-0 pb-1 text-sm font-medium text-navy underline-offset-2 hover:underline"
+          >
+            반·임원 코드
+          </Link>
+        </div>
+      </div>
+      <p className="text-sm text-muted">
+        역할·반을 바꾸면 바로 저장됩니다. 담임 배정은 반·임원 코드에서도 「담당 교사 저장」으로 할 수
+        있어요.
       </p>
       {error ? <p className="text-sm text-danger">{error}</p> : null}
 

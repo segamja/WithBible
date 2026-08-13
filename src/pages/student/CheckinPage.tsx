@@ -10,9 +10,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { createReadingLog } from '@/services/readingService'
 import { uploadCheckinPhoto } from '@/services/storageService'
-import { getPersonalProgress } from '@/services/progressService'
+import { getPersonalProgress, getReadingTargets } from '@/services/progressService'
 import type { Visibility } from '@/types'
-import { getTodayReadingRange } from '@/utils/schedule'
 
 export function CheckinPage() {
   const navigate = useNavigate()
@@ -41,39 +40,35 @@ export function CheckinPage() {
     void loadForUser(profile.class_id)
   }, [profile.class_id, loadForUser])
 
-  // Keep bookId in sync with loaded books (Select can look selected while value is still "").
+  // Prefer unfinished target book (project multi-book goals), then legacy class target.
   useEffect(() => {
-    if (bibleBooks.length === 0) return
-    setBookId((current) => {
-      if (current && bibleBooks.some((b) => b.id === current)) return current
-      const preferred = myProjectClass?.target_book_id
-      if (preferred && bibleBooks.some((b) => b.id === preferred)) return preferred
-      return bibleBooks[0]?.id ?? ''
-    })
-  }, [bibleBooks, myProjectClass?.target_book_id])
-
-  useEffect(() => {
-    if (!project) return
-    if (myProjectClass) {
-      const range = getTodayReadingRange({
-        startDate: project.start_date,
-        endDate: project.end_date,
-        targetStart: myProjectClass.target_start_chapter,
-        targetEnd: myProjectClass.target_end_chapter,
-      })
-      setStartChapter(String(range.start))
-      setEndChapter(String(range.end))
-      return
-    }
-    if (!profile.class_id) return
+    if (!project || bibleBooks.length === 0) return
     const run = async () => {
-      const personal = await getPersonalProgress(project.id, profile.id, profile.class_id!)
-      const next = Math.min(personal.covered + 1, personal.target || 1)
-      setStartChapter(String(next))
-      setEndChapter(String(next))
+      const personal = await getPersonalProgress(project.id, profile.id, profile.class_id)
+      const nextBook = personal.byBook.find((b) => b.covered < b.target) ?? personal.byBook[0]
+      const targets = await getReadingTargets(project.id, profile.class_id)
+      const preferred =
+        nextBook?.bookId ??
+        targets[0]?.bookId ??
+        myProjectClass?.target_book_id ??
+        bibleBooks[0]?.id ??
+        ''
+
+      setBookId((current) => {
+        if (current && bibleBooks.some((b) => b.id === current)) return current
+        return preferred && bibleBooks.some((b) => b.id === preferred)
+          ? preferred
+          : (bibleBooks[0]?.id ?? '')
+      })
+
+      if (nextBook) {
+        const next = Math.min(nextBook.covered + 1, nextBook.endChapter)
+        setStartChapter(String(next))
+        setEndChapter(String(next))
+      }
     }
     void run()
-  }, [project, profile.class_id, profile.id, myProjectClass])
+  }, [project, profile.class_id, profile.id, bibleBooks, myProjectClass?.target_book_id])
 
   useEffect(() => {
     return () => {
@@ -165,7 +160,7 @@ export function CheckinPage() {
         imageUrl,
       })
       setDone(true)
-      setTimeout(() => navigate('/feed'), 900)
+      setTimeout(() => navigate('/me'), 900)
     } catch (err) {
       setError(err instanceof Error ? err.message : '인증 실패')
     } finally {

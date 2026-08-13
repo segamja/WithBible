@@ -6,7 +6,7 @@ import {
   Megaphone,
   Users,
   UserRound,
-  Newspaper,
+  ChartColumn,
   SlidersHorizontal,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
@@ -18,27 +18,28 @@ interface NavItem {
   icon: typeof Home
 }
 
+/** Shared tabs (home differs by role). Feed is reachable from home. */
 const studentNav: NavItem[] = [
   { to: '/', label: '홈', icon: Home },
   { to: '/checkin', label: '인증', icon: BookOpen },
   { to: '/class', label: '우리반', icon: Users },
-  { to: '/feed', label: '피드', icon: Newspaper },
+  { to: '/progress', label: '현황', icon: ChartColumn },
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
 const teacherWithClassNav: NavItem[] = [
   { to: '/teacher', label: '홈', icon: LayoutDashboard },
   { to: '/checkin', label: '인증', icon: BookOpen },
-  { to: '/teacher/class', label: '우리반', icon: Users },
-  { to: '/feed', label: '피드', icon: Newspaper },
+  { to: '/class', label: '우리반', icon: Users },
+  { to: '/progress', label: '현황', icon: ChartColumn },
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
-/** 임원 선생님: 반 없음 → 현황/우리반 대신 공지 */
+/** 임원 선생님: 반 없음 → 우리반 대신 공지 */
 const teacherStaffNav: NavItem[] = [
   { to: '/teacher', label: '홈', icon: Home },
   { to: '/checkin', label: '인증', icon: BookOpen },
-  { to: '/feed', label: '피드', icon: Newspaper },
+  { to: '/progress', label: '현황', icon: ChartColumn },
   { to: '/teacher/announce', label: '공지', icon: Megaphone },
   { to: '/me', label: '마이', icon: UserRound },
 ]
@@ -46,7 +47,7 @@ const teacherStaffNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { to: '/admin', label: '현황', icon: LayoutDashboard },
   { to: '/checkin', label: '인증', icon: BookOpen },
-  { to: '/feed', label: '피드', icon: Newspaper },
+  { to: '/progress', label: '반현황', icon: ChartColumn },
   { to: '/admin/settings', label: '설정', icon: SlidersHorizontal },
   { to: '/me', label: '마이', icon: UserRound },
 ]
@@ -73,9 +74,17 @@ export function BottomNav({
           const Icon = item.icon
           const end =
             item.to === '/' || item.to === '/teacher' || item.to === '/admin'
-          const active = end
-            ? location.pathname === item.to
-            : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
+          const adminHubActive =
+            item.to === '/admin' &&
+            (location.pathname === '/admin' ||
+              location.pathname === '/admin/classes' ||
+              location.pathname === '/admin/users' ||
+              location.pathname === '/admin/projects')
+          const active = adminHubActive
+            ? true
+            : end
+              ? location.pathname === item.to
+              : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
           return (
             <li key={item.to} className="flex-1">
               <NavLink

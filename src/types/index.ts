@@ -62,6 +62,19 @@ export interface BibleBook {
   name: string
   testament: string
   chapter_count: number
+  sort_order?: number
+}
+
+/** Project-wide reading goal (one or more books) */
+export interface ProjectTarget {
+  id: string
+  project_id: string
+  book_id: string
+  start_chapter: number
+  end_chapter: number
+  sort_order: number
+  created_at?: string
+  bible_books?: Pick<BibleBook, 'id' | 'name' | 'chapter_count' | 'sort_order' | 'testament'>
 }
 
 export interface ReadingLog {

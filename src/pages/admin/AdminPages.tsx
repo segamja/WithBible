@@ -11,12 +11,12 @@ import { useProjectStore } from '@/stores/projectStore'
 import {
   createProject,
   listProjects,
-  listProjectClasses,
+  listProjectTargets,
+  replaceProjectTargets,
   updateProject,
-  upsertProjectClass,
 } from '@/services/projectService'
 import { getAdminOverview } from '@/services/progressService'
-import type { Project } from '@/types'
+import type { BibleBook, Project } from '@/types'
 import { getDDayLabel } from '@/utils/dday'
 
 export function AdminDashboardPage() {
@@ -136,7 +136,7 @@ export function AdminDashboardPage() {
 }
 
 export function AdminProjectsPage() {
-  const { bibleBooks, classes, loadForUser } = useProjectStore()
+  const { bibleBooks, loadForUser } = useProjectStore()
   const profile = useAuthStore((s) => s.profile)!
   const [projects, setProjects] = useState<Project[]>([])
   const [title, setTitle] = useState('우리 반 복음서 완독 프로젝트')
@@ -148,10 +148,9 @@ export function AdminProjectsPage() {
   const [partyPlace, setPartyPlace] = useState('')
   const [partyNote, setPartyNote] = useState('')
   const [selectedProject, setSelectedProject] = useState('')
-  const [classId, setClassId] = useState('')
-  const [bookId, setBookId] = useState('')
-  const [startChapter, setStartChapter] = useState(1)
-  const [endChapter, setEndChapter] = useState(28)
+  const [selectedBookIds, setSelectedBookIds] = useState<Set<string>>(new Set())
+  const [targetRefresh, setTargetRefresh] = useState(0)
+  const [savingTargets, setSavingTargets] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -161,13 +160,34 @@ export function AdminProjectsPage() {
   }, [loadForUser, profile.class_id])
 
   useEffect(() => {
-    if (classes[0] && !classId) setClassId(classes[0].id)
-    if (bibleBooks[0] && !bookId) {
-      setBookId(bibleBooks[0].id)
-      setEndChapter(bibleBooks[0].chapter_count)
-    }
     if (projects[0] && !selectedProject) setSelectedProject(projects[0].id)
-  }, [classes, bibleBooks, projects, classId, bookId, selectedProject])
+  }, [projects, selectedProject])
+
+  useEffect(() => {
+    if (!selectedProject) return
+    void listProjectTargets(selectedProject).then((rows) => {
+      setSelectedBookIds(new Set(rows.map((r) => r.book_id)))
+    })
+  }, [selectedProject, targetRefresh])
+
+  const otBooks = bibleBooks.filter((b) => b.testament === 'OT')
+  const ntBooks = bibleBooks.filter((b) => b.testament === 'NT')
+
+  const toggleBook = (id: string) => {
+    setSelectedBookIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectGospels = () => {
+    const ids = bibleBooks
+      .filter((b) => ['마태복음', '마가복음', '누가복음', '요한복음'].includes(b.name))
+      .map((b) => b.id)
+    setSelectedBookIds(new Set(ids))
+  }
 
   const create = async (e: FormEvent) => {
     e.preventDefault()
@@ -192,20 +212,34 @@ export function AdminProjectsPage() {
     }
   }
 
-  const saveTarget = async (e: FormEvent) => {
+  const saveTargets = async (e: FormEvent) => {
     e.preventDefault()
+    if (!selectedProject) return
+    setSavingTargets(true)
     setError(null)
     try {
-      await upsertProjectClass({
-        projectId: selectedProject,
-        classId,
-        targetBookId: bookId,
-        targetStartChapter: Number(startChapter),
-        targetEndChapter: Number(endChapter),
-      })
-      setMessage('반 목표가 저장되었습니다.')
+      const books = bibleBooks
+        .filter((b) => selectedBookIds.has(b.id))
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      await replaceProjectTargets(
+        selectedProject,
+        books.map((b) => ({
+          bookId: b.id,
+          startChapter: 1,
+          endChapter: b.chapter_count,
+          sortOrder: b.sort_order ?? 0,
+        })),
+      )
+      setTargetRefresh((n) => n + 1)
+      setMessage(
+        books.length === 0
+          ? '읽기 목표를 비웠습니다.'
+          : `읽기 목표 ${books.length}권을 저장했습니다. (전체 ${books.reduce((s, b) => s + b.chapter_count, 0)}장)`,
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : '목표 저장 실패')
+    } finally {
+      setSavingTargets(false)
     }
   }
 
@@ -248,9 +282,13 @@ export function AdminProjectsPage() {
         </Card>
       </form>
 
-      <form onSubmit={saveTarget} className="space-y-3">
+      <form onSubmit={saveTargets} className="space-y-3">
         <Card className="space-y-3">
-          <h2 className="font-semibold">반별 목표 설정</h2>
+          <h2 className="font-semibold">읽기 목표 (성경 선택)</h2>
+          <p className="text-sm text-muted">
+            구약·신약 66권 중 읽을 책을 고르세요. 선택한 책의 전체 장이 목표가 됩니다. (예: 4복음서 =
+            마태·마가·누가·요한)
+          </p>
           <Select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
@@ -258,43 +296,32 @@ export function AdminProjectsPage() {
               </option>
             ))}
           </Select>
-          <Select value={classId} onChange={(e) => setClassId(e.target.value)}>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-          <Select
-            value={bookId}
-            onChange={(e) => {
-              setBookId(e.target.value)
-              const book = bibleBooks.find((b) => b.id === e.target.value)
-              if (book) setEndChapter(book.chapter_count)
-            }}
-          >
-            {bibleBooks.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </Select>
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              type="number"
-              min={1}
-              value={startChapter}
-              onChange={(e) => setStartChapter(Number(e.target.value))}
-            />
-            <Input
-              type="number"
-              min={1}
-              value={endChapter}
-              onChange={(e) => setEndChapter(Number(e.target.value))}
-            />
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={selectGospels}>
+              4복음서 선택
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedBookIds(new Set(ntBooks.map((b) => b.id)))}
+            >
+              신약 전체
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedBookIds(new Set())}
+            >
+              선택 해제
+            </Button>
           </div>
-          <Button type="submit" variant="secondary" className="w-full">
-            목표 저장
+          <BookPickSection title="신약" books={ntBooks} selected={selectedBookIds} onToggle={toggleBook} />
+          <BookPickSection title="구약" books={otBooks} selected={selectedBookIds} onToggle={toggleBook} />
+          <p className="text-sm text-muted">선택 {selectedBookIds.size}권</p>
+          <Button type="submit" variant="secondary" className="w-full" disabled={savingTargets}>
+            {savingTargets ? '저장 중…' : '읽기 목표 저장'}
           </Button>
         </Card>
       </form>
@@ -325,31 +352,73 @@ export function AdminProjectsPage() {
       {message ? <p className="text-sm text-brand-700">{message}</p> : null}
       {error ? <p className="text-sm text-danger">{error}</p> : null}
 
-      {selectedProject ? (
-        <ProjectTargets projectId={selectedProject} />
-      ) : null}
+      {selectedProject ? <SavedProjectTargets projectId={selectedProject} refresh={targetRefresh} /> : null}
     </div>
   )
 }
 
-function ProjectTargets({ projectId }: { projectId: string }) {
-  const [rows, setRows] = useState<
-    Awaited<ReturnType<typeof listProjectClasses>>
-  >([])
+function BookPickSection({
+  title,
+  books,
+  selected,
+  onToggle,
+}: {
+  title: string
+  books: BibleBook[]
+  selected: Set<string>
+  onToggle: (id: string) => void
+}) {
+  if (books.length === 0) return null
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-semibold text-navy">{title}</p>
+      <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-line/70 p-2">
+        {books.map((b) => (
+          <label
+            key={b.id}
+            className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-brand-50"
+          >
+            <input
+              type="checkbox"
+              checked={selected.has(b.id)}
+              onChange={() => onToggle(b.id)}
+              className="accent-navy"
+            />
+            <span className="flex-1">{b.name}</span>
+            <span className="text-xs text-muted">{b.chapter_count}장</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SavedProjectTargets({ projectId, refresh }: { projectId: string; refresh: number }) {
+  const [rows, setRows] = useState<Awaited<ReturnType<typeof listProjectTargets>>>([])
 
   useEffect(() => {
-    void listProjectClasses(projectId).then(setRows)
-  }, [projectId])
+    void listProjectTargets(projectId).then(setRows)
+  }, [projectId, refresh])
 
-  if (rows.length === 0) return null
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <p className="text-sm text-muted">저장된 읽기 목표가 없습니다. 위에서 책을 선택해 저장하세요.</p>
+      </Card>
+    )
+  }
+
+  const total = rows.reduce((s, r) => s + (r.end_chapter - r.start_chapter + 1), 0)
   return (
     <Card>
-      <h2 className="font-semibold">저장된 반 목표</h2>
+      <h2 className="font-semibold">저장된 읽기 목표</h2>
+      <p className="mt-1 text-xs text-muted">
+        {rows.length}권 · 총 {total}장
+      </p>
       <div className="mt-2 space-y-2 text-sm">
         {rows.map((r) => (
           <p key={r.id}>
-            {r.classes?.name} · {r.bible_books?.name} {r.target_start_chapter}~
-            {r.target_end_chapter}장
+            {r.bible_books?.name} {r.start_chapter}~{r.end_chapter}장
           </p>
         ))}
       </div>

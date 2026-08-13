@@ -1,12 +1,14 @@
 -- Seed data for With Bible MVP (wb_* tables)
 -- Run after 001_schema.sql and 002_rls.sql
 
-insert into public.wb_bible_books (id, name, testament, chapter_count) values
-  ('11111111-1111-1111-1111-111111111101', '마태복음', 'NT', 28),
-  ('11111111-1111-1111-1111-111111111102', '마가복음', 'NT', 16),
-  ('11111111-1111-1111-1111-111111111103', '누가복음', 'NT', 24),
-  ('11111111-1111-1111-1111-111111111104', '요한복음', 'NT', 21)
-on conflict (name) do nothing;
+-- Full 66-book seed lives in migration 013. Gospels kept here for quick local bootstrap.
+insert into public.wb_bible_books (id, name, testament, chapter_count, sort_order) values
+  ('11111111-1111-1111-1111-111111111101', '마태복음', 'NT', 28, 40),
+  ('11111111-1111-1111-1111-111111111102', '마가복음', 'NT', 16, 41),
+  ('11111111-1111-1111-1111-111111111103', '누가복음', 'NT', 24, 42),
+  ('11111111-1111-1111-1111-111111111104', '요한복음', 'NT', 21, 43)
+on conflict (name) do update
+set chapter_count = excluded.chapter_count, sort_order = excluded.sort_order;
 
 insert into public.wb_classes (id, name, join_code, teacher_join_code) values
   ('22222222-2222-2222-2222-222222222201', '1반', 'BIBLE26-1', 'T-BIBLE26-1'),

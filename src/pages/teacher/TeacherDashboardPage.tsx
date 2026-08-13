@@ -37,7 +37,8 @@ function StaffTeacherHome({
         <h1 className="font-display mt-1 text-3xl text-navy">함께 읽는 말씀</h1>
         {projectEnd ? <p className="mt-2 text-muted">{getDDayLabel(projectEnd)}</p> : null}
         <p className="mt-2 text-sm text-muted">
-          반에 소속되지 않아도 학생과 같이 읽고 인증할 수 있어요. 반별 현황은 담임 선생님 화면입니다.
+          반에 소속되지 않아도 학생과 같이 읽고 인증할 수 있어요. 하단 «현황»에서 반별 진행을 볼 수
+          있습니다.
         </p>
       </div>
 
@@ -194,6 +195,19 @@ export function TeacherDashboardPage() {
           )}
         </div>
       </Card>
+
+      <div className="flex gap-2">
+        <Link to="/class" className="flex-1">
+          <Button className="w-full" variant="outline">
+            우리반
+          </Button>
+        </Link>
+        <Link to="/progress" className="flex-1">
+          <Button className="w-full" variant="outline">
+            반별 현황
+          </Button>
+        </Link>
+      </div>
 
       <div className="flex gap-2">
         <Link to="/teacher/announce" className="flex-1">

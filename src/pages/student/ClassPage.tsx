@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { ProgressBar } from '@/components/ui/ProgressBar'
+import { Button } from '@/components/ui/Button'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { getClassById } from '@/services/classService'
@@ -12,7 +13,7 @@ import { getDDayLabel } from '@/utils/dday'
 
 export function ClassPage() {
   const profile = useAuthStore((s) => s.profile)!
-  const { project, loadForUser, myProjectClass } = useProjectStore()
+  const { project, loadForUser } = useProjectStore()
   const [className, setClassName] = useState('우리 반')
   const [progress, setProgress] = useState({
     achievementRate: 0,
@@ -21,12 +22,14 @@ export function ClassPage() {
     todayCheckins: 0,
     weekCheckins: 0,
   })
-  const [personal, setPersonal] = useState({ covered: 0, target: 0, rate: 0, bookName: '' })
+  const [personal, setPersonal] = useState({
+    covered: 0,
+    target: 0,
+    rate: 0,
+    goalLabel: '',
+    byBook: [] as Awaited<ReturnType<typeof getPersonalProgress>>['byBook'],
+  })
   const [anns, setAnns] = useState<{ content: string; author?: string }[]>([])
-
-  if (!profile.class_id) {
-    return <Navigate to={roleHome(profile.role)} replace />
-  }
 
   useEffect(() => {
     void loadForUser(profile.class_id)
@@ -45,7 +48,14 @@ export function ClassPage() {
         todayCheckins: p.todayCheckins,
         weekCheckins: p.weekCheckins,
       })
-      setPersonal(await getPersonalProgress(project.id, profile.id, profile.class_id!))
+      const me = await getPersonalProgress(project.id, profile.id, profile.class_id)
+      setPersonal({
+        covered: me.covered,
+        target: me.target,
+        rate: me.rate,
+        goalLabel: me.goalLabel,
+        byBook: me.byBook,
+      })
       const list = await listAnnouncements({
         projectId: project.id,
         classId: profile.class_id,
@@ -60,6 +70,10 @@ export function ClassPage() {
     void run()
   }, [project, profile])
 
+  if (!profile.class_id) {
+    return <Navigate to={roleHome(profile.role)} replace />
+  }
+
   return (
     <div className="space-y-4 px-5 pb-8 pt-7">
       <div>
@@ -71,22 +85,32 @@ export function ClassPage() {
       </div>
 
       <Card className="border-none bg-navy text-white">
-        <p className="text-sm text-white/70">현재 진행률</p>
+        <p className="text-sm text-white/70">우리 반 진행률</p>
         <p className="font-display text-5xl">{progress.achievementRate}%</p>
         <ProgressBar value={progress.achievementRate} className="mt-3 bg-white/15" />
-        <p className="mt-3 text-sm text-white/70">
-          {myProjectClass?.bible_books?.name ?? personal.bookName}{' '}
-          {myProjectClass?.target_start_chapter ?? 1}~
-          {myProjectClass?.target_end_chapter ?? personal.target}장
-        </p>
+        <p className="mt-3 text-sm text-white/70">{personal.goalLabel || '목표 미설정'}</p>
       </Card>
 
       <Card>
         <h2 className="font-semibold text-navy">나의 진행률</h2>
-        <p className="mt-2 text-2xl font-display text-sage-dark">
+        <p className="mt-2 font-display text-2xl text-sage-dark">
           {personal.covered} / {personal.target}장 · {personal.rate}%
         </p>
         <ProgressBar value={personal.rate} className="mt-3" />
+        {personal.byBook.length > 1 ? (
+          <div className="mt-3 space-y-2 text-sm">
+            {personal.byBook.map((b) => (
+              <div key={b.bookId} className="flex justify-between gap-2 border-b border-line/60 py-1 last:border-0">
+                <span>
+                  {b.bookName} {b.startChapter}~{b.endChapter}장
+                </span>
+                <span className="font-medium text-navy">
+                  {b.covered}/{b.target} · {b.rate}%
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </Card>
 
       <Card className="grid grid-cols-2 gap-3 text-sm">
@@ -107,6 +131,12 @@ export function ClassPage() {
           <p className="text-xl font-semibold">{progress.participationRate}%</p>
         </div>
       </Card>
+
+      <Link to="/progress">
+        <Button variant="outline" className="w-full">
+          전체 반별 현황 보기
+        </Button>
+      </Link>
 
       <div className="space-y-3">
         <h2 className="font-semibold">공지</h2>
