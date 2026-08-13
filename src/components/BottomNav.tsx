@@ -8,7 +8,6 @@ import {
   UserRound,
   Award,
   Newspaper,
-  Settings2,
   ChartColumn,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
@@ -48,8 +47,8 @@ const teacherStaffNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { to: '/admin', label: '현황', icon: LayoutDashboard },
   { to: '/checkin', label: '인증', icon: Award },
+  { to: '/feed', label: '피드', icon: Newspaper },
   { to: '/progress', label: '반현황', icon: ChartColumn },
-  { to: '/admin/settings', label: '설정', icon: Settings2 },
   { to: '/me', label: '마이', icon: UserRound },
 ]
 

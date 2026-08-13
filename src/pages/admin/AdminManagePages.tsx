@@ -234,12 +234,12 @@ export function AdminClassesPage() {
                 !prev || prev.startsWith('T-') ? (v ? `T-${v}` : '') : prev,
               )
             }}
-            placeholder="학생 가입 코드 (예: BIBLE26-2)"
+            placeholder="학생 가입 코드 (예: WB-2-1)"
           />
           <Input
             value={teacherJoinCode}
             onChange={(e) => setTeacherJoinCode(e.target.value.toUpperCase())}
-            placeholder="교사 코드 (비우면 T-학생코드)"
+            placeholder="교사 코드 (비우면 T-WB-학년-반)"
           />
           <Button type="submit" className="w-full">
             반 생성
@@ -339,7 +339,7 @@ export function AdminClassesPage() {
                       required
                       value={editJoinCode}
                       onChange={(e) => setEditJoinCode(e.target.value.toUpperCase())}
-                      placeholder="예: BIBLE26-2"
+                      placeholder="예: WB-2-1"
                       className="font-semibold tracking-wide"
                       autoCapitalize="characters"
                     />
@@ -350,7 +350,7 @@ export function AdminClassesPage() {
                       required
                       value={editTeacherJoinCode}
                       onChange={(e) => setEditTeacherJoinCode(e.target.value.toUpperCase())}
-                      placeholder="예: T-BIBLE26-2"
+                      placeholder="예: T-WB-2-1"
                       className="font-semibold tracking-wide"
                       autoCapitalize="characters"
                     />

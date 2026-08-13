@@ -100,14 +100,14 @@ export function ClassOnboardingPage() {
             <Input
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              placeholder="BIBLE26-2 또는 T-BIBLE26-2 또는 STAFF26"
+              placeholder="WB-학년-반 또는 T-WB-학년-반 또는 STAFF26"
               autoComplete="off"
               autoCapitalize="characters"
               spellCheck={false}
               className="font-semibold tracking-wide"
             />
             <p className="mt-1 text-xs text-muted">
-              학생 코드 · 담임 교사 코드(T-…) · 임원 코드는 각각 다릅니다.
+              예: 학생 WB-2-1 · 담임 T-WB-2-1 · 임원 STAFF26
             </p>
           </div>
           <div>

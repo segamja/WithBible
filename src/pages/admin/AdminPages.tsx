@@ -64,10 +64,15 @@ export function AdminDashboardPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <Link to="/checkin">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Link to="/feed">
           <Button className="w-full" variant="sage" size="sm">
-            인증
+            피드
+          </Button>
+        </Link>
+        <Link to="/admin/settings">
+          <Button className="w-full" variant="outline" size="sm">
+            설정
           </Button>
         </Link>
         <Link to="/admin/classes">

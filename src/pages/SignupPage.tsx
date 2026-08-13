@@ -41,8 +41,11 @@ export function SignupPage() {
       <p className="caption-caps">with BIBLE</p>
       <h1 className="page-title mt-1">회원가입</h1>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        학생 코드 / 담임 교사 코드(T-…) / 임원 코드(STAFF26) 중 하나를 입력하세요. 코드 종류에 따라
-        권한이 정해집니다.
+        가입코드는{' '}
+        <span className="font-medium text-navy">WB-학년-반</span>,{' '}
+        <span className="font-medium text-navy">T-WB-학년-반</span>,{' '}
+        <span className="font-medium text-navy">STAFF26</span> 형식입니다. 코드 종류에 따라 권한이
+        정해집니다.
       </p>
 
       {done ? (
@@ -85,21 +88,23 @@ export function SignupPage() {
             <Input
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              placeholder="BIBLE26-2 또는 T-BIBLE26-2 또는 STAFF26"
+              placeholder="WB-학년-반 또는 T-WB-학년-반 또는 STAFF26"
               autoCapitalize="characters"
             />
+            <p className="mt-1 text-xs text-muted">
+              예: 학생 WB-2-1 · 담임 T-WB-2-1 · 임원 STAFF26
+            </p>
           </div>
           <div>
             <label className="mb-1.5 block text-sm text-muted">임원 코드 (선택)</label>
             <Input
               value={staffCode}
               onChange={(e) => setStaffCode(e.target.value.toUpperCase())}
-              placeholder="학생 코드와 함께 쓸 때만"
+              placeholder="STAFF26 (학생 코드와 함께 쓸 때만)"
               autoCapitalize="characters"
             />
             <p className="mt-1 text-xs text-muted">
-              담임은 교사 코드(T-…)만 넣으면 TEACHER+반이 됩니다. 관리자 수동 배정도 그대로
-              됩니다.
+              담임은 교사 코드(T-WB-학년-반)만 넣으면 TEACHER+반이 됩니다.
             </p>
           </div>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
