@@ -101,7 +101,7 @@ export function ClassesOverviewPage() {
                     <dd className="font-semibold">{c.todayCheckins}명</dd>
                   </div>
                   <div>
-                    <dt className="text-muted">커버 장</dt>
+                    <dt className="text-muted">평균 읽은 장</dt>
                     <dd className="font-semibold">
                       {c.coveredChapters}/{c.targetChapters}
                     </dd>

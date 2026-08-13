@@ -68,7 +68,20 @@ export async function getClassProgress(
   const studentIds = students.map((s) => s.id)
   const logs = await listClassLogs(projectId, studentIds)
   const targets = await getReadingTargets(projectId, classId)
-  const prog = progressAgainstTargets(logs, targets)
+  const targetChapters = progressAgainstTargets([], targets).target
+
+  // 반 진행률 = 학생별 개인 달성률(%)의 산술평균
+  let sumRate = 0
+  let sumCovered = 0
+  for (const student of students) {
+    const mine = logs.filter((l) => l.user_id === student.id)
+    const prog = progressAgainstTargets(mine, targets)
+    sumRate += prog.rate
+    sumCovered += prog.covered
+  }
+  const n = students.length
+  const achievementRate = n === 0 ? 0 : Math.round(sumRate / n)
+  const coveredChapters = n === 0 ? 0 : Math.round(sumCovered / n)
 
   const participated = new Set(logs.map((l) => l.user_id)).size
   const today = todayISO()
@@ -83,13 +96,12 @@ export async function getClassProgress(
   return {
     classId,
     className,
-    studentCount: students.length,
+    studentCount: n,
     participatedCount: participated,
-    participationRate:
-      students.length === 0 ? 0 : Math.round((participated / students.length) * 100),
-    coveredChapters: prog.covered,
-    targetChapters: prog.target,
-    achievementRate: prog.rate,
+    participationRate: n === 0 ? 0 : Math.round((participated / n) * 100),
+    coveredChapters,
+    targetChapters,
+    achievementRate,
     todayCheckins,
     weekCheckins,
   }
