@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, ImagePlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { ChapterPicker, ChapterQuickPicks } from '@/components/ui/ChapterPicker'
 import { Field } from '@/components/ui/Field'
-import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
@@ -14,6 +14,17 @@ import { createReadingLog } from '@/services/readingService'
 import { uploadCheckinPhoto } from '@/services/storageService'
 import { getPersonalProgress, getReadingTargets } from '@/services/progressService'
 import type { BibleBook, Visibility } from '@/types'
+
+type BookRange = { start: number; end: number }
+
+function parseChapter(raw: string) {
+  const n = Number(raw)
+  return Number.isInteger(n) && n >= 1 ? n : null
+}
+
+function clampToRange(n: number, range: BookRange) {
+  return Math.min(range.end, Math.max(range.start, n))
+}
 
 export function CheckinPage() {
   const navigate = useNavigate()
@@ -29,8 +40,9 @@ export function CheckinPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
-  /** Only books set as project reading goals (설정) */
   const [goalBooks, setGoalBooks] = useState<BibleBook[]>([])
+  const [bookRanges, setBookRanges] = useState<Record<string, BookRange>>({})
+  const [suggestedChapter, setSuggestedChapter] = useState(1)
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
 
@@ -60,6 +72,17 @@ export function CheckinPage() {
       })
       setGoalBooks(books)
 
+      const ranges: Record<string, BookRange> = {}
+      for (const t of targets) {
+        const full = bibleBooks.find((b) => b.id === t.bookId)
+        const max = full?.chapter_count ?? t.endChapter
+        ranges[t.bookId] = {
+          start: Math.max(1, t.startChapter),
+          end: Math.min(max, t.endChapter),
+        }
+      }
+      setBookRanges(ranges)
+
       if (books.length === 0) {
         setBookId('')
         setError('관리자가 설정한 읽기 목표 성경이 없습니다. 설정에서 목표 책을 저장해주세요.')
@@ -69,19 +92,29 @@ export function CheckinPage() {
       const personal = await getPersonalProgress(project.id, profile.id, profile.class_id)
       const nextBook = personal.byBook.find((b) => b.covered < b.target) ?? personal.byBook[0]
       const preferred =
-        nextBook?.bookId ??
-        targets[0]?.bookId ??
-        books[0]?.id ??
-        ''
+        nextBook?.bookId ?? targets[0]?.bookId ?? books[0]?.id ?? ''
 
+      const resolvedBookId =
+        preferred && books.some((b) => b.id === preferred) ? preferred : books[0].id
       setBookId((current) => {
         if (current && books.some((b) => b.id === current)) return current
-        return preferred && books.some((b) => b.id === preferred) ? preferred : books[0].id
+        return resolvedBookId
       })
       setError(null)
 
       if (nextBook) {
-        const next = Math.min(nextBook.covered + 1, nextBook.endChapter)
+        const range = ranges[nextBook.bookId] ?? {
+          start: nextBook.startChapter,
+          end: nextBook.endChapter,
+        }
+        const next = clampToRange(nextBook.covered + 1, range)
+        setSuggestedChapter(next)
+        setStartChapter(String(next))
+        setEndChapter(String(next))
+      } else {
+        const range = ranges[resolvedBookId]
+        const next = range?.start ?? 1
+        setSuggestedChapter(next)
         setStartChapter(String(next))
         setEndChapter(String(next))
       }
@@ -94,6 +127,50 @@ export function CheckinPage() {
       if (photoPreview) URL.revokeObjectURL(photoPreview)
     }
   }, [photoPreview])
+
+  const activeRange = useMemo<BookRange>(() => {
+    const fromTarget = bookId ? bookRanges[bookId] : undefined
+    if (fromTarget) return fromTarget
+    const book = goalBooks.find((b) => b.id === bookId)
+    return { start: 1, end: book?.chapter_count ?? 1 }
+  }, [bookId, bookRanges, goalBooks])
+
+  const applyStart = (raw: string) => {
+    setStartChapter(raw)
+    const start = parseChapter(raw)
+    const end = parseChapter(endChapter)
+    if (start === null) return
+    if (end === null || end < start) setEndChapter(String(start))
+  }
+
+  const applyEnd = (raw: string) => {
+    setEndChapter(raw)
+    const end = parseChapter(raw)
+    const start = parseChapter(startChapter)
+    if (end === null || start === null) return
+    if (end < start) setStartChapter(String(end))
+  }
+
+  const onBookChange = (nextBookId: string) => {
+    setBookId(nextBookId)
+    const range = bookRanges[nextBookId] ?? {
+      start: 1,
+      end: goalBooks.find((b) => b.id === nextBookId)?.chapter_count ?? 1,
+    }
+    const start = parseChapter(startChapter)
+    const end = parseChapter(endChapter)
+    const nextStart = clampToRange(start ?? range.start, range)
+    const nextEnd = clampToRange(Math.max(end ?? nextStart, nextStart), range)
+    setStartChapter(String(nextStart))
+    setEndChapter(String(nextEnd))
+    setSuggestedChapter(nextStart)
+  }
+
+  const pickSingleChapter = (chapter: number) => {
+    const n = clampToRange(chapter, activeRange)
+    setStartChapter(String(n))
+    setEndChapter(String(n))
+  }
 
   const pickFile = (file: File | undefined) => {
     if (!file) return
@@ -117,23 +194,6 @@ export function CheckinPage() {
     setPhotoPreview(null)
   }
 
-  const parseChapter = (raw: string) => {
-    const n = Number(raw)
-    return Number.isInteger(n) && n >= 1 ? n : null
-  }
-
-  const onChapterChange =
-    (setter: (v: string) => void) => (e: ChangeEvent<HTMLInputElement>) => {
-      const raw = e.target.value
-      if (raw === '' || /^\d+$/.test(raw)) setter(raw)
-    }
-
-  const onChapterBlur = (value: string, setter: (v: string) => void) => () => {
-    if (value === '') return
-    const n = parseChapter(value)
-    if (n !== null) setter(String(n))
-  }
-
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     const resolvedBookId =
@@ -151,6 +211,10 @@ export function CheckinPage() {
     const end = parseChapter(endChapter)
     if (start === null || end === null) {
       setError('시작 장과 종료 장을 1 이상으로 입력해주세요.')
+      return
+    }
+    if (start < activeRange.start || end > activeRange.end) {
+      setError(`${activeRange.start}~${activeRange.end}장 범위에서 선택해주세요.`)
       return
     }
     if (end < start) {
@@ -187,6 +251,7 @@ export function CheckinPage() {
   const rangeLabel = `${bookName} ${startChapter}${
     endChapter !== startChapter ? `-${endChapter}` : ''
   }장`
+  const startNum = parseChapter(startChapter)
 
   if (!project) {
     return (
@@ -209,46 +274,59 @@ export function CheckinPage() {
           <Card className="space-y-3">
             <p className="caption-caps">Today&apos;s Reading</p>
             <p className="font-display text-xl text-navy">{rangeLabel}</p>
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              <Select
-                required
-                value={bookId || goalBooks[0]?.id || ''}
-                onChange={(e) => setBookId(e.target.value)}
-                className="col-span-3"
-                disabled={goalBooks.length === 0}
-              >
-                {goalBooks.length === 0 ? (
-                  <option value="">목표 성경 없음</option>
-                ) : (
-                  goalBooks.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))
-                )}
-              </Select>
-              <Input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                required
+
+            <Select
+              required
+              value={bookId || goalBooks[0]?.id || ''}
+              onChange={(e) => onBookChange(e.target.value)}
+              disabled={goalBooks.length === 0}
+            >
+              {goalBooks.length === 0 ? (
+                <option value="">목표 성경 없음</option>
+              ) : (
+                goalBooks.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name} ({bookRanges[b.id]?.start ?? 1}–
+                    {bookRanges[b.id]?.end ?? b.chapter_count}장)
+                  </option>
+                ))
+              )}
+            </Select>
+
+            <div className="grid grid-cols-2 gap-3">
+              <ChapterPicker
+                label="시작 장"
                 value={startChapter}
-                onChange={onChapterChange(setStartChapter)}
-                onBlur={onChapterBlur(startChapter, setStartChapter)}
-                aria-label="시작 장"
+                min={activeRange.start}
+                max={activeRange.end}
+                onChange={applyStart}
               />
-              <span className="flex items-center justify-center text-sm text-muted">~</span>
-              <Input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                required
+              <ChapterPicker
+                label="종료 장"
                 value={endChapter}
-                onChange={onChapterChange(setEndChapter)}
-                onBlur={onChapterBlur(endChapter, setEndChapter)}
-                aria-label="종료 장"
+                min={activeRange.start}
+                max={activeRange.end}
+                onChange={applyEnd}
               />
             </div>
+
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted">빠른 선택 · 한 장만</p>
+              <ChapterQuickPicks
+                center={suggestedChapter}
+                min={activeRange.start}
+                max={activeRange.end}
+                selected={
+                  startNum !== null && startChapter === endChapter ? startNum : null
+                }
+                onPick={pickSingleChapter}
+              />
+            </div>
+
+            <p className="text-xs text-muted">
+              직접 숫자를 치거나 오른쪽 목록에서 {activeRange.start}–{activeRange.end}장을 고르세요.
+              여러 장을 읽었다면 종료 장만 늘리면 됩니다.
+            </p>
           </Card>
 
           <div className="rounded-[1.5rem] border border-dashed border-line/70 bg-panel px-4 py-6 shadow-[0_4px_20px_rgba(23,32,51,0.03)]">
