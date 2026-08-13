@@ -1,12 +1,14 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { SavedAccountList } from '@/components/SavedAccountList'
 import { roleHome } from '@/layouts/AppShell'
 import { useAuthStore } from '@/stores/authStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { AppVersionBadge } from '@/components/AppVersionBadge'
 import { APP_VERSION, clearStaleAppCaches } from '@/lib/version'
+import type { SavedAccount } from '@/lib/savedAccounts'
 import type { Profile } from '@/types'
 
 function KakaoIcon({ className }: { className?: string }) {
@@ -32,10 +34,16 @@ export function LoginPage() {
   const login = useAuthStore((s) => s.login)
   const loginWithKakao = useAuthStore((s) => s.loginWithKakao)
   const loading = useAuthStore((s) => s.loading)
-  const [showEmail, setShowEmail] = useState(false)
+  const [searchParams] = useSearchParams()
+  const switching = searchParams.get('switch') === '1'
+  const [showEmail, setShowEmail] = useState(switching)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [hint, setHint] = useState<string | null>(
+    switching ? '전환할 계정을 고른 뒤 비밀번호를 입력하세요.' : null,
+  )
+  const passwordRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     try {
@@ -44,6 +52,22 @@ export function LoginPage() {
       /* ignore */
     }
   }, [])
+
+  const pickAccount = (account: SavedAccount) => {
+    setError(null)
+    setPassword('')
+    if (account.provider === 'kakao' || !account.email) {
+      setShowEmail(false)
+      setHint(
+        `${account.name}(${account.role === 'ADMIN' ? '관리자' : account.role === 'TEACHER' ? '교사' : '학생'})는 카카오 로그인으로 들어오세요.`,
+      )
+      return
+    }
+    setEmail(account.email)
+    setShowEmail(true)
+    setHint(`${account.name} 계정 · 비밀번호만 입력하면 됩니다.`)
+    window.setTimeout(() => passwordRef.current?.focus(), 50)
+  }
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -76,13 +100,26 @@ export function LoginPage() {
       </p>
       <AppVersionBadge className="mt-3" />
 
+      {switching ? (
+        <p className="mt-4 rounded-2xl bg-sky-soft px-4 py-3 text-sm text-sky-dark">
+          계정 전환 모드 · 아래에서 계정을 선택하세요.
+        </p>
+      ) : null}
+
       {!isSupabaseConfigured ? (
         <p className="mt-6 rounded-2xl bg-streak/20 px-4 py-3 text-sm text-navy">
           Supabase 환경변수를 먼저 설정해주세요.
         </p>
       ) : null}
 
-      <div className="mt-8 space-y-3">
+      <SavedAccountList
+        className="mt-6"
+        title="계정 선택"
+        hint="한 번 로그인한 계정이 이 기기에 기억됩니다. (비밀번호는 저장하지 않아요)"
+        onPick={pickAccount}
+      />
+
+      <div className="mt-6 space-y-3">
         <button
           type="button"
           onClick={() => void onKakao()}
@@ -111,8 +148,10 @@ export function LoginPage() {
         </Link>
       </div>
 
+      {hint ? <p className="mt-4 text-sm text-sky-dark">{hint}</p> : null}
+
       {showEmail ? (
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        <form onSubmit={onSubmit} className="mt-4 space-y-4">
           <div>
             <label className="mb-1.5 block text-sm text-muted">이메일</label>
             <Input
@@ -127,6 +166,7 @@ export function LoginPage() {
           <div>
             <label className="mb-1.5 block text-sm text-muted">비밀번호</label>
             <Input
+              ref={passwordRef}
               type="password"
               required
               minLength={6}

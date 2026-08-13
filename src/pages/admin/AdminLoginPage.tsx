@@ -1,11 +1,13 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { SavedAccountList } from '@/components/SavedAccountList'
 import { AppVersionBadge } from '@/components/AppVersionBadge'
 import { useAuthStore } from '@/stores/authStore'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { APP_VERSION, clearStaleAppCaches } from '@/lib/version'
+import type { SavedAccount } from '@/lib/savedAccounts'
 
 /**
  * Dedicated operator login (MyLevelUp `/admin/auth` style).
@@ -19,6 +21,7 @@ export function AdminLoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [preparing, setPreparing] = useState(true)
+  const passwordRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     try {
@@ -46,6 +49,17 @@ export function AdminLoginPage() {
       cancelled = true
     }
   }, [logout])
+
+  const pickAccount = (account: SavedAccount) => {
+    if (!account.email) {
+      setError('이 계정은 이메일이 없어 관리자 로그인에 쓸 수 없습니다.')
+      return
+    }
+    setEmail(account.email)
+    setPassword('')
+    setError(null)
+    window.setTimeout(() => passwordRef.current?.focus(), 50)
+  }
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -81,45 +95,59 @@ export function AdminLoginPage() {
       {preparing ? (
         <p className="mt-8 text-sm text-muted">세션 정리 중…</p>
       ) : (
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
-          <div>
-            <label className="mb-1.5 block text-sm text-muted">이메일</label>
-            <Input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@church.com"
-              autoComplete="username"
-              autoFocus
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm text-muted">비밀번호</label>
-            <Input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-            />
-          </div>
-          {error ? <p className="text-sm text-danger">{error}</p> : null}
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            disabled={loading || !isSupabaseConfigured}
-          >
-            {loading ? '로그인 중…' : '관리자로 입장'}
-          </Button>
-        </form>
+        <>
+          <SavedAccountList
+            className="mt-6"
+            title="관리자 계정 선택"
+            hint="관리자로 로그인한 적 있는 계정을 고르고 비밀번호만 입력하세요."
+            filter={(a) => a.role === 'ADMIN' && Boolean(a.email)}
+            onPick={pickAccount}
+          />
+
+          <form onSubmit={onSubmit} className="mt-6 space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm text-muted">이메일</label>
+              <Input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@church.com"
+                autoComplete="username"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm text-muted">비밀번호</label>
+              <Input
+                ref={passwordRef}
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+            {error ? <p className="text-sm text-danger">{error}</p> : null}
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={loading || !isSupabaseConfigured}
+            >
+              {loading ? '로그인 중…' : '관리자로 입장'}
+            </Button>
+          </form>
+        </>
       )}
 
       <p className="mt-8 text-center text-sm text-muted">
-        <Link to="/login" className="font-medium text-navy underline-offset-2 hover:underline">
-          ← 학생·선생님 로그인으로
+        <Link
+          to="/login?switch=1"
+          className="font-medium text-navy underline-offset-2 hover:underline"
+        >
+          ← 학생·교사 계정으로 전환
         </Link>
       </p>
     </div>

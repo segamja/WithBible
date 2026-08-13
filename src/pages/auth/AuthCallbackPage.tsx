@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getCurrentSession } from '@/services/authService'
 import { useAuthStore } from '@/stores/authStore'
+import { rememberAccount } from '@/lib/savedAccounts'
 import { Button } from '@/components/ui/Button'
 
 export function AuthCallbackPage() {
@@ -30,6 +31,7 @@ export function AuthCallbackPage() {
         await refreshProfile()
         if (cancelled) return
         const { onboardingRequired, profile } = useAuthStore.getState()
+        if (profile) rememberAccount(profile, 'kakao')
         if (onboardingRequired) {
           navigate('/onboarding/class', { replace: true })
           return

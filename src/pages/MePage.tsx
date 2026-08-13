@@ -7,15 +7,19 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { getPersonalProgress } from '@/services/progressService'
+import { rememberAccount } from '@/lib/savedAccounts'
 
 export function MePage() {
   const profile = useAuthStore((s) => s.profile)!
-  const logout = useAuthStore((s) => s.logout)
   const { project, classes, loadForUser } = useProjectStore()
   const myClass = classes.find((c) => c.id === profile.class_id)
   const [personal, setPersonal] = useState<Awaited<ReturnType<typeof getPersonalProgress>> | null>(
     null,
   )
+
+  useEffect(() => {
+    rememberAccount(profile, profile.email ? 'email' : 'kakao')
+  }, [profile])
 
   useEffect(() => {
     void loadForUser(profile.class_id)
@@ -113,9 +117,26 @@ export function MePage() {
         </Card>
       )}
 
-      <Button variant="outline" className="w-full" onClick={() => void logout()}>
-        로그아웃
-      </Button>
+      <div className="space-y-2">
+        <Button
+          variant="secondary"
+          className="w-full"
+          onClick={() => {
+            window.location.assign(`/logout?next=${encodeURIComponent('/login?switch=1')}`)
+          }}
+        >
+          다른 계정으로 전환
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            window.location.assign('/logout')
+          }}
+        >
+          로그아웃
+        </Button>
+      </div>
     </div>
   )
 }

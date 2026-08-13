@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import * as authService from '@/services/authService'
 import * as onboardingService from '@/services/onboardingService'
+import { rememberAccount } from '@/lib/savedAccounts'
 import type { Profile, UserRole } from '@/types'
 
 interface AuthState {
@@ -106,6 +107,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const profile = await authService.signIn(email, password)
       const userId = profile.id
+      rememberAccount(profile, 'email')
       set({
         profile,
         sessionUserId: userId,
@@ -140,6 +142,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const profile = await authService.signUp(input)
+      rememberAccount(profile, 'email')
       set({
         profile,
         sessionUserId: profile.id,
