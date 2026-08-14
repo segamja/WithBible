@@ -10,92 +10,195 @@
 
 이다.
 
-이 문서를 Cursor의 개발 지시서로 사용하여 MVP를 먼저 구현한다.
+이 문서를 Cursor의 개발 지시서로 사용하며, 아래 **「0.1 현재 구현 현황」**은 **as-built(실제 구현)** 기준이다.
 
-> **문서 상태 (2026-08):** MVP 핵심 기능이 구현·운영 가능한 상태이다.  
-> 아래 **「0.1 현재 구현 현황」** 및 갱신된 화면·데이터 모델·네비 절을 **as-built(실제 구현)** 기준으로 유지한다.
+> **문서 상태:** 2026-08-14 · 앱 버전 **v0.3.19** · 라이브 https://with-bible.vercel.app  
+> 제품명(설치/홈 화면): **위드바이블** · 앱 내 영문 브랜드: **with BIBLE**  
+> 기획·철학 절(2장 이후)은 유지하되, 네비·진행률·데이터·마이그레이션은 본 절과 충돌 시 **0.1을 우선**한다.
 
 ---
 
-# 0.1 현재 구현 현황 (As-Built)
+# 0.1 현재 구현 현황 (As-Built · v0.3.19)
+
+## 운영 정보
+
+| 항목 | 내용 |
+|------|------|
+| 앱 버전 | `0.3.19` (`package.json`) |
+| 배포 | Vercel · https://with-bible.vercel.app |
+| 저장소 | GitHub `segamja/WithBible` |
+| 스택 | React 19 · Vite 8 · TypeScript · Tailwind CSS 4 · Zustand · React Router 7 · Supabase (Auth/DB/Storage/Realtime) · PWA (`vite-plugin-pwa`) |
+| DB | 시그널수사와 **동일 Supabase 프로젝트** · 모든 테이블 **`wb_` 접두어** |
+| 디자인 | Stitch **Luminous Fellowship** 톤 · `src/index.css` 토큰 (navy / sage / sky / surface) · Pretendard |
 
 ## 구현 완료 요약
 
 | 영역 | 구현 내용 |
 |------|-----------|
-| 인증 | 이메일/비밀번호 가입·로그인, 반 가입 코드, 역할(STUDENT/TEACHER/ADMIN) |
-| 학생 | 홈, 사진 인증, 피드(실시간), 반별 전체 진행(`/progress`), 마이 |
-| 교사 | 대시보드, 피드, 전체 진행, 격려 공지, 마이 |
-| 관리자 | 전체 현황, **설정**(타이틀·기간·보상·데이터 리셋), 반 관리, 마이 |
-| 인증 방식 | **스마트폰 촬영/앨범 사진 업로드 + 읽은 범위 + 한 줄 묵상** |
-| 공개 범위 | 기본값 **전체 공개** (`public`), 선택 시 반 공개 |
-| 피드 | 사진·묵상 표시, **좋아요**, **한 줄 댓글(최대 80자)**, Supabase Realtime LIVE |
-| 진행률 | 반 참여율 / 고유 장 커버 목표 달성률, D-Day, 완주·포트럭 안내 |
-| 인프라 | React+Vite+TS, Tailwind, Zustand, React Router, Supabase(Auth/DB/Storage/Realtime) |
-| DB 구분 | 시그널수사와 **동일 Supabase 프로젝트** 공유 → 모든 테이블 **`wb_` 접두어** |
+| 인증 | 이메일/비밀번호, **카카오 OAuth**, 반·교사·임원 가입 코드, 역할(STUDENT/TEACHER/ADMIN) |
+| 계정 UX | 기기 내 **저장된 계정** 전환 · 선택적 비밀번호 기억(원탭) |
+| 학생 | 홈, 사진 인증, 피드(Realtime), 우리반, 반별 현황(`/progress`), 마이 |
+| 교사 | **학생과 동일 홈(`/`)**, 하단 **교사** 탭(기존 대시보드), 인증·우리반·공지·마이 |
+| 임원 교사 | 반 미배정 TEACHER · 홈·인증·피드·교사·마이 · 전교 공지·반현황 |
+| 관리자 | 현황, 설정, 프로젝트, 반·임원코드, **사용자(유령 삭제·비번 초기화)**, 인증·피드·반현황·마이 |
+| 홈 브랜딩 | `with BIBLE` · **부서 타이틀**(기본 `주고받고 고등부`) · 송내사랑의교회 로고 · 인사 카드 |
+| 읽기 목표 | 프로젝트 **다중 권** 목표(`wb_project_targets`) · 인증은 목표 권으로 제한 |
+| 인증 UX | 다음 미독 장부터 재개 · 텍스트+드롭다운+퀵픽(장 구간) · 사진 필수 |
+| 진행률 | **반 달성률 = 학생별 개인 달성률(%)의 산술평균** · 참여율 · D-Day · 완주·행사 안내 |
+| PWA | 설치명 **위드바이블** · 설치 안내 배너(iOS는 Safari 안내, Android는 설치 버튼) |
+| 공개 범위 | 기본 **전체 공개** (`public`), 선택 시 반 공개 |
+| 피드 | 사진·묵상, 좋아요, 한 줄 댓글(최대 80자), Realtime |
 
-## 하단 네비게이션 (실제)
+## 하단 네비게이션 (실제 · `BottomNav.tsx`)
 
-- **학생:** 홈 \| 인증 \| 피드 \| 전체 \| 마이
-- **교사:** 대시보드 \| 피드 \| 전체 \| 공지 \| 마이
-- **관리자:** 현황 \| 설정 \| 전체 \| 반관리 \| 마이
+| 역할 | 탭 |
+|------|-----|
+| **학생** | 홈 `/` · 인증 · 우리반 · 피드 · 마이 |
+| **담임 교사** (`TEACHER` + `class_id`) | 홈 `/` · 인증 · 우리반 · **교사** `/teacher` · 마이 *(피드는 홈·교사 화면 링크로 진입)* |
+| **임원 교사** (`TEACHER`, 반 없음) | 홈 `/` · 인증 · 피드 · **교사** `/teacher` · 마이 |
+| **관리자** | 현황 `/admin` · 인증 · 피드 · 반현황 `/progress` · 마이 |
 
-## 주요 라우트
+- 교사 로그인 후 기본 홈: **`/`** (학생 홈과 동일). 기존 교사 대시보드는 **교사** 탭.
+- 관리자 기본 홈: `/admin`. 설정·반·사용자는 현황 허브 버튼으로 진입.
+- 하단 탭 위에 **앱 버전 뱃지** 표시.
 
-| 경로 | 역할 | 화면 |
+## 주요 라우트 (`App.tsx`)
+
+| 경로 | 가드 | 화면 |
 |------|------|------|
-| `/login`, `/signup` | 게스트 | 로그인 / 회원가입(반 코드) |
-| `/`, `/checkin`, `/feed`, `/class` | 학생 | 홈 / 사진 인증 / 피드 / 우리반 |
-| `/progress` | 전체 역할 | 반별 진행 현황(와이드) |
-| `/teacher`, `/teacher/feed`, `/teacher/announce` | 교사 | 대시보드 / 피드 / 공지 |
-| `/admin`, `/admin/settings`, `/admin/projects`, `/admin/classes`, `/admin/users` | 관리자 | 현황 / 설정 / 프로젝트 / 반 / 사용자 |
-| `/me` | 전체 | 마이·로그아웃 |
+| `/login`, `/signup` | GuestOnly | 로그인 / 회원가입 |
+| `/auth/callback` | — | 카카오 OAuth 콜백 |
+| `/onboarding/class` | OnboardingOnly | 가입 코드 온보딩 |
+| `/` | STUDENT, TEACHER | 공용 홈 |
+| `/checkin`, `/feed`, `/class`, `/progress` | STUDENT, TEACHER, ADMIN | 인증 / 피드 / 우리반 / 반현황 |
+| `/teacher` | TEACHER | 교사 대시보드(반 현황·응원 필요 친구 등) |
+| `/teacher/announce` | TEACHER | 격려·전교 공지 |
+| `/teacher/class` → `/class`, `/teacher/feed` → `/feed` | — | 호환 리다이렉트 |
+| `/admin`, `/admin/settings`, `/admin/projects`, `/admin/classes`, `/admin/users` | ADMIN | 관리 |
+| `/admin/login` | — | 관리자 전용 로그인 |
+| `/me` | 로그인+온보딩 완료 | 마이 |
+| `/logout` | — | 로그아웃 |
 
-## Supabase 마이그레이션 파일
+`roleHome`: ADMIN → `/admin`, 그 외 → `/`.
 
-순서대로 SQL Editor에서 실행:
+## 가입 코드 (운영)
 
-1. `(선택)` `000_drop_legacy_if_needed.sql` — 접두어 없는 초기 스키마가 있을 때만
-2. `001_schema.sql` — `wb_*` 테이블·트리거
-3. `002_rls.sql` — RLS
-4. `seed.sql` — 복음서 4권, 샘플 반·프로젝트
-5. `003_fix_signup_trigger.sql` — 가입 트리거 보강
-6. `004_photo_like_realtime.sql` — 사진(`image_url`), Storage `wb-checkins`, like, Realtime
-7. `005_comments_admin_reset.sql` — `wb_comments`, 관리자 활동 데이터 리셋 RPC
+| 종류 | UI 안내 예시 | 역할 |
+|------|--------------|------|
+| 학생 반 코드 | `WB-학년-반` (시드 예: `BIBLE26-n`) | STUDENT + 반 배정 |
+| 담임 교사 코드 | `T-WB-학년-반` (시드 예: `T-BIBLE26-n`) | TEACHER + 해당 반 |
+| 임원 코드 | `STAFF26` (`wb_staff_codes`) | TEACHER, 반 없음 |
+| 이중 코드 | 임원 + 반 코드 | TEACHER + 반 |
+| 관리자 | 공개 코드 없음 | SQL/관리 UI에서 승격 |
+
+온보딩 RPC: `wb_complete_join_onboarding`.
+
+## Supabase 마이그레이션 (순서대로 SQL Editor 실행)
+
+| # | 파일 | 목적 |
+|---|------|------|
+| (선택) | `000_drop_legacy_if_needed.sql` | 접두어 없는 레거시 정리 |
+| 001 | `001_schema.sql` | `wb_*` 스키마·헬퍼·가입 트리거 |
+| 002 | `002_rls.sql` | RLS |
+| — | `seed.sql` | 성경·샘플 반·프로젝트 |
+| 003 | `003_fix_signup_trigger.sql` | 가입 트리거 보강 |
+| 004 | `004_photo_like_realtime.sql` | 사진·like·Storage·Realtime |
+| 005 | `005_comments_admin_reset.sql` | 댓글 · `wb_admin_reset_project_activity` |
+| 006 | `006_kakao_onboarding_rpc.sql` | 카카오 온보딩·join RPC |
+| 007 | `007_staff_codes_and_join_onboarding.sql` | 임원 코드 · 통합 온보딩 |
+| 008 | `008_teacher_class_dual_join.sql` | 임원+반 → TEACHER+반 |
+| 009 | `009_class_teacher_join_code.sql` | 반별 `teacher_join_code` |
+| 010 | `010_party_title.sql` | 행사명 `party_title` |
+| 011 | `011_teacher_of_class_by_profile.sql` | 소속 교사 반 권한 |
+| 012 | `012_fix_join_onboarding_return_type.sql` | 온보딩 반환 타입 수정 |
+| 013 | `013_bible_targets_and_progress.sql` | 66권 · `wb_project_targets` · 반현황 RPC |
+| 014 | `014_class_progress_avg_personal.sql` | 반 진행률 = **개인 달성률 평균** |
+| 015 | `015_department_title.sql` | 홈 부서 타이틀 `department_title` |
+| 016 | `016_admin_user_delete_reset.sql` | 사용자 목록·삭제·비밀번호 초기화 |
+
+### 주요 RPC (앱 호출)
+
+- `wb_complete_join_onboarding` / `wb_lookup_class_by_join_code`
+- `wb_list_staff_codes` / `wb_upsert_staff_code`
+- `wb_get_classes_progress`
+- `wb_admin_reset_project_activity`
+- `wb_admin_list_users` / `wb_admin_delete_user` / `wb_admin_reset_password`
 
 ## 관리자 설정 (`/admin/settings`)
 
-1. **타이틀:** 프로젝트명, 설명  
-2. **기간:** 시작일, 목표일(D-Day 기준)  
-3. **마지막 보상:** 포트럭 파티 일시·장소·안내문  
-4. **전체 데이터 리셋:** 확인 문구 `RESET` 입력 후 해당 프로젝트의 인증·좋아요·댓글·공지 삭제 (반/사용자/프로젝트 설정은 유지)
+1. **부서 타이틀** — 홈 표시명 (기본: 주고받고 고등부)
+2. **프로젝트** — 제목·설명·기간
+3. **읽기 목표 권** — 하나 이상 성경 선택 (인증·진행률 기준)
+4. **마지막 보상/행사** — `party_title` · 일시·장소·안내
+5. **활동 데이터 리셋** — 확인어 `RESET` → 해당 프로젝트 인증·좋아요·댓글·공지 삭제
+
+## 관리자 사용자 (`/admin/users`) — v0.3.19
+
+- 역할·반 즉시 저장
+- **유령만 보기**: 학생 + 반 미배정 + 인증 기록 0
+- **계정 삭제**: `auth.users` 삭제(프로필 cascade). 본인·마지막 ADMIN 제외
+- **비밀번호 초기화**: 임시 비번 자동 생성(`wb######`) 또는 직접 입력 후 전달
+
+> migration **016** 미적용 시 목록 폴백만 되고 삭제·비번 초기화는 실패할 수 있다.
+
+## 홈 화면 UX (실제)
+
+```text
+[카드]
+  with BIBLE          [교회 로고]
+  주고받고 고등부
+  ────────────────
+  Good evening, ○○ 👋
+  오늘도 우리 반과 함께 말씀을 읽어볼까요?
+[카드] 오늘의 말씀 · D-Day · 오늘 읽었어요
+[카드] 우리 반 진행률 (개인 달성률 평균 %)
+[카드] 나의 Streak
+… 친구 활동 · 공지 · 행사 배너
+```
 
 ## 사진 인증 플로우
 
 ```text
-홈 → 오늘 읽었어요 → 사진 촬영/선택 → 범위·묵상 → 인증 완료 → 피드
+홈 → 오늘 읽었어요 → 사진 촬영/선택 → 권·장 범위·묵상 → 인증 완료 → 피드
 ```
 
-- Storage 버킷: `wb-checkins` (유저별 폴더, 공개 URL)
+- Storage: `wb-checkins` (유저별 폴더, 공개 URL)
 - 사진 필수, 5MB 이하 이미지
+- 장은 **다음 미독 장부터** 기본값 · 퀵픽은 시작장부터의 구간
 
 ## 피드 상호작용
 
 - **좋아요:** `wb_encouragements.type = 'like'` 토글
-- **한 줄 댓글:** `wb_comments` (내용 1~80자), 본인 삭제 가능
-- **Realtime:** `wb_reading_logs`, `wb_encouragements`, `wb_comments` 변경 시 피드 갱신
+- **한 줄 댓글:** `wb_comments` (1~80자)
+- **Realtime:** `wb_reading_logs`, `wb_encouragements`, `wb_comments`
+
+## 진행률 (실제 계산 · 014 이후)
+
+| 지표 | 계산 |
+|------|------|
+| **개인 달성률** | 목표 권 범위 중 본인이 커버한 장 수 / 목표 장 수 |
+| **반 달성률** | 반 학생들의 **개인 달성률(%)의 산술평균** (장 합집합이 아님) |
+| **참여율** | 인증 경험 학생 수 / 반 학생 수 |
+
+## 최근 반영 이력 (요약)
+
+- v0.3.19 — 홈 헤더 카드화 · 관리자 유령 삭제·비번 초기화 (016)
+- v0.3.18 — PWA 설치 배너 조건 완화
+- v0.3.17 — 설치명 **위드바이블**
+- v0.3.16 — 교사=학생 홈 공유 · 교사 탭 분리 · 부서 타이틀 UI 정리
+- v0.3.15 — 부서 타이틀 DB (015)
+- 그 이전 — 교회 로고, 계정 전환, 다중 목표 권, 개인 달성률 평균, Stitch UI, PWA 등
 
 ---
 
+# 0.2 V2 핵심 기능 (구현 반영)
 
-# 0.2 V2 핵심 기능 추가 명세
+아래 기능은 명세상 V2로 정의되었고, **현재 앱에 반영된 상태**이다.
 
-이번 V2에서는 다음 4개 기능을 핵심 기능으로 추가한다.
-
-1. **오늘의 읽기 자동 배분**
-2. **우리 반 공동 게이지**
-3. **Streak(연속 읽기)**
-4. **교사 전용 '응원이 필요한 친구'**
+1. **오늘의 읽기 자동 배분** — 홈·인증에서 목표 권 기준 다음 장 제시 (개인 진도 재개 우선)
+2. **우리 반 공동 게이지** — 홈·교사 탭 · **개인 달성률 평균**
+3. **Streak(연속 읽기)** — `reading_date` 기반 개인 Streak · 주간 표시
+4. **교사 전용 '응원이 필요한 친구'** — `/teacher` · 2일 이상 미인증
 
 ## 0.2.1 사진 인증의 명확한 정의
 
@@ -146,7 +249,7 @@ UI 문구:
 
 ### 상단 개인화 인사
 
-시간대에 따라 자동으로 표시한다.
+시간대에 따라 자동으로 표시한다. 홈 상단은 **카드 UI**로 `with BIBLE` · 부서 타이틀 · 교회 로고와 인사를 구분한다.
 
 - `Good morning, 민수 👋`
 - `Good afternoon, 민수 👋`
@@ -204,7 +307,10 @@ UI 문구:
 > 🔥 오늘 9명 인증  
 > 📅 완주까지 D-8
 
-게이지는 기존의 **고유 장 커버 목표 달성률**을 사용한다.
+게이지는 **반 소속 학생 각자의 개인 목표 달성률(%)을 산술평균**한 값을 사용한다.  
+(과거 명세의 「고유 장 합집합 커버율」은 migration 014 이후 폐기.)
+
+예: 학생 A 100%, B 50%, C 0% → 반 달성률 **50%**.
 
 100% 달성 시:
 
@@ -275,21 +381,26 @@ Streak가 끊긴 경우에는 부정적 표현 대신:
 
 ## 0.2.6 교사 대시보드 우선순위
 
-교사 화면 상단 순서는 다음과 같이 한다.
+교사는 하단 **홈**에서 학생과 같이 읽고 인증하고, **교사** 탭(`/teacher`)에서 반 관리 화면을 본다.
 
-1. 우리 반 공동 게이지
+교사 탭 상단 순서:
+
+1. 우리 반 공동 게이지(개인 달성률 평균)
 2. 오늘의 참여 현황
 3. 응원이 필요한 친구
-4. 최근 인증 피드
-5. 이번 주 참여 현황
-6. 반 공지/격려
+4. 우리반 / 반별 현황 / 격려 / 피드 바로가기
+5. 학생별 상태(교사 전용)
 
 # 1. 프로젝트 개요
 
 ## 1.1 프로젝트명
 
 
-**With Bible(위드바이블)**
+**위드바이블 (with BIBLE)**
+
+- 설치·홈 화면 표시명: **위드바이블**
+- 앱 내 영문 브랜드 카피: **with BIBLE**
+- 부서 표시명(설정 가능): 기본 **주고받고 고등부**
 
 ## 1.2 프로젝트 한 줄 정의
 
@@ -309,20 +420,19 @@ Streak가 끊긴 경우에는 부정적 표현 대신:
 
 ### 반 담당 교사
 
-- 반 학생 확인
-- 학생들의 인증 현황 확인
-- 진행률 확인
+- **학생과 동일한 홈**에서 본인도 읽고 인증
+- 하단 **교사** 탭에서 반 학생·진행률·응원 필요 친구 확인
 - 격려 메시지(반 공지) 작성
-- 참여가 낮은 학생 확인(교사 전용 상태)
 - 전체 반 진행·피드 확인
 
 ### 고등부 관리자 / 임원 교사
 
-- 프로젝트 생성·**설정**(타이틀·기간·보상)
-- 반 생성 및 관리·가입 코드
-- 학생/교사 역할·반 배정
+- 프로젝트 생성·**설정**(부서 타이틀·기간·읽기 목표 권·보상)
+- 반 생성·가입/교사 코드·임원 코드
+- 학생/교사 역할·반 배정 · **유령 계정 삭제 · 비밀번호 초기화**
 - 전체 반 진행률·대시보드
 - 공지·**활동 데이터 리셋**
+- 임원(반 없음)은 홈에서 인증·피드 참여 가능
 
 ---
 
@@ -369,7 +479,9 @@ Streak가 끊긴 경우에는 부정적 표현 대신:
 - 교사 대시보드
 - 공지사항
 - 관리자 설정·데이터 리셋
-- 모바일 반응형 UI
+- 모바일 반응형 UI · PWA(위드바이블)
+- 부서 타이틀 · 교회 로고 · 교사=학생 홈 공유
+- 계정 전환 · 유령 계정 삭제 · 비밀번호 초기화
 
 ## MVP에서 제외 (유지)
 
@@ -400,28 +512,24 @@ Streak가 끊긴 경우에는 부정적 표현 대신:
 
 ## 4.2 반 교사 TEACHER
 
-학생 권한 포함.
+학생 화면(홈·인증·피드 등) 사용 가능. 담임은 `class_id` 보유, 임원은 반 없음.
 
 추가 권한:
 
-- 담당 반 학생 조회
-- 학생별 참여 현황 조회
+- 담당 반 학생 조회 (`/teacher`, `/class`)
+- 학생별 참여 현황 · 응원 필요 친구(교사 전용)
 - 반 진행률 조회
-- 격려 메시지 작성
-- 반 공지 작성
+- 격려 메시지 · 반/전교 공지
 
 ## 4.3 관리자 ADMIN
 
 전체 기능:
 
-- 프로젝트 생성/수정/**설정**(타이틀·기간·보상)
+- 프로젝트 생성/수정/**설정**(부서 타이틀·기간·읽기 목표·보상)
 - 활동 데이터 리셋
-- 반 생성/수정
-- 학생 관리
-- 교사 관리
-- 반 배정
-- 프로젝트 진행률 조회
-- 전체 대시보드
+- 반 생성/수정 · 학생/교사 가입 코드 · 임원 코드
+- 사용자 역할·반 배정 · **계정 삭제 · 비밀번호 초기화**
+- 프로젝트 진행률 · 전체 대시보드
 - 공지 관리
 
 ---
@@ -447,14 +555,13 @@ Streak가 끊긴 경우에는 부정적 표현 대신:
 
 ## 시나리오 B. 교사
 
-1. 로그인
-2. 교사 대시보드 진입
-3. 담당 반 선택
-4. 반 전체 진행률 확인
-5. 최근 인증 확인
-6. 아직 인증하지 않은 학생 확인
-7. 필요한 경우 격려 메시지 작성
-8. 반 목표 달성률 확인
+1. 로그인 → **학생과 동일한 홈** 진입
+2. 오늘 말씀 확인 · 본인도 인증 가능
+3. 하단 **교사** 탭으로 반 대시보드 이동
+4. 반 전체 진행률(개인 달성률 평균) 확인
+5. 응원이 필요한 친구 확인
+6. 필요한 경우 격려 메시지 작성
+7. 피드·반별 현황 확인
 
 ---
 
@@ -479,32 +586,20 @@ Streak가 끊긴 경우에는 부정적 표현 대신:
 
 ### 6.1 홈
 
-상단:
+상단 카드:
 
-- 프로젝트명
-- D-Day
-- 우리 반 이름
-- 우리 반 진행률
+- with BIBLE · 부서 타이틀 · 교회 로고
+- 시간대 인사 (Good morning/afternoon/evening)
+- 한 줄 안내 문구
 
-중앙:
+본문 카드:
 
-**오늘의 성경읽기**
+- **오늘의 말씀** · D-Day · `오늘 읽었어요 ✓`
+- 우리 반 진행률 (개인 달성률 평균)
+- 나의 Streak
+- 친구 활동 · 공지 · 행사 배너
 
-예:
-
-> 📖 오늘 읽을 말씀
->
-> 마태복음 5~6장
-
-버튼:
-
-**[오늘 읽었어요 ✓]**
-
-하단:
-
-- 최근 인증(사진·묵상)
-- 좋아요 / 한 줄 댓글
-- 피드·전체 진행으로 이동
+하단 탭: 홈 | 인증 | 우리반 | 피드 | 마이
 
 ---
 
@@ -626,42 +721,26 @@ D-12
 
 # 9. 진행률 계산
 
-## 프로젝트 진행률
+## 프로젝트·반 진행률 (as-built · migration 014)
 
-기본 공식:
-
-**전체 목표 장 수 대비 반 전체 누적 인증 장 수**
-
-단, 동일한 장을 여러 학생이 읽었다고 해서 단순히 합산하여 프로젝트 전체 진행률이 과도하게 올라가지 않도록 한다.
-
-따라서 MVP에서는 다음 두 지표를 분리한다.
+지표를 분리한다.
 
 ### ① 반 참여율
 
-학생 기준:
-
 > 인증 경험이 있는 학생 수 / 전체 학생 수
 
-### ② 반 목표 달성률
+### ② 개인 목표 달성률
 
-반에서 목표로 지정된 성경 범위 중 **반 구성원이 실제로 읽은 고유 범위**를 기준으로 계산한다.
+프로젝트 `wb_project_targets`(또는 레거시 반별 단일 목표) 범위에서  
+해당 학생이 커버한 장 수 / 목표 장 수.
 
-예:
+### ③ 반 목표 달성률 (홈·반현황에 표시)
 
-목표:
-마태복음 28장
+> **반 소속 학생들의 개인 달성률(%)의 산술평균**
 
-학생들이 인증한 범위:
+예: A 100%, B 50%, C 0% → 반 **50%**.
 
-1~10장
-8~15장
-14~20장
-18~28장
-
-고유하게 커버된 장:
-1~28장
-
-→ 목표 달성률 100%
+> 참고: 초기 명세의 「반 구성원이 읽은 고유 장 합집합」방식은 더 이상 사용하지 않는다.
 
 ---
 
@@ -828,10 +907,18 @@ D-12
 
 ## 프로젝트 설정 (`/admin/settings`) — 구현됨
 
-1. 타이틀(프로젝트명·설명)
-2. 기간(시작일·목표일)
-3. 마지막 보상(포트럭 일시·장소·안내)
-4. 전체 활동 데이터 리셋 (`RESET` 확인, RPC `wb_admin_reset_project_activity`)
+1. 부서 타이틀(홈 표시, 기본 주고받고 고등부)
+2. 타이틀(프로젝트명·설명)
+3. 기간(시작일·목표일)
+4. 읽기 목표 권(다중 선택)
+5. 마지막 보상/행사(`party_title` · 일시·장소·안내)
+6. 전체 활동 데이터 리셋 (`RESET` 확인, RPC `wb_admin_reset_project_activity`)
+
+## 사용자 관리 (`/admin/users`) — 구현됨
+
+- 역할·반 배정
+- 유령 계정 필터·삭제 (`wb_admin_delete_user`)
+- 비밀번호 초기화 (`wb_admin_reset_password`)
 
 ---
 
@@ -843,9 +930,9 @@ Auth `auth.users`와 1:1인 프로필만 With Bible 가입(`raw_user_meta_data.a
 
 ## wb_profiles
 
-- id (FK auth.users)
+- id (FK auth.users, on delete cascade)
 - name
-- email
+- email (nullable — 카카오)
 - profile_image
 - role (`wb_user_role`: STUDENT | TEACHER | ADMIN)
 - class_id
@@ -856,8 +943,14 @@ Auth `auth.users`와 1:1인 프로필만 With Bible 가입(`raw_user_meta_data.a
 - id
 - name
 - teacher_id
-- join_code
+- join_code (학생)
+- teacher_join_code (담임)
+- is_active
 - created_at
+
+## wb_staff_codes
+
+- 임원 가입 코드 (예: STAFF26)
 
 ## wb_projects
 
@@ -867,66 +960,46 @@ Auth `auth.users`와 1:1인 프로필만 With Bible 가입(`raw_user_meta_data.a
 - start_date
 - end_date
 - status (`draft` | `active` | `completed`)
-- party_date / party_place / party_note (포트럭·보상)
+- **department_title** (홈 부서 표시명)
+- **party_title** / party_date / party_place / party_note
 - created_at
+
+## wb_project_targets (013+)
+
+프로젝트 전역 읽기 목표(다중 권 가능)
+
+- id, project_id, book_id, start_chapter, end_chapter, sort_order
 
 ## wb_project_classes
 
-- id
-- project_id
-- class_id
-- target_book_id
-- target_start_chapter
-- target_end_chapter
+- id, project_id, class_id
+- target_book_id, target_start_chapter, target_end_chapter (레거시 단권 폴백)
 - created_at
 
 ## wb_bible_books
 
-- id
-- name
-- testament
-- chapter_count
+- id, name, testament, chapter_count, sort_order
 
 ## wb_reading_logs
 
-- id
-- project_id
-- user_id
-- book_id
-- start_chapter
-- end_chapter
-- reflection
+- id, project_id, user_id, book_id
+- start_chapter, end_chapter, reflection
 - visibility (`class` | `public`, **기본 public**)
-- **image_url**
-- reading_date
-- created_at
-- updated_at
+- **image_url**, reading_date, created_at, updated_at
 
 ## wb_encouragements
 
-- id
-- reading_log_id
-- user_id
+- id, reading_log_id, user_id
 - type (`fighting` | `together` | `word` | `grace` | `well_done` | **`like`**)
-- created_at  
-- unique (reading_log_id, user_id)
+- created_at · unique (reading_log_id, user_id)
 
 ## wb_comments
 
-- id
-- reading_log_id
-- user_id
-- content (1~80자)
-- created_at
+- id, reading_log_id, user_id, content (1~80자), created_at
 
 ## wb_announcements
 
-- id
-- project_id
-- class_id
-- author_id
-- content
-- created_at
+- id, project_id, class_id, author_id, content, created_at
 
 ## Storage
 
@@ -996,22 +1069,18 @@ Auth `auth.users`와 1:1인 프로필만 With Bible 가입(`raw_user_meta_data.a
 
 # 21. 인증 및 로그인
 
-MVP에서는 Supabase Auth 사용.
+Supabase Auth 사용.
 
-### 1차 (구현됨)
+### 구현됨
 
-이메일/비밀번호 로그인·회원가입
+- 이메일/비밀번호 로그인·회원가입
+- **카카오 OAuth** (`/auth/callback`)
+- 기기 내 **저장된 계정** 목록 · 선택적 비밀번호 기억
+- 가입 메타데이터: `app: 'withbible'`, `name`, `join_code` 등
 
-가입 메타데이터:
+### 이후 검토
 
-- `app: 'withbible'` — With Bible 전용 `wb_profiles` 생성 트리거 조건
-- `name`, `join_code`, `role`
-
-### 2차
-
-Google 로그인
-
-교회 현장에서 학생 계정을 쉽게 관리해야 하므로 이후에는 **관리자가 학생 계정을 초대하거나 가입코드를 통해 반을 배정하는 방식**도 검토한다. (가입 코드 방식은 구현됨)
+Google 로그인, 관리자 초대 메일 등.
 
 ---
 
@@ -1019,21 +1088,15 @@ Google 로그인
 
 학생이 회원가입 후 관리자에게 요청하는 방식은 운영 부담이 크다.
 
-추천 방식:
+### 코드 방식 (구현됨)
 
-### 반 코드 방식
+| 코드 | 예 | 결과 |
+|------|-----|------|
+| 학생 반 코드 | `WB-학년-반` / 시드 `BIBLE26-n` | STUDENT + 반 |
+| 담임 코드 | `T-WB-학년-반` / 시드 `T-BIBLE26-n` | TEACHER + 반 |
+| 임원 코드 | `STAFF26` | TEACHER, 반 없음 |
 
-교사가 반 코드를 생성한다.
-
-예:
-
-> 2반 가입 코드: `BIBLE26-2`
-
-학생은 가입 시 코드를 입력한다.
-
-그러면 자동으로 해당 반에 배정된다.
-
-관리자는 이후 학생 명단을 확인한다.
+가입·온보딩 시 코드를 입력하면 RPC로 역할·반이 배정된다. 관리자는 `/admin/users`·`/admin/classes`에서 사후 조정한다.
 
 ---
 
@@ -1052,21 +1115,27 @@ Google 로그인
 
 ---
 
-# 24. 네비게이션 (구현)
+# 24. 네비게이션 (구현 · v0.3.19)
 
 학생:
 
-**홈 | 인증 | 피드 | 전체 | 마이**
+**홈 | 인증 | 우리반 | 피드 | 마이**
 
-교사:
+담임 교사:
 
-**대시보드 | 피드 | 전체 | 공지 | 마이**
+**홈 | 인증 | 우리반 | 교사 | 마이**
+
+임원 교사(반 없음):
+
+**홈 | 인증 | 피드 | 교사 | 마이**
 
 관리자:
 
-**현황 | 설정 | 전체 | 반관리 | 마이**
+**현황 | 인증 | 피드 | 반현황 | 마이**
 
-(`프로젝트`·`사용자` 화면은 `/admin/projects`, `/admin/users`로 유지하며 설정·반관리에서 연계 운영한다.)
+(`설정`·`반`·`사용자`·`프로젝트`는 `/admin` 허브 및 하위 경로로 진입.)
+
+상세는 **0.1 하단 네비게이션**을 따른다.
 
 ---
 
@@ -1079,7 +1148,7 @@ Google 로그인
 - 모바일 1순위
 - PC 2순위
 - 반응형 웹
-- PWA 지원 고려
+- **PWA 지원 (설치명: 위드바이블)**
 
 인증 과정은 **3번 이상의 화면 이동을 하지 않도록** 한다.
 
@@ -1163,11 +1232,12 @@ supabase/
 
 # 28. 개발 단계
 
-## Phase 1 — 프로젝트 기반
+> Phase 1~6 및 V2 핵심은 **구현 완료**. 이후는 운영 개선·현장 피드백 반영.
+
+## Phase 1 — 프로젝트 기반 ✓
 
 - React + Vite + TypeScript
-- Tailwind
-- shadcn/ui
+- Tailwind (+ 커스텀 UI)
 - Supabase 연결
 - 기본 라우팅
 - 환경변수 설정
@@ -1503,17 +1573,19 @@ QA 및 모바일 최적화
 
 ## 기술 원칙
 
-React + Vite + TypeScript
+React 19 + Vite 8 + TypeScript
 
-Tailwind CSS + shadcn/ui
+Tailwind CSS 4 (+ 커스텀 UI: Card / Button / Input — shadcn 미사용)
 
-Supabase Auth + PostgreSQL
+Stitch Luminous Fellowship 토큰 (`src/index.css`)
 
-Zustand
+Supabase Auth + PostgreSQL + Storage + Realtime
 
-React Router
+Zustand · React Router 7
 
-Vercel 배포를 전제로 한다.
+PWA (`vite-plugin-pwa`) · 설치명 위드바이블
+
+Vercel 배포 (https://with-bible.vercel.app)
 
 컴포넌트에서 Supabase를 직접 호출하지 말고 service layer를 사용한다.
 
@@ -1534,6 +1606,7 @@ Supabase RLS를 반드시 적용한다.
 
 ### 우리 반 공동 게이지
 - 학생 홈에서 반 전체 목표 달성률을 확인한다.
+- 달성률은 **개인 달성률(%)의 산술평균**이다.
 - 참여 학생 수와 오늘 인증 학생 수를 함께 표시한다.
 - 100% 달성 시 완주 상태로 전환한다.
 
@@ -1551,11 +1624,12 @@ Supabase RLS를 반드시 적용한다.
 
 
 ### 학생 홈 UX
-- 로그인 후 학생은 가장 먼저 개인화 인사와 오늘의 말씀을 본다.
+- 로그인 후 가장 먼저 브랜드·부서 타이틀·인사(카드)와 오늘의 말씀을 본다.
 - 오늘의 말씀 카드에 목표 범위와 D-Day가 함께 표시된다.
 - `오늘 읽었어요 ✓` 버튼에서 바로 사진 인증을 시작할 수 있다.
 - 홈에서 우리 반 진행률을 별도 메뉴로 이동하지 않고 확인할 수 있다.
 - 개인 Streak와 친구 활동을 홈 하단에서 확인할 수 있다.
+- 교사도 동일 홈을 사용하며, 반 관리는 **교사** 탭에서 한다.
 
 ### 사진 인증
 - 사진은 **읽은 성경 부분**을 촬영한 이미지여야 한다.
@@ -1607,3 +1681,12 @@ D-18
 ```
 
 이 흐름은 앱의 가장 중요한 제품 경험으로 간주한다.
+
+---
+
+# 부록 A. 문서·코드 정합 규칙
+
+1. 네비·라우트·진행률·마이그레이션은 **0.1 As-Built**가 우선이다.
+2. 기획 철학(경쟁 지양·격려 중심)은 2장 원칙을 유지한다.
+3. README와 본 문서가 다르면 **코드(`BottomNav`, `App.tsx`, migrations)** 및 **0.1**을 따른다.
+4. Supabase에 신규 migration 적용 전에는 해당 UI 기능이 실패할 수 있다(특히 014~016).
