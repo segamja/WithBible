@@ -1,12 +1,16 @@
 import { differenceInCalendarDays, parseISO, startOfDay, subDays, format } from 'date-fns'
 import { todayISO } from '@/utils/dday'
 
-export function greetingForNow(name: string, now = new Date()): string {
+export function greetingPartsForNow(name: string, now = new Date()): { period: string; name: string } {
   const hour = now.getHours()
   const short = name.trim() || '친구'
-  if (hour < 12) return `Good morning, ${short}`
-  if (hour < 18) return `Good afternoon, ${short}`
-  return `Good evening, ${short}`
+  const period = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  return { period, name: short }
+}
+
+export function greetingForNow(name: string, now = new Date()): string {
+  const { period, name: short } = greetingPartsForNow(name, now)
+  return `${period}, ${short}`
 }
 
 /** Distribute target chapters evenly across project days (no backlog carry). */

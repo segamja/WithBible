@@ -17,7 +17,7 @@ import { getClassById, listClassStudents } from '@/services/classService'
 import type { ReadingLogWithMeta } from '@/types'
 import { departmentTitleOf } from '@/lib/branding'
 import { getDDayLabel } from '@/utils/dday'
-import { calcPersonalStreak, getTodayReadingRange, greetingForNow } from '@/utils/schedule'
+import { calcPersonalStreak, getTodayReadingRange, greetingPartsForNow } from '@/utils/schedule'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 
 export function StudentHomePage() {
@@ -132,6 +132,7 @@ export function StudentHomePage() {
   const todayLabel = `${todayBookName} ${todayRange.start}${
     todayRange.end !== todayRange.start ? `–${todayRange.end}` : ''
   }장`
+  const greeting = greetingPartsForNow(profile.name)
 
   const friendAvatars = feed
     .filter((f) => f.user_id !== profile.id)
@@ -156,7 +157,10 @@ export function StudentHomePage() {
             <ChurchLogoHeader className="h-6 max-w-[8.5rem] shrink-0 sm:h-7 sm:max-w-[10rem]" />
           </div>
           <div className="space-y-1.5 border-t border-line/40 pt-5">
-            <h1 className="page-title">{greetingForNow(profile.name)} 👋</h1>
+            <h1 className="page-title text-[1.45rem] leading-snug sm:text-[1.75rem]">
+              <span className="inline-block whitespace-nowrap">{greeting.period},</span>{' '}
+              <span className="inline-block max-w-full break-keep">{greeting.name}&nbsp;👋</span>
+            </h1>
             <p className="text-sm leading-relaxed text-muted">
               {profile.role === 'TEACHER'
                 ? '오늘도 학생들과 함께 말씀을 읽어볼까요?'
