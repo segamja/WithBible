@@ -4,7 +4,7 @@ import type { Announcement, AnnouncementKind } from '@/types'
 import { seoulTodayStartIso } from '@/utils/seoul'
 import { emptyToNull, isUuid, requireUuid } from '@/utils/uuid'
 
-const TODAY_CHEER_LIMIT = 8
+const TODAY_CHEER_LIMIT = 20
 
 export async function purgeOldCheers(): Promise<void> {
   await supabase.rpc('wb_purge_old_cheers')
