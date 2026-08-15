@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import {
   formatTogetherLabel,
-  QUICK_COMMENTS,
   STUDENT_REACTIONS,
   TEACHER_REACTION,
   type ReactionDef,
@@ -30,7 +29,6 @@ interface ReadingFeedCardProps {
   onReaction: (logId: string, type: EncouragementType, active: boolean) => Promise<void>
   onReadAlong: (logId: string, active: boolean) => Promise<void>
   onComment: (logId: string, content: string) => Promise<void>
-  onQuickComment: (logId: string, content: string) => Promise<void>
   onDelete?: (logId: string) => Promise<void>
   onDeleteComment?: (commentId: string) => Promise<void>
 }
@@ -46,7 +44,6 @@ export function ReadingFeedCard({
   onReaction,
   onReadAlong,
   onComment,
-  onQuickComment,
   onDelete,
   onDeleteComment,
 }: ReadingFeedCardProps) {
@@ -97,13 +94,6 @@ export function ReadingFeedCard({
     }
   }
 
-  const handleQuick = async (text: string) => {
-    setCommentError(null)
-    await run(`quick-${text}`, async () => {
-      await onQuickComment(log.id, text)
-    })
-  }
-
   const bookLabel = `${log.bible_books?.name ?? '성경'} ${log.start_chapter}${
     log.end_chapter !== log.start_chapter ? `-${log.end_chapter}` : ''
   }장`
@@ -112,18 +102,6 @@ export function ReadingFeedCard({
 
   const countLine = STUDENT_REACTIONS.filter((r) => (counts[r.type] ?? 0) > 0)
   const teacherCheerCount = counts.teacher_cheer ?? 0
-
-  const myQuickSet = new Set(
-    comments
-      .filter((c) => c.user_id === currentUserId)
-      .map((c) => c.content.trim()),
-  )
-  const quickCounts = Object.fromEntries(
-    QUICK_COMMENTS.map((text) => [
-      text,
-      comments.filter((c) => c.content.trim() === text).length,
-    ]),
-  ) as Record<(typeof QUICK_COMMENTS)[number], number>
 
   return (
     <Card className={cn('space-y-3', className)}>
@@ -186,16 +164,14 @@ export function ReadingFeedCard({
       ) : null}
 
       {(countLine.length > 0 || teacherCheerCount > 0) && (
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm tabular-nums text-muted">
+        <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[12px] tabular-nums text-muted">
           {countLine.map((r) => (
             <span key={r.type} aria-label={`${r.label} ${counts[r.type]}`}>
               {r.emoji} {counts[r.type]}
             </span>
           ))}
           {teacherCheerCount > 0 ? (
-            <span aria-label={`선생님 응원 ${teacherCheerCount}`}>
-              💛 {teacherCheerCount}
-            </span>
+            <span aria-label={`선생님 응원 ${teacherCheerCount}`}>💛 {teacherCheerCount}</span>
           ) : null}
         </div>
       )}
@@ -204,7 +180,7 @@ export function ReadingFeedCard({
         <p className="text-sm font-medium text-sky-dark">🙌 {togetherLabel}</p>
       ) : null}
 
-      <div className="flex flex-wrap gap-1.5 border-t border-line/30 pt-3">
+      <div className="flex flex-wrap items-center gap-1 border-t border-line/30 pt-2.5">
         {reactionButtons.map((r) => {
           const active = mySet.has(r.type)
           return (
@@ -218,10 +194,8 @@ export function ReadingFeedCard({
                 void run(r.type, () => onReaction(log.id, r.type, active))
               }
               className={cn(
-                'inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-lg transition active:scale-95',
-                active
-                  ? 'bg-sage-soft ring-2 ring-sage/40'
-                  : 'bg-brand-50 hover:bg-sky-soft',
+                'inline-flex h-7 w-7 items-center justify-center rounded-md text-[15px] leading-none transition active:scale-95',
+                active ? 'bg-sage-soft/80' : 'hover:bg-brand-50',
                 busyType === r.type && 'opacity-70',
               )}
             >
@@ -248,7 +222,7 @@ export function ReadingFeedCard({
             void run('read-along', () => onReadAlong(log.id, myReadAlong))
           }
           className={cn(
-            'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition active:scale-[0.99]',
+            'inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold transition active:scale-[0.99]',
             myReadAlong
               ? 'bg-sky-soft text-sky-dark'
               : 'border border-line/60 bg-panel text-navy hover:bg-brand-50',
@@ -261,39 +235,13 @@ export function ReadingFeedCard({
         </button>
       ) : null}
 
-      <div className="flex flex-wrap gap-1.5">
-        {QUICK_COMMENTS.map((text) => {
-          const active = myQuickSet.has(text)
-          const n = quickCounts[text] ?? 0
-          return (
-            <button
-              key={text}
-              type="button"
-              disabled={busy}
-              aria-pressed={active}
-              aria-label={`${text}${n > 0 ? ` ${n}명` : ''}`}
-              onClick={() => void handleQuick(text)}
-              className={cn(
-                'inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition active:scale-95',
-                active
-                  ? 'bg-sage-soft text-sage-dark ring-2 ring-sage/30'
-                  : 'bg-brand-50 text-navy hover:bg-sky-soft',
-              )}
-            >
-              <span>{text}</span>
-              {n > 0 ? <span className="tabular-nums opacity-80">{n}</span> : null}
-            </button>
-          )
-        })}
-      </div>
-
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-muted hover:bg-brand-50 hover:text-navy"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-sm font-medium text-muted hover:bg-brand-50 hover:text-navy"
           onClick={() => setShowComments((v) => !v)}
         >
-          <MessageCircle className="h-4 w-4" />
+          <MessageCircle className="h-3.5 w-3.5" />
           댓글
           <span className="tabular-nums">{comments.length}</span>
         </button>

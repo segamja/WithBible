@@ -1,4 +1,4 @@
-/** Reaction / quick-comment constants for community feed */
+/** Reaction constants for community feed */
 
 import type { EncouragementType } from '@/types'
 
@@ -23,13 +23,6 @@ export const TEACHER_REACTION: ReactionDef = {
   label: '선생님이 응원해요',
   teacherOnly: true,
 }
-
-export const QUICK_COMMENTS = [
-  '잘했어! 👏',
-  '같이 가자! 🙌',
-  '은혜롭다 ❤️',
-  '기도할게 🙏',
-] as const
 
 export function reactionEmoji(type: EncouragementType): string {
   const all = [...STUDENT_REACTIONS, TEACHER_REACTION]

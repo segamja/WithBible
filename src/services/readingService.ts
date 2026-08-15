@@ -340,6 +340,46 @@ export async function toggleReadAlong(
   return true
 }
 
+/** Attach teacher cheer to a student's latest reading log (shows on that post in feed). */
+export async function cheerStudentLatestLog(input: {
+  projectId: string
+  studentUserId: string
+  teacherUserId: string
+}): Promise<{ logId: string; already: boolean }> {
+  const projectId = requireUuid(input.projectId, 'projectId')
+  const studentUserId = requireUuid(input.studentUserId, 'studentUserId')
+  const teacherUserId = requireUuid(input.teacherUserId, 'teacherUserId')
+
+  const { data: log, error } = await supabase
+    .from(Tables.readingLogs)
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('user_id', studentUserId)
+    .order('reading_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!log?.id) {
+    throw new Error('아직 읽기 인증이 없어 피드에 응원할 수 없습니다.')
+  }
+
+  const { data: existing, error: existError } = await supabase
+    .from(Tables.encouragements)
+    .select('id')
+    .eq('reading_log_id', log.id)
+    .eq('user_id', teacherUserId)
+    .eq('type', 'teacher_cheer')
+    .maybeSingle()
+  if (existError) throw new Error(existError.message)
+  if (existing) {
+    return { logId: log.id as string, already: true }
+  }
+
+  await addEncouragement(log.id as string, teacherUserId, 'teacher_cheer')
+  return { logId: log.id as string, already: false }
+}
+
 export function subscribeFeedChanges(
   projectId: string,
   onChange: () => void,

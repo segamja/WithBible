@@ -14,7 +14,7 @@ import {
   getPersonalProgress,
   getClassCommunityWarmth,
 } from '@/services/progressService'
-import { listFeed, listClassLogs } from '@/services/readingService'
+import { listFeed, listClassLogs, cheerStudentLatestLog } from '@/services/readingService'
 import {
   createAnnouncement,
   listAnnouncements,
@@ -33,11 +33,6 @@ const statusLabel = {
 function daysSinceLast(lastReadingDate: string | null): number {
   if (!lastReadingDate) return 999
   return differenceInCalendarDays(parseISO(todayISO()), parseISO(lastReadingDate))
-}
-
-function cheerTemplate(name: string) {
-  const short = name.trim() || '친구'
-  return `${short}아 😊 오늘부터 다시 우리 반이랑 함께 읽어보자!\n하루 놓쳐도 괜찮아. 오늘부터 다시 시작하면 돼! 📖`
 }
 
 function StaffTeacherHome({
@@ -112,7 +107,9 @@ export function TeacherDashboardPage() {
   const [notices, setNotices] = useState<{ id: string; content: string }[]>([])
   const [noticeError, setNoticeError] = useState<string | null>(null)
   const [noticeLoading, setNoticeLoading] = useState(false)
-  const [cheerFocus, setCheerFocus] = useState<string | null>(null)
+  const [cheerBusyId, setCheerBusyId] = useState<string | null>(null)
+  const [cheerMessage, setCheerMessage] = useState<string | null>(null)
+  const [cheerError, setCheerError] = useState<string | null>(null)
 
   const hasClass = Boolean(profile.class_id)
 
@@ -197,12 +194,34 @@ export function TeacherDashboardPage() {
         content,
       })
       setNoticeContent('')
-      setCheerFocus(null)
       await refreshNotices()
     } catch (err) {
       setNoticeError(err instanceof Error ? err.message : '공지 작성 실패')
     } finally {
       setNoticeLoading(false)
+    }
+  }
+
+  const onCheerStudent = async (student: StudentStatus) => {
+    if (!project) return
+    setCheerBusyId(student.userId)
+    setCheerError(null)
+    setCheerMessage(null)
+    try {
+      const result = await cheerStudentLatestLog({
+        projectId: project.id,
+        studentUserId: student.userId,
+        teacherUserId: profile.id,
+      })
+      setCheerMessage(
+        result.already
+          ? `${student.name} 친구의 최근 인증에는 이미 응원이 있어요.`
+          : `${student.name} 친구의 최근 인증 피드에 응원을 남겼어요. (반 공지가 아닙니다)`,
+      )
+    } catch (err) {
+      setCheerError(err instanceof Error ? err.message : '응원 실패')
+    } finally {
+      setCheerBusyId(null)
     }
   }
 
@@ -238,8 +257,14 @@ export function TeacherDashboardPage() {
       <Card className="border-coral/25 bg-coral/10">
         <h2 className="section-title text-base">응원이 필요한 친구</h2>
         <p className="mt-1 text-xs text-muted">
-          2일 이상 미인증 · 학생 화면에는 표시되지 않습니다.
+          2일 이상 미인증 · 응원하기는 해당 학생의 최근 인증 피드에만 표시됩니다.
         </p>
+        {cheerMessage ? (
+          <p className="mt-2 rounded-xl bg-panel/90 px-3 py-2 text-xs font-medium text-sage-dark">
+            {cheerMessage}
+          </p>
+        ) : null}
+        {cheerError ? <p className="mt-2 text-xs text-danger">{cheerError}</p> : null}
         <div className="mt-3 space-y-2">
           {needCheer.length === 0 ? (
             <p className="text-sm text-sage-dark">모두 잘 따라오고 있어요 🙌</p>
@@ -263,16 +288,10 @@ export function TeacherDashboardPage() {
                     size="sm"
                     variant="sage"
                     type="button"
-                    onClick={() => {
-                      setCheerFocus(s.name)
-                      setNoticeContent(cheerTemplate(s.name))
-                      document.getElementById('teacher-notice')?.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start',
-                      })
-                    }}
+                    disabled={cheerBusyId === s.userId || !s.lastReadingDate}
+                    onClick={() => void onCheerStudent(s)}
                   >
-                    응원하기
+                    {cheerBusyId === s.userId ? '…' : '응원하기'}
                   </Button>
                 </div>
               )
@@ -313,9 +332,7 @@ export function TeacherDashboardPage() {
         <div>
           <h2 className="section-title text-base">공지사항</h2>
           <p className="mt-1 text-sm text-muted">
-            {cheerFocus
-              ? `${cheerFocus} 친구에게 남길 격려 메시지를 다듬어 등록하세요. 우리 반 홈에만 보여요.`
-              : '우리 반 친구들 홈에만 보이는 공지를 남겨주세요.'}
+            여기 등록한 글만 우리 반 전체 홈에 보입니다.
           </p>
         </div>
         <form onSubmit={onSubmitNotice} className="space-y-3">
