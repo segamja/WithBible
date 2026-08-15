@@ -123,7 +123,7 @@ export function OpsPage() {
             authorId={profile.id}
             kind="cheer"
             title="응원의 메시지"
-            hint="모든 학생 홈에 보이는 격려 글입니다."
+            hint="모든 학생 홈에 오늘 하루 동안 보이는 격려 글입니다. 보낸 뒤에는 홈에서만 확인할 수 있어요."
             placeholder="우리 고등부 친구들, 오늘도 말씀 안에서 힘내요!"
             canWrite
           />

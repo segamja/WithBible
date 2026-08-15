@@ -267,7 +267,7 @@ export function TeacherDashboardPage() {
           kind="cheer"
           classId={profile.class_id}
           title="응원의 메시지"
-          hint="우리 반 친구들 홈에만 보이는 격려 글입니다. 공식 공지는 강도사님·최고관리자가 남깁니다."
+          hint="우리 반 홈에 오늘 하루 동안 보이는 격려 글입니다. 보낸 뒤에는 홈에서만 확인할 수 있어요."
           placeholder={`우리 ${className}!\n조금 늦어도 괜찮아. 오늘부터 다시 함께 읽어보자.`}
           canWrite
         />

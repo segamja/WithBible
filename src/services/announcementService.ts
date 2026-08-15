@@ -1,7 +1,14 @@
 import { supabase } from '@/lib/supabase'
 import { Tables } from '@/lib/tables'
 import type { Announcement, AnnouncementKind } from '@/types'
+import { seoulTodayStartIso } from '@/utils/seoul'
 import { emptyToNull, isUuid, requireUuid } from '@/utils/uuid'
+
+const TODAY_CHEER_LIMIT = 8
+
+export async function purgeOldCheers(): Promise<void> {
+  await supabase.rpc('wb_purge_old_cheers')
+}
 
 export type AnnouncementRow = Announcement & { profiles?: { name: string } }
 
@@ -32,19 +39,28 @@ export async function listAnnouncements(params: {
   return (data ?? []) as AnnouncementRow[]
 }
 
-export async function listClassCheers(
+export async function listTodayCheers(
   projectId: string,
-  classId: string,
+  classId?: string | null,
 ): Promise<AnnouncementRow[]> {
-  if (!isUuid(projectId) || !isUuid(classId)) return []
-  const { data, error } = await supabase
+  await purgeOldCheers()
+  if (!isUuid(projectId)) return []
+  let query = supabase
     .from(Tables.announcements)
     .select('*, profiles:wb_profiles(name)')
     .eq('project_id', projectId)
     .eq('kind', 'cheer')
-    .eq('class_id', classId)
+    .gte('created_at', seoulTodayStartIso())
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(TODAY_CHEER_LIMIT)
+
+  if (isUuid(classId)) {
+    query = query.or(`class_id.is.null,class_id.eq.${classId}`)
+  } else {
+    query = query.is('class_id', null)
+  }
+
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   return (data ?? []) as AnnouncementRow[]
 }
@@ -65,6 +81,9 @@ export async function createAnnouncement(input: {
   }
   if (input.kind === 'cheer' && classId === undefined) {
     throw new Error('응원 메시지 대상이 없습니다.')
+  }
+  if (input.kind === 'cheer') {
+    await purgeOldCheers()
   }
   const { data, error } = await supabase
     .from(Tables.announcements)

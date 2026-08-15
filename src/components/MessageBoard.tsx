@@ -6,7 +6,6 @@ import {
   createAnnouncement,
   deleteAnnouncement,
   listAnnouncements,
-  listClassCheers,
   type AnnouncementRow,
 } from '@/services/announcementService'
 import type { AnnouncementKind } from '@/types'
@@ -20,6 +19,7 @@ export function MessageBoard({
   hint,
   placeholder,
   canWrite,
+  showHistory,
 }: {
   projectId: string
   authorId: string
@@ -29,23 +29,24 @@ export function MessageBoard({
   hint: string
   placeholder: string
   canWrite: boolean
+  showHistory?: boolean
 }) {
+  const keepHistory = showHistory ?? kind !== 'cheer'
   const [content, setContent] = useState('')
   const [list, setList] = useState<AnnouncementRow[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const load = async () => {
-    const rows =
-      kind === 'cheer' && classId
-        ? await listClassCheers(projectId, classId)
-        : await listAnnouncements({ projectId, kind, classId })
-    setList(rows)
+    if (!keepHistory) return
+    const rows = await listAnnouncements({ projectId, kind, classId })
+    setList(kind === 'notice' ? rows.filter((r) => r.class_id == null) : rows)
   }
 
   useEffect(() => {
     void load().catch((e) => setError(e instanceof Error ? e.message : '목록을 불러오지 못했어요'))
-  }, [projectId, kind, classId])
+  }, [projectId, kind, classId, keepHistory])
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -53,6 +54,7 @@ export function MessageBoard({
     if (!text || !canWrite) return
     setLoading(true)
     setError(null)
+    setSuccess(null)
     try {
       await createAnnouncement({
         projectId,
@@ -62,7 +64,15 @@ export function MessageBoard({
         kind,
       })
       setContent('')
-      await load()
+      if (keepHistory) {
+        await load()
+      } else {
+        setSuccess(
+          classId
+            ? '우리 반 홈에 전달됐어요. 오늘 하루 동안 보여요.'
+            : '모든 학생 홈에 전달됐어요. 오늘 하루 동안 보여요.',
+        )
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '등록 실패')
     } finally {
@@ -88,6 +98,7 @@ export function MessageBoard({
             />
           </Card>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
+          {success ? <p className="text-sm text-sage-dark">{success}</p> : null}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? '등록 중…' : '등록'}
           </Button>
@@ -95,33 +106,35 @@ export function MessageBoard({
       ) : error ? (
         <p className="text-sm text-danger">{error}</p>
       ) : null}
-      <div className="space-y-3">
-        {list.length === 0 ? (
-          <p className="text-sm text-muted">아직 등록된 글이 없습니다.</p>
-        ) : (
-          list.map((item) => (
-            <Card key={item.id} className="space-y-2">
-              {item.profiles?.name ? (
-                <p className="text-xs text-muted">{item.profiles.name}</p>
-              ) : null}
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">{item.content}</p>
-              {canWrite ? (
-                <button
-                  type="button"
-                  className="text-xs text-muted hover:text-danger"
-                  onClick={() =>
-                    void deleteAnnouncement(item.id).then(() =>
-                      setList((prev) => prev.filter((x) => x.id !== item.id)),
-                    )
-                  }
-                >
-                  삭제
-                </button>
-              ) : null}
-            </Card>
-          ))
-        )}
-      </div>
+      {keepHistory ? (
+        <div className="space-y-3">
+          {list.length === 0 ? (
+            <p className="text-sm text-muted">아직 등록된 글이 없습니다.</p>
+          ) : (
+            list.map((item) => (
+              <Card key={item.id} className="space-y-2">
+                {item.profiles?.name ? (
+                  <p className="text-xs text-muted">{item.profiles.name}</p>
+                ) : null}
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">{item.content}</p>
+                {canWrite ? (
+                  <button
+                    type="button"
+                    className="text-xs text-muted hover:text-danger"
+                    onClick={() =>
+                      void deleteAnnouncement(item.id).then(() =>
+                        setList((prev) => prev.filter((x) => x.id !== item.id)),
+                      )
+                    }
+                  >
+                    삭제
+                  </button>
+                ) : null}
+              </Card>
+            ))
+          )}
+        </div>
+      ) : null}
     </section>
   )
 }

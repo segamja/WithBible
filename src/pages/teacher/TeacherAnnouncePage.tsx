@@ -39,7 +39,7 @@ export function TeacherAnnouncePage() {
           kind="cheer"
           classId={profile.class_id}
           title="우리 반 응원"
-          hint="담당 반 친구들 홈에만 보입니다."
+          hint="담당 반 친구들 홈에 오늘 하루 동안 보입니다."
           placeholder="조금 늦어도 괜찮아! 오늘부터 다시 함께 읽어보자."
           canWrite
         />

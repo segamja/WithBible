@@ -11,7 +11,8 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { getClassProgress, getPersonalProgress, getClassCommunityWarmth } from '@/services/progressService'
-import { listAnnouncements } from '@/services/announcementService'
+import { CheerTodayCard } from '@/components/CheerTodayCard'
+import { listAnnouncements, listTodayCheers, type AnnouncementRow } from '@/services/announcementService'
 import { listClassLogs, listFeed } from '@/services/readingService'
 import { getClassById, listClassStudents } from '@/services/classService'
 import type { ReadingLogWithMeta } from '@/types'
@@ -40,10 +41,7 @@ export function StudentHomePage() {
     readUpToLabel: '아직 인증한 장이 없어요',
   })
   const [announcement, setAnnouncement] = useState<string | null>(null)
-  const [cheerMessage, setCheerMessage] = useState<{
-    content: string
-    author?: string
-  } | null>(null)
+  const [cheers, setCheers] = useState<AnnouncementRow[]>([])
   const [feed, setFeed] = useState<ReadingLogWithMeta[]>([])
   const [className, setClassName] = useState('우리 반')
   const [personalStreak, setPersonalStreak] = useState(0)
@@ -128,17 +126,7 @@ export function StudentHomePage() {
         kind: 'notice',
       })
       setAnnouncement(notices[0]?.content ?? null)
-      const cheers = await listAnnouncements({
-        projectId: project.id,
-        kind: 'cheer',
-        classId: profile.class_id,
-      })
-      const cheer = cheers[0]
-      setCheerMessage(
-        cheer
-          ? { content: cheer.content, author: cheer.profiles?.name }
-          : null,
-      )
+      setCheers(await listTodayCheers(project.id, profile.class_id))
       setFeed(await listFeed({ projectId: project.id, limit: 8 }))
     }
     void run()
@@ -311,15 +299,7 @@ export function StudentHomePage() {
         </Card>
       ) : null}
 
-      {cheerMessage ? (
-        <Card>
-          <p className="text-sm font-medium text-navy">응원의 메시지</p>
-          {cheerMessage.author ? (
-            <p className="mt-1 text-xs text-muted">{cheerMessage.author}</p>
-          ) : null}
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{cheerMessage.content}</p>
-        </Card>
-      ) : null}
+      <CheerTodayCard cheers={cheers} />
 
       {project?.party_date || project?.party_title ? (
         <PartyBanner
