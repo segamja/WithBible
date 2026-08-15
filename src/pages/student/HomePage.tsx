@@ -19,7 +19,7 @@ import { getClassById, listClassStudents } from '@/services/classService'
 import type { ReadingLogWithMeta } from '@/types'
 import { departmentTitleOf } from '@/lib/branding'
 import { homeGreetingLine } from '@/lib/roles'
-import { getDDayLabel } from '@/utils/dday'
+import { getDDayLabel, formatProjectRange } from '@/utils/dday'
 import { calcPersonalStreak, getTodayReadingRange, greetingPartsForNow } from '@/utils/schedule'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 
@@ -193,6 +193,7 @@ export function StudentHomePage() {
             </span>
           </div>
           <h2 className="font-display text-[1.65rem] text-navy">{todayLabel}</h2>
+          <p className="text-xs text-muted">읽는 기간 · {formatProjectRange(project.start_date, project.end_date)}</p>
           <p className="text-xs text-muted">
             {profile.class_id ? `${className} · ` : ''}
             {personal.readUpToLabel} · 목표 {personal.rate}%
