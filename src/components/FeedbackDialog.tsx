@@ -70,7 +70,7 @@ export function FeedbackDialog({
         {success ? (
           <div className="space-y-4">
             <p className="text-sm leading-relaxed text-sage-dark">
-              최고관리자에게 전달했어요. 확인 후 반영할게요.
+              관리자에게 전달했어요. 확인 후 반영할게요.
             </p>
             <Button type="button" className="w-full" onClick={onClose}>
               닫기
