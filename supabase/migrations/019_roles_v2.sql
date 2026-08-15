@@ -3,20 +3,9 @@
 -- Announcements: kind notice|cheer
 
 -- ---------------------------------------------------------------------------
--- 1) Expand enum, migrate rows, rebuild type without ADMIN
+-- 1) Rebuild enum without ADMIN (Postgres forbids using ADD VALUE in the
+--    same transaction — Supabase SQL Editor wraps the whole script).
 -- ---------------------------------------------------------------------------
-alter type public.wb_user_role add value if not exists 'MASTER';
-alter type public.wb_user_role add value if not exists 'SUB_MASTER';
-alter type public.wb_user_role add value if not exists 'STAFF';
-
-update public.wb_profiles
-set role = 'MASTER'
-where role::text = 'ADMIN';
-
-update public.wb_profiles
-set role = 'STAFF'
-where role::text = 'TEACHER'
-  and class_id is null;
 
 -- Policies still call these during the type swap — keep them text-safe
 create or replace function public.wb_is_admin()
@@ -68,6 +57,15 @@ drop function if exists public.wb_upsert_staff_code(text, text);
 alter table public.wb_profiles alter column role drop default;
 alter table public.wb_profiles
   alter column role type text using role::text;
+
+update public.wb_profiles
+set role = 'MASTER'
+where role = 'ADMIN';
+
+update public.wb_profiles
+set role = 'STAFF'
+where role = 'TEACHER'
+  and class_id is null;
 
 drop type public.wb_user_role cascade;
 
