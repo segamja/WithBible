@@ -359,8 +359,6 @@ export function CheckinPage() {
                 <Camera className="h-10 w-10 text-muted" strokeWidth={1.5} />
                 <p className="mt-3 text-sm leading-relaxed text-muted">
                   읽은 성경 부분이 보이도록 촬영해주세요
-                  <br />
-                  (얼굴 제외)
                 </p>
               </div>
             )}
@@ -401,12 +399,11 @@ export function CheckinPage() {
             />
           </div>
 
-          <Field label="오늘 마음에 남은 한 줄">
+          <Field label="오늘 말씀에서 마음에 남은 것" hint="선택 사항 · 비워 두어도 인증할 수 있어요">
             <Textarea
-              required
               value={reflection}
               onChange={(e) => setReflection(e.target.value)}
-              placeholder="오늘 말씀에서 가장 기억에 남은 것은?"
+              placeholder="오늘 말씀을 읽고 어떤 생각이나 깨달음이 있었나요?"
             />
           </Field>
 
