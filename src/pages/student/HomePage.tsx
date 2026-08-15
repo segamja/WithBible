@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { getClassProgress, getPersonalProgress, getClassCommunityWarmth } from '@/services/progressService'
 import { CheerTodayCard } from '@/components/CheerTodayCard'
+import { FeedbackDialog } from '@/components/FeedbackDialog'
 import { listAnnouncements, listTodayCheers, type AnnouncementRow } from '@/services/announcementService'
 import { listClassLogs, listFeed } from '@/services/readingService'
 import { getClassById, listClassStudents } from '@/services/classService'
@@ -48,6 +49,7 @@ export function StudentHomePage() {
   const [myDates, setMyDates] = useState<string[]>([])
   const [todayRange, setTodayRange] = useState({ start: 1, end: 1 })
   const [todayBookName, setTodayBookName] = useState('복음서')
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   useEffect(() => {
     void loadForUser(profile.class_id)
@@ -318,6 +320,15 @@ export function StudentHomePage() {
           note={project.party_note}
         />
       ) : null}
+
+      <Button type="button" variant="outline" className="w-full" onClick={() => setFeedbackOpen(true)}>
+        버그신고 / 기능제안
+      </Button>
+      <FeedbackDialog
+        userId={profile.id}
+        open={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+      />
     </div>
   )
 }

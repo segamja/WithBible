@@ -20,6 +20,7 @@ import { getAdminOverview } from '@/services/progressService'
 import type { BibleBook, Project } from '@/types'
 import { getDDayLabel } from '@/utils/dday'
 import { MessageBoard } from '@/components/MessageBoard'
+import { countUnreadFeedback } from '@/services/feedbackService'
 
 export function AdminDashboardPage() {
   const profile = useAuthStore((s) => s.profile)!
@@ -33,6 +34,7 @@ export function AdminDashboardPage() {
     avgAchievement: 0,
     classes: [] as Awaited<ReturnType<typeof getAdminOverview>>['classes'],
   })
+  const [unreadFeedback, setUnreadFeedback] = useState(0)
 
   useEffect(() => {
     void loadForUser(profile.class_id)
@@ -45,6 +47,11 @@ export function AdminDashboardPage() {
       setProject(active)
       if (active) {
         setOverview(await getAdminOverview(active.id))
+      }
+      try {
+        setUnreadFeedback(await countUnreadFeedback())
+      } catch {
+        setUnreadFeedback(0)
       }
     }
     void run()
@@ -84,6 +91,11 @@ export function AdminDashboardPage() {
         <Link to="/admin/users">
           <Button className="w-full" variant="outline" size="sm">
             사용자
+          </Button>
+        </Link>
+        <Link to="/admin/feedback">
+          <Button className="w-full" variant="outline" size="sm">
+            제안함{unreadFeedback > 0 ? ` ${unreadFeedback}` : ''}
           </Button>
         </Link>
         <Link to="/progress">

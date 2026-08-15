@@ -27,6 +27,7 @@ import { AdminLoginPage } from '@/pages/admin/AdminLoginPage'
 import { AdminDashboardPage, AdminProjectsPage } from '@/pages/admin/AdminPages'
 import { AdminClassesPage, AdminUsersPage } from '@/pages/admin/AdminManagePages'
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage'
+import { AdminFeedbackPage } from '@/pages/admin/AdminFeedbackPage'
 import { OpsPage } from '@/pages/ops/OpsPage'
 import { StaffPage } from '@/pages/staff/StaffPage'
 import { ALL_ROLES } from '@/lib/roles'
@@ -100,6 +101,7 @@ export default function App() {
           <Route path="/admin/projects" element={<AdminProjectsPage />} />
           <Route path="/admin/classes" element={<AdminClassesPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
         </Route>
 
         <Route path="/me" element={<MePage />} />

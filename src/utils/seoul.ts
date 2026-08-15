@@ -30,3 +30,13 @@ export function cheerPreview(content: string, max = 42): string {
   if (line.length <= max) return line
   return `${line.slice(0, max)}…`
 }
+
+export function formatSeoulDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('ko-KR', {
+    timeZone: SEOUL,
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}

@@ -97,7 +97,8 @@ export function BottomNav({
               location.pathname === '/admin/classes' ||
               location.pathname === '/admin/users' ||
               location.pathname === '/admin/projects' ||
-              location.pathname === '/admin/settings')
+              location.pathname === '/admin/settings' ||
+              location.pathname === '/admin/feedback')
           const opsHubActive =
             item.to === '/ops' &&
             (location.pathname === '/ops' || location.pathname.startsWith('/ops/'))

@@ -2,6 +2,8 @@ export type UserRole = 'MASTER' | 'SUB_MASTER' | 'STAFF' | 'TEACHER' | 'STUDENT'
 
 export type AnnouncementKind = 'notice' | 'cheer'
 
+export type FeedbackKind = 'bug' | 'feature'
+
 export type ProjectStatus = 'draft' | 'active' | 'completed'
 
 export type Visibility = 'class' | 'public'
@@ -117,6 +119,15 @@ export interface Announcement {
   content: string
   kind: AnnouncementKind
   created_at: string
+}
+
+export interface Feedback {
+  id: string
+  user_id: string
+  kind: FeedbackKind
+  content: string
+  created_at: string
+  read_at: string | null
 }
 
 export interface FeedComment {

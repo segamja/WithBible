@@ -13,4 +13,5 @@ export const Tables = {
   staffCodes: 'wb_staff_codes',
   readAlongs: 'wb_read_alongs',
   notifications: 'wb_notifications',
+  feedback: 'wb_feedback',
 } as const
