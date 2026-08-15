@@ -11,6 +11,11 @@ export type EncouragementType =
   | 'grace'
   | 'well_done'
   | 'like'
+  | 'love'
+  | 'prayer'
+  | 'fire'
+  | 'cheer'
+  | 'teacher_cheer'
 
 export interface Profile {
   id: string
@@ -120,12 +125,38 @@ export interface FeedComment {
   profiles?: { name: string } | null
 }
 
+export interface ReadAlongPreview {
+  user_id: string
+  name: string
+}
+
+export type ReactionCounts = Partial<Record<EncouragementType, number>>
+
+export interface AppNotification {
+  id: string
+  user_id: string
+  actor_id: string | null
+  reading_log_id: string | null
+  kind: 'reaction' | 'comment' | 'read_along' | 'teacher_cheer'
+  reaction_type: string | null
+  message: string
+  is_read: boolean
+  created_at: string
+  actor?: Pick<Profile, 'id' | 'name' | 'profile_image'> | null
+}
+
 export interface ReadingLogWithMeta extends ReadingLog {
   profiles?: Pick<Profile, 'id' | 'name' | 'profile_image' | 'class_id'>
   bible_books?: Pick<BibleBook, 'id' | 'name'>
   classes?: Pick<ClassRow, 'id' | 'name'>
   encouragement_count?: number
   my_encouragement?: EncouragementType | null
+  reaction_counts?: ReactionCounts
+  my_reactions?: EncouragementType[]
+  has_teacher_cheer?: boolean
+  read_along_count?: number
+  read_along_preview?: ReadAlongPreview[]
+  my_read_along?: boolean
   comments?: FeedComment[]
 }
 

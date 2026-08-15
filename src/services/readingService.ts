@@ -1,10 +1,13 @@
 import { supabase } from '@/lib/supabase'
 import { Tables } from '@/lib/tables'
+import { reactionLabel } from '@/lib/reactions'
 import type {
   CreateReadingInput,
   EncouragementType,
+  ReactionCounts,
   ReadingLog,
   ReadingLogWithMeta,
+  ReadAlongPreview,
 } from '@/types'
 import { todayISO } from '@/utils/dday'
 import { isUuid, requireUuid } from '@/utils/uuid'
@@ -72,10 +75,69 @@ export async function deleteReadingLog(id: string, userId: string): Promise<void
   if (error) throw new Error(error.message)
 }
 
+type EncRow = { id: string; user_id: string; type: EncouragementType }
+type AlongRow = {
+  user_id: string
+  created_at: string
+  profiles?: { id: string; name: string } | null
+}
+
+function aggregateEncouragements(
+  rows: EncRow[],
+  currentUserId?: string,
+): {
+  reaction_counts: ReactionCounts
+  my_reactions: EncouragementType[]
+  encouragement_count: number
+  has_teacher_cheer: boolean
+  my_encouragement: EncouragementType | null
+} {
+  const reaction_counts: ReactionCounts = {}
+  const my_reactions: EncouragementType[] = []
+  for (const row of rows) {
+    reaction_counts[row.type] = (reaction_counts[row.type] ?? 0) + 1
+    if (currentUserId && row.user_id === currentUserId) {
+      my_reactions.push(row.type)
+    }
+  }
+  return {
+    reaction_counts,
+    my_reactions,
+    encouragement_count: rows.length,
+    has_teacher_cheer: (reaction_counts.teacher_cheer ?? 0) > 0,
+    my_encouragement: my_reactions[0] ?? null,
+  }
+}
+
+function aggregateReadAlongs(
+  rows: AlongRow[],
+  currentUserId?: string,
+): {
+  read_along_count: number
+  read_along_preview: ReadAlongPreview[]
+  my_read_along: boolean
+} {
+  const preview: ReadAlongPreview[] = []
+  let my_read_along = false
+  for (const row of rows) {
+    if (currentUserId && row.user_id === currentUserId) my_read_along = true
+    const name = row.profiles?.name
+    if (name && preview.length < 2) {
+      preview.push({ user_id: row.user_id, name })
+    }
+  }
+  return {
+    read_along_count: rows.length,
+    read_along_preview: preview,
+    my_read_along,
+  }
+}
+
 export async function listFeed(params: {
   projectId: string
   classId?: string | null
   limit?: number
+  currentUserId?: string
 }): Promise<ReadingLogWithMeta[]> {
   let query = supabase
     .from(Tables.readingLogs)
@@ -84,7 +146,8 @@ export async function listFeed(params: {
       *,
       profiles:wb_profiles!inner(id, name, profile_image, class_id),
       bible_books:wb_bible_books(id, name),
-      encouragements:wb_encouragements(id, user_id, type)
+      encouragements:wb_encouragements(id, user_id, type),
+      read_alongs:wb_read_alongs(user_id, created_at, profiles:wb_profiles(id, name))
     `,
     )
     .eq('project_id', params.projectId)
@@ -99,15 +162,18 @@ export async function listFeed(params: {
   if (error) throw new Error(error.message)
 
   return (data ?? []).map((row) => {
-    const encouragements =
-      (row.encouragements as { id: string; user_id: string; type: EncouragementType }[]) ?? []
-    const { encouragements: _removed, ...rest } = row as typeof row & {
+    const encouragements = (row.encouragements as EncRow[] | null) ?? []
+    const readAlongs = (row.read_alongs as AlongRow[] | null) ?? []
+    const { encouragements: _e, read_alongs: _a, ...rest } = row as typeof row & {
       encouragements?: unknown
+      read_alongs?: unknown
     }
-    void _removed
+    void _e
+    void _a
     return {
       ...rest,
-      encouragement_count: encouragements.length,
+      ...aggregateEncouragements(encouragements, params.currentUserId),
+      ...aggregateReadAlongs(readAlongs, params.currentUserId),
     } as ReadingLogWithMeta
   })
 }
@@ -149,6 +215,26 @@ export async function listClassLogs(
   return (data ?? []) as ReadingLog[]
 }
 
+async function notifyOwner(
+  readingLogId: string,
+  actorId: string,
+  kind: 'reaction' | 'comment' | 'read_along' | 'teacher_cheer',
+  message: string,
+  reactionType?: EncouragementType,
+): Promise<void> {
+  try {
+    await supabase.rpc('wb_notify_log_owner', {
+      p_log_id: readingLogId,
+      p_actor_id: actorId,
+      p_kind: kind,
+      p_reaction_type: reactionType ?? null,
+      p_message: message,
+    })
+  } catch {
+    /* notification is best-effort */
+  }
+}
+
 export async function addEncouragement(
   readingLogId: string,
   userId: string,
@@ -160,9 +246,46 @@ export async function addEncouragement(
       user_id: userId,
       type,
     },
-    { onConflict: 'reading_log_id,user_id' },
+    { onConflict: 'reading_log_id,user_id,type' },
   )
   if (error) throw new Error(error.message)
+
+  const kind = type === 'teacher_cheer' ? 'teacher_cheer' : 'reaction'
+  const message =
+    type === 'teacher_cheer'
+      ? '선생님이 말씀읽기를 응원합니다.'
+      : `친구가 ${reactionLabel(type)} 응원을 보냈어요.`
+  await notifyOwner(readingLogId, userId, kind, message, type)
+}
+
+export async function removeEncouragement(
+  readingLogId: string,
+  userId: string,
+  type?: EncouragementType,
+): Promise<void> {
+  let query = supabase
+    .from(Tables.encouragements)
+    .delete()
+    .eq('reading_log_id', readingLogId)
+    .eq('user_id', userId)
+  if (type) query = query.eq('type', type)
+  const { error } = await query
+  if (error) throw new Error(error.message)
+}
+
+/** Toggle one reaction type. Returns true if reaction is now active. */
+export async function toggleReaction(
+  readingLogId: string,
+  userId: string,
+  type: EncouragementType,
+  currentlyActive: boolean,
+): Promise<boolean> {
+  if (currentlyActive) {
+    await removeEncouragement(readingLogId, userId, type)
+    return false
+  }
+  await addEncouragement(readingLogId, userId, type)
+  return true
 }
 
 export async function toggleLike(
@@ -170,30 +293,13 @@ export async function toggleLike(
   userId: string,
   currentlyLiked: boolean,
 ): Promise<boolean> {
-  if (currentlyLiked) {
-    await removeEncouragement(readingLogId, userId)
-    return false
-  }
-  await addEncouragement(readingLogId, userId, 'like')
-  return true
-}
-
-export async function removeEncouragement(
-  readingLogId: string,
-  userId: string,
-): Promise<void> {
-  const { error } = await supabase
-    .from(Tables.encouragements)
-    .delete()
-    .eq('reading_log_id', readingLogId)
-    .eq('user_id', userId)
-  if (error) throw new Error(error.message)
+  return toggleReaction(readingLogId, userId, 'like', currentlyLiked)
 }
 
 export async function getMyEncouragements(
   userId: string,
   logIds: string[],
-): Promise<Record<string, EncouragementType>> {
+): Promise<Record<string, EncouragementType[]>> {
   if (logIds.length === 0) return {}
   const { data, error } = await supabase
     .from(Tables.encouragements)
@@ -201,11 +307,37 @@ export async function getMyEncouragements(
     .eq('user_id', userId)
     .in('reading_log_id', logIds)
   if (error) throw new Error(error.message)
-  const map: Record<string, EncouragementType> = {}
+  const map: Record<string, EncouragementType[]> = {}
   for (const row of data ?? []) {
-    map[row.reading_log_id as string] = row.type as EncouragementType
+    const id = row.reading_log_id as string
+    const type = row.type as EncouragementType
+    if (!map[id]) map[id] = []
+    map[id].push(type)
   }
   return map
+}
+
+export async function toggleReadAlong(
+  readingLogId: string,
+  userId: string,
+  currentlyActive: boolean,
+): Promise<boolean> {
+  if (currentlyActive) {
+    const { error } = await supabase
+      .from(Tables.readAlongs)
+      .delete()
+      .eq('reading_log_id', readingLogId)
+      .eq('user_id', userId)
+    if (error) throw new Error(error.message)
+    return false
+  }
+  const { error } = await supabase.from(Tables.readAlongs).upsert(
+    { reading_log_id: readingLogId, user_id: userId },
+    { onConflict: 'reading_log_id,user_id' },
+  )
+  if (error) throw new Error(error.message)
+  await notifyOwner(readingLogId, userId, 'read_along', '친구도 함께 읽었어요.')
+  return true
 }
 
 export function subscribeFeedChanges(
@@ -239,6 +371,15 @@ export function subscribeFeedChanges(
         event: '*',
         schema: 'public',
         table: Tables.comments,
+      },
+      () => onChange(),
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: Tables.readAlongs,
       },
       () => onChange(),
     )

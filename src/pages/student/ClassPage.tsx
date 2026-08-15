@@ -7,7 +7,7 @@ import { CircularProgress } from '@/components/CircularProgress'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { getClassById, listClassStudents } from '@/services/classService'
-import { getClassProgress, getPersonalProgress } from '@/services/progressService'
+import { getClassProgress, getPersonalProgress, getClassCommunityWarmth } from '@/services/progressService'
 import { listAnnouncements } from '@/services/announcementService'
 import { listClassLogs } from '@/services/readingService'
 import { roleHome } from '@/layouts/AppShell'
@@ -35,6 +35,13 @@ export function ClassPage() {
     goalLabel: '',
   })
   const [classStreak, setClassStreak] = useState(0)
+  const [warmth, setWarmth] = useState({
+    warmth: 0,
+    checkins: 0,
+    reactions: 0,
+    comments: 0,
+    readAlongs: 0,
+  })
   const [todayFriends, setTodayFriends] = useState<Profile[]>([])
   const [anns, setAnns] = useState<{ content: string; author?: string }[]>([])
 
@@ -70,6 +77,11 @@ export function ClassPage() {
         students.map((s) => s.id),
       )
       setClassStreak(calcClassStreak([...new Set(logs.map((l) => l.reading_date))]))
+      try {
+        setWarmth(await getClassCommunityWarmth(project.id, profile.class_id!))
+      } catch {
+        setWarmth({ warmth: 0, checkins: 0, reactions: 0, comments: 0, readAlongs: 0 })
+      }
       const today = todayISO()
       const todayIds = new Set(
         logs.filter((l) => l.reading_date === today).map((l) => l.user_id),
@@ -135,6 +147,21 @@ export function ClassPage() {
             {classStreak > 0 ? `${classStreak} 일 연속 말씀읽기` : '오늘 함께 시작해 볼까요?'}
           </p>
         </div>
+      </Card>
+
+      <Card className="space-y-2">
+        <p className="text-sm text-muted">💛 오늘 우리 반 응원 온도</p>
+        <p className="font-display text-3xl text-navy">
+          {warmth.warmth}
+          <span className="ml-0.5 text-xl">°</span>
+        </p>
+        <p className="text-xs leading-relaxed text-muted">
+          오늘 {warmth.checkins}명이 말씀을 읽었어요 · 응원 {warmth.reactions} · 댓글{' '}
+          {warmth.comments} · 함께 읽기 {warmth.readAlongs}
+        </p>
+        <p className="text-[11px] text-muted/80">
+          다른 반과 비교하는 점수가 아니라, 우리 반이 함께하는 오늘의 분위기예요.
+        </p>
       </Card>
 
       {project ? (

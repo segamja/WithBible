@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/Card'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
-import { getClassProgress, getPersonalProgress } from '@/services/progressService'
+import { getClassProgress, getPersonalProgress, getClassCommunityWarmth } from '@/services/progressService'
 import { listAnnouncements } from '@/services/announcementService'
 import { listClassLogs, listFeed } from '@/services/readingService'
 import { getClassById, listClassStudents } from '@/services/classService'
@@ -29,6 +29,7 @@ export function StudentHomePage() {
     todayCheckins: 0,
     participatedCount: 0,
   })
+  const [warmth, setWarmth] = useState(0)
   const [personal, setPersonal] = useState({
     covered: 0,
     target: 0,
@@ -93,6 +94,12 @@ export function StudentHomePage() {
           todayCheckins: progress.todayCheckins,
           participatedCount: progress.participatedCount,
         })
+        try {
+          const w = await getClassCommunityWarmth(project.id, profile.class_id)
+          setWarmth(w.warmth)
+        } catch {
+          setWarmth(0)
+        }
         const students = await listClassStudents(profile.class_id)
         const logs = await listClassLogs(
           project.id,
@@ -216,6 +223,12 @@ export function StudentHomePage() {
             </span>
             <span className="text-line">|</span>
             <span>🔥 오늘 {progressMeta.todayCheckins}명 인증</span>
+            {warmth > 0 ? (
+              <>
+                <span className="text-line">|</span>
+                <span>💛 응원 온도 {warmth}°</span>
+              </>
+            ) : null}
           </div>
           <p className="text-xs text-muted">
             나의 목표 진행 {personal.covered}/{personal.target}장 · {personal.rate}%

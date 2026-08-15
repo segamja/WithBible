@@ -19,6 +19,7 @@ import { StudentHomePage } from '@/pages/student/HomePage'
 import { CheckinPage } from '@/pages/student/CheckinPage'
 import { ClassPage } from '@/pages/student/ClassPage'
 import { FeedPage } from '@/pages/student/FeedPage'
+import { NotificationsPage } from '@/pages/student/NotificationsPage'
 import { ClassesOverviewPage } from '@/pages/ClassesOverviewPage'
 import { TeacherDashboardPage } from '@/pages/teacher/TeacherDashboardPage'
 import { TeacherAnnouncePage } from '@/pages/teacher/TeacherAnnouncePage'
@@ -71,6 +72,7 @@ export default function App() {
         <Route element={<RoleGuard allow={['STUDENT', 'TEACHER', 'ADMIN']} />}>
           <Route path="/checkin" element={<CheckinPage />} />
           <Route path="/feed" element={<FeedPage scope="all" />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/class" element={<ClassPage />} />
           <Route path="/progress" element={<ClassesOverviewPage />} />
         </Route>

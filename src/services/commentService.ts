@@ -45,6 +45,19 @@ export async function addComment(input: {
     .select('*, profiles:wb_profiles(name)')
     .single()
   if (error) throw new Error(error.message)
+
+  try {
+    await supabase.rpc('wb_notify_log_owner', {
+      p_log_id: readingLogId,
+      p_actor_id: userId,
+      p_kind: 'comment',
+      p_reaction_type: null,
+      p_message: '친구가 응원 댓글을 남겼어요.',
+    })
+  } catch {
+    /* best-effort */
+  }
+
   return data as FeedComment
 }
 

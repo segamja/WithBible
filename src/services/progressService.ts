@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { Tables } from '@/lib/tables'
 import { listClassLogs, listProjectLogs } from '@/services/readingService'
 import { listClassStudents, listClasses } from '@/services/classService'
 import {
@@ -13,6 +14,7 @@ import {
   type BookTarget,
 } from '@/utils/progress'
 import { todayISO } from '@/utils/dday'
+import { computeClassWarmth } from '@/lib/reactions'
 import { subDays } from 'date-fns'
 
 export async function getReadingTargets(
@@ -289,4 +291,56 @@ export function suggestedTodayRange(
   const start = Math.min(coveredChapters + 1, targetEnd)
   const end = Math.min(start + chaptersPerDay - 1, targetEnd)
   return { start, end }
+}
+
+/** Today's community activity for one class (no rankings). */
+export async function getClassCommunityWarmth(
+  projectId: string,
+  classId: string,
+): Promise<{
+  checkins: number
+  reactions: number
+  comments: number
+  readAlongs: number
+  warmth: number
+}> {
+  const students = await listClassStudents(classId)
+  const studentIds = students.map((s) => s.id)
+  if (studentIds.length === 0) {
+    return { checkins: 0, reactions: 0, comments: 0, readAlongs: 0, warmth: 0 }
+  }
+
+  const today = todayISO()
+  const logs = await listClassLogs(projectId, studentIds)
+  const todayLogs = logs.filter((l) => l.reading_date === today)
+  const logIds = todayLogs.map((l) => l.id)
+  const checkins = new Set(todayLogs.map((l) => l.user_id)).size
+
+  if (logIds.length === 0) {
+    return { checkins: 0, reactions: 0, comments: 0, readAlongs: 0, warmth: 0 }
+  }
+
+  const [{ count: reactions }, { count: comments }, { count: readAlongs }] =
+    await Promise.all([
+      supabase
+        .from(Tables.encouragements)
+        .select('id', { count: 'exact', head: true })
+        .in('reading_log_id', logIds),
+      supabase
+        .from(Tables.comments)
+        .select('id', { count: 'exact', head: true })
+        .in('reading_log_id', logIds),
+      supabase
+        .from(Tables.readAlongs)
+        .select('id', { count: 'exact', head: true })
+        .in('reading_log_id', logIds),
+    ])
+
+  const stats = {
+    checkins,
+    reactions: reactions ?? 0,
+    comments: comments ?? 0,
+    readAlongs: readAlongs ?? 0,
+  }
+  return { ...stats, warmth: computeClassWarmth(stats) }
 }

@@ -13,7 +13,7 @@ import { useProjectStore } from '@/stores/projectStore'
 import { createReadingLog } from '@/services/readingService'
 import { uploadCheckinPhoto } from '@/services/storageService'
 import { getPersonalProgress, getReadingTargets } from '@/services/progressService'
-import type { BibleBook, Visibility } from '@/types'
+import type { BibleBook } from '@/types'
 
 type BookRange = { start: number; end: number }
 
@@ -34,7 +34,6 @@ export function CheckinPage() {
   const [startChapter, setStartChapter] = useState('1')
   const [endChapter, setEndChapter] = useState('1')
   const [reflection, setReflection] = useState('')
-  const [visibility, setVisibility] = useState<Visibility>('public')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -46,10 +45,6 @@ export function CheckinPage() {
   const [resumeByBook, setResumeByBook] = useState<Record<string, number>>({})
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (!profile.class_id) setVisibility('public')
-  }, [profile.class_id])
 
   useEffect(() => {
     void loadForUser(profile.class_id)
@@ -227,7 +222,7 @@ export function CheckinPage() {
         startChapter: start,
         endChapter: end,
         reflection: reflection.trim(),
-        visibility,
+        visibility: 'public',
         imageUrl,
       })
       setDone(true)
@@ -406,22 +401,6 @@ export function CheckinPage() {
               placeholder="오늘 말씀을 읽고 어떤 생각이나 깨달음이 있었나요?"
             />
           </Field>
-
-          {profile.class_id ? (
-            <Field label="공개 범위">
-              <Select
-                value={visibility}
-                onChange={(e) => setVisibility(e.target.value as Visibility)}
-              >
-                <option value="public">전체 공개</option>
-                <option value="class">반 친구에게 공개</option>
-              </Select>
-            </Field>
-          ) : (
-            <p className="rounded-2xl bg-brand-50 px-4 py-3 text-sm text-navy">
-              반에 소속되지 않아 전체 공개로 올라갑니다.
-            </p>
-          )}
 
           {error ? <p className="text-sm text-danger">{error}</p> : null}
           <Button

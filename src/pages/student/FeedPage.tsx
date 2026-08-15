@@ -1,28 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ReadingFeedCard } from '@/components/ReadingFeedCard'
 import { Card } from '@/components/ui/Card'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import {
   deleteReadingLog,
-  getMyEncouragements,
   listFeed,
   subscribeFeedChanges,
-  toggleLike,
+  toggleReaction,
+  toggleReadAlong,
 } from '@/services/readingService'
 import {
   addComment,
   deleteComment,
   listCommentsForLogs,
 } from '@/services/commentService'
-import type { EncouragementType, FeedComment, ReadingLogWithMeta } from '@/types'
+import { countUnreadNotifications } from '@/services/notificationService'
+import type { FeedComment, ReadingLogWithMeta, ReactionCounts } from '@/types'
 
 export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
   const profile = useAuthStore((s) => s.profile)!
   const { project, classes, loadForUser } = useProjectStore()
   const [feed, setFeed] = useState<ReadingLogWithMeta[]>([])
-  const [myEnc, setMyEnc] = useState<Record<string, EncouragementType>>({})
   const [commentsByLog, setCommentsByLog] = useState<Record<string, FeedComment[]>>({})
+  const [unread, setUnread] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   const classNameById = useMemo(() => {
@@ -37,10 +39,15 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
       projectId: project.id,
       classId: scope === 'class' ? profile.class_id : null,
       limit: 80,
+      currentUserId: profile.id,
     })
     setFeed(logs)
-    setMyEnc(await getMyEncouragements(profile.id, logs.map((l) => l.id)))
     setCommentsByLog(await listCommentsForLogs(logs.map((l) => l.id)))
+    try {
+      setUnread(await countUnreadNotifications(profile.id))
+    } catch {
+      setUnread(0)
+    }
   }, [project, profile.class_id, profile.id, scope])
 
   useEffect(() => {
@@ -74,7 +81,18 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
           </div>
         )}
         <h1 className="font-display text-lg text-navy">함께 읽는 피드</h1>
-        <span className="w-10" aria-hidden />
+        <Link
+          to="/notifications"
+          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-lg"
+          aria-label="알림"
+        >
+          🔔
+          {unread > 0 ? (
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-coral px-1 text-[10px] font-bold text-white">
+              {unread > 9 ? '9+' : unread}
+            </span>
+          ) : null}
+        </Link>
       </header>
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}
@@ -90,29 +108,63 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
                 ? classNameById.get(log.profiles.class_id) ?? null
                 : null
             }
-            liked={Boolean(myEnc[log.id])}
+            myReactions={log.my_reactions ?? []}
             comments={commentsByLog[log.id] ?? []}
             currentUserId={profile.id}
-            onLike={async (logId, liked) => {
-              await toggleLike(logId, profile.id, liked)
-              setMyEnc((prev) => {
-                const next = { ...prev }
-                if (liked) delete next[logId]
-                else next[logId] = 'like'
-                return next
-              })
+            currentUserRole={profile.role}
+            onReaction={async (logId, type, active) => {
+              await toggleReaction(logId, profile.id, type, active)
               setFeed((prev) =>
-                prev.map((item) =>
-                  item.id === logId
-                    ? {
-                        ...item,
-                        encouragement_count: Math.max(
-                          0,
-                          (item.encouragement_count ?? 0) + (liked ? -1 : 1),
-                        ),
-                      }
-                    : item,
-                ),
+                prev.map((item) => {
+                  if (item.id !== logId) return item
+                  const counts: ReactionCounts = { ...(item.reaction_counts ?? {}) }
+                  const mine = new Set(item.my_reactions ?? [])
+                  if (active) {
+                    mine.delete(type)
+                    counts[type] = Math.max(0, (counts[type] ?? 1) - 1)
+                  } else {
+                    mine.add(type)
+                    counts[type] = (counts[type] ?? 0) + 1
+                  }
+                  const my_reactions = [...mine]
+                  return {
+                    ...item,
+                    reaction_counts: counts,
+                    my_reactions,
+                    encouragement_count: Object.values(counts).reduce(
+                      (a, b) => a + (b ?? 0),
+                      0,
+                    ),
+                    has_teacher_cheer: (counts.teacher_cheer ?? 0) > 0,
+                  }
+                }),
+              )
+            }}
+            onReadAlong={async (logId, active) => {
+              await toggleReadAlong(logId, profile.id, active)
+              setFeed((prev) =>
+                prev.map((item) => {
+                  if (item.id !== logId) return item
+                  const count = Math.max(
+                    0,
+                    (item.read_along_count ?? 0) + (active ? -1 : 1),
+                  )
+                  let preview = [...(item.read_along_preview ?? [])]
+                  if (active) {
+                    preview = preview.filter((p) => p.user_id !== profile.id)
+                  } else if (
+                    !preview.some((p) => p.user_id === profile.id) &&
+                    preview.length < 2
+                  ) {
+                    preview = [...preview, { user_id: profile.id, name: profile.name }]
+                  }
+                  return {
+                    ...item,
+                    my_read_along: !active,
+                    read_along_count: count,
+                    read_along_preview: preview,
+                  }
+                }),
               )
             }}
             onComment={async (logId, content) => {
