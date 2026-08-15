@@ -15,6 +15,7 @@ import {
   addComment,
   deleteComment,
   listCommentsForLogs,
+  toggleQuickComment,
 } from '@/services/commentService'
 import { countUnreadNotifications } from '@/services/notificationService'
 import type { FeedComment, ReadingLogWithMeta, ReactionCounts } from '@/types'
@@ -173,10 +174,52 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
                 userId: profile.id,
                 content,
               })
-              setCommentsByLog((prev) => ({
-                ...prev,
-                [logId]: [...(prev[logId] ?? []), row],
-              }))
+              setCommentsByLog((prev) => {
+                const list = prev[logId] ?? []
+                if (list.some((c) => c.id === row.id)) return prev
+                // same text already shown from prior insert
+                if (
+                  list.some(
+                    (c) => c.user_id === profile.id && c.content.trim() === content.trim(),
+                  )
+                ) {
+                  return prev
+                }
+                return { ...prev, [logId]: [...list, row] }
+              })
+            }}
+            onQuickComment={async (logId, content) => {
+              const { active, comment } = await toggleQuickComment({
+                readingLogId: logId,
+                userId: profile.id,
+                content,
+              })
+              setCommentsByLog((prev) => {
+                const list = prev[logId] ?? []
+                if (!active) {
+                  return {
+                    ...prev,
+                    [logId]: list.filter(
+                      (c) =>
+                        !(
+                          c.user_id === profile.id &&
+                          c.content.trim() === content.trim()
+                        ),
+                    ),
+                  }
+                }
+                if (!comment) return prev
+                if (list.some((c) => c.id === comment.id)) return prev
+                if (
+                  list.some(
+                    (c) =>
+                      c.user_id === profile.id && c.content.trim() === content.trim(),
+                  )
+                ) {
+                  return prev
+                }
+                return { ...prev, [logId]: [...list, comment] }
+              })
             }}
             onDelete={async (logId) => {
               await deleteReadingLog(logId, profile.id)

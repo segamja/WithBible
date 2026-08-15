@@ -30,6 +30,7 @@ interface ReadingFeedCardProps {
   onReaction: (logId: string, type: EncouragementType, active: boolean) => Promise<void>
   onReadAlong: (logId: string, active: boolean) => Promise<void>
   onComment: (logId: string, content: string) => Promise<void>
+  onQuickComment: (logId: string, content: string) => Promise<void>
   onDelete?: (logId: string) => Promise<void>
   onDeleteComment?: (commentId: string) => Promise<void>
 }
@@ -45,6 +46,7 @@ export function ReadingFeedCard({
   onReaction,
   onReadAlong,
   onComment,
+  onQuickComment,
   onDelete,
   onDeleteComment,
 }: ReadingFeedCardProps) {
@@ -98,8 +100,7 @@ export function ReadingFeedCard({
   const handleQuick = async (text: string) => {
     setCommentError(null)
     await run(`quick-${text}`, async () => {
-      await onComment(log.id, text)
-      setShowComments(true)
+      await onQuickComment(log.id, text)
     })
   }
 
@@ -111,6 +112,18 @@ export function ReadingFeedCard({
 
   const countLine = STUDENT_REACTIONS.filter((r) => (counts[r.type] ?? 0) > 0)
   const teacherCheerCount = counts.teacher_cheer ?? 0
+
+  const myQuickSet = new Set(
+    comments
+      .filter((c) => c.user_id === currentUserId)
+      .map((c) => c.content.trim()),
+  )
+  const quickCounts = Object.fromEntries(
+    QUICK_COMMENTS.map((text) => [
+      text,
+      comments.filter((c) => c.content.trim() === text).length,
+    ]),
+  ) as Record<(typeof QUICK_COMMENTS)[number], number>
 
   return (
     <Card className={cn('space-y-3', className)}>
@@ -249,17 +262,29 @@ export function ReadingFeedCard({
       ) : null}
 
       <div className="flex flex-wrap gap-1.5">
-        {QUICK_COMMENTS.map((text) => (
-          <button
-            key={text}
-            type="button"
-            disabled={busy}
-            onClick={() => void handleQuick(text)}
-            className="min-h-10 rounded-full bg-brand-50 px-3 text-xs font-medium text-navy transition hover:bg-sky-soft active:scale-95"
-          >
-            {text}
-          </button>
-        ))}
+        {QUICK_COMMENTS.map((text) => {
+          const active = myQuickSet.has(text)
+          const n = quickCounts[text] ?? 0
+          return (
+            <button
+              key={text}
+              type="button"
+              disabled={busy}
+              aria-pressed={active}
+              aria-label={`${text}${n > 0 ? ` ${n}명` : ''}`}
+              onClick={() => void handleQuick(text)}
+              className={cn(
+                'inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition active:scale-95',
+                active
+                  ? 'bg-sage-soft text-sage-dark ring-2 ring-sage/30'
+                  : 'bg-brand-50 text-navy hover:bg-sky-soft',
+              )}
+            >
+              <span>{text}</span>
+              {n > 0 ? <span className="tabular-nums opacity-80">{n}</span> : null}
+            </button>
+          )
+        })}
       </div>
 
       <div className="flex items-center gap-2">

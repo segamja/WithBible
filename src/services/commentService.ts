@@ -35,6 +35,17 @@ export async function addComment(input: {
   if (!content) throw new Error('댓글을 입력해주세요.')
   if (content.length > 80) throw new Error('댓글은 80자 이내로 작성해주세요.')
 
+  // Same user + same text on one post → reuse (no spam duplicates)
+  const { data: existing, error: existingError } = await supabase
+    .from(Tables.comments)
+    .select('*, profiles:wb_profiles(name)')
+    .eq('reading_log_id', readingLogId)
+    .eq('user_id', userId)
+    .eq('content', content)
+    .maybeSingle()
+  if (existingError) throw new Error(existingError.message)
+  if (existing) return existing as FeedComment
+
   const { data, error } = await supabase
     .from(Tables.comments)
     .insert({
@@ -59,6 +70,43 @@ export async function addComment(input: {
   }
 
   return data as FeedComment
+}
+
+/**
+ * Quick cheer chips: one per user per phrase.
+ * Returns { active, comment } — active=false means removed.
+ */
+export async function toggleQuickComment(input: {
+  readingLogId: string
+  userId: string
+  content: string
+}): Promise<{ active: boolean; comment: FeedComment | null }> {
+  const readingLogId = requireUuid(input.readingLogId, 'readingLogId')
+  const userId = requireUuid(input.userId, 'userId')
+  const content = input.content.trim()
+  if (!content) throw new Error('응원 문구가 비어 있어요.')
+
+  const { data: existingRows, error: findError } = await supabase
+    .from(Tables.comments)
+    .select('id')
+    .eq('reading_log_id', readingLogId)
+    .eq('user_id', userId)
+    .eq('content', content)
+  if (findError) throw new Error(findError.message)
+
+  if (existingRows && existingRows.length > 0) {
+    const { error: delError } = await supabase
+      .from(Tables.comments)
+      .delete()
+      .eq('reading_log_id', readingLogId)
+      .eq('user_id', userId)
+      .eq('content', content)
+    if (delError) throw new Error(delError.message)
+    return { active: false, comment: null }
+  }
+
+  const comment = await addComment({ readingLogId, userId, content })
+  return { active: true, comment }
 }
 
 export async function deleteComment(id: string, userId: string): Promise<void> {
