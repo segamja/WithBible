@@ -45,14 +45,20 @@ $$;
 drop trigger if exists wb_protect_profile_columns on public.wb_profiles;
 drop trigger if exists wb_on_auth_user_created on auth.users;
 
-drop function if exists public.wb_current_role();
-drop function if exists public.wb_admin_list_users();
-drop function if exists public.wb_complete_join_onboarding(text, text);
-drop function if exists public.wb_complete_join_onboarding(text);
-drop function if exists public.wb_handle_new_user();
-drop function if exists public.wb_protect_profile_columns();
-drop function if exists public.wb_admin_delete_user(uuid);
-drop function if exists public.wb_upsert_staff_code(text, text);
+-- Policies depend on wb_current_role(); drop them before the function/type swap
+drop policy if exists "wb_announcements_insert" on public.wb_announcements;
+drop policy if exists "wb_announcements_select" on public.wb_announcements;
+drop policy if exists "wb_announcements_update" on public.wb_announcements;
+drop policy if exists "wb_announcements_delete" on public.wb_announcements;
+
+drop function if exists public.wb_current_role() cascade;
+drop function if exists public.wb_admin_list_users() cascade;
+drop function if exists public.wb_complete_join_onboarding(text, text) cascade;
+drop function if exists public.wb_complete_join_onboarding(text) cascade;
+drop function if exists public.wb_handle_new_user() cascade;
+drop function if exists public.wb_protect_profile_columns() cascade;
+drop function if exists public.wb_admin_delete_user(uuid) cascade;
+drop function if exists public.wb_upsert_staff_code(text, text) cascade;
 
 alter table public.wb_profiles alter column role drop default;
 alter table public.wb_profiles
