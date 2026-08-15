@@ -303,9 +303,10 @@ export function StudentHomePage() {
 
       <CheerTodayCard cheers={cheers} />
 
-      {project?.party_date || project?.party_title ? (
+      {project?.party_date || project?.party_title || project?.party_subtitle ? (
         <PartyBanner
           title={project.party_title}
+          subtitle={project.party_subtitle}
           dateLabel={
             project.party_date
               ? new Date(project.party_date).toLocaleString('ko-KR', {

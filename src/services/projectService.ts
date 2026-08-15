@@ -114,6 +114,7 @@ export async function createProject(input: {
   status?: ProjectStatus
   departmentTitle?: string | null
   partyTitle?: string | null
+  partySubtitle?: string | null
   partyDate?: string | null
   partyPlace?: string | null
   partyNote?: string | null
@@ -128,6 +129,7 @@ export async function createProject(input: {
       status: input.status ?? 'active',
       department_title: input.departmentTitle?.trim() || DEFAULT_DEPARTMENT_TITLE,
       party_title: input.partyTitle ?? null,
+      party_subtitle: input.partySubtitle ?? null,
       party_date: input.partyDate ?? null,
       party_place: input.partyPlace ?? null,
       party_note: input.partyNote ?? null,
@@ -148,6 +150,7 @@ export async function updateProject(
     status: ProjectStatus
     department_title: string | null
     party_title: string | null
+    party_subtitle: string | null
     party_date: string | null
     party_place: string | null
     party_note: string | null

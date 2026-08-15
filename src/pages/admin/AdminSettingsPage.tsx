@@ -36,6 +36,7 @@ export function AdminSettingsPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [partyTitle, setPartyTitle] = useState('')
+  const [partySubtitle, setPartySubtitle] = useState('')
   const [partyDate, setPartyDate] = useState('')
   const [partyPlace, setPartyPlace] = useState('')
   const [partyNote, setPartyNote] = useState('')
@@ -63,6 +64,7 @@ export function AdminSettingsPage() {
     setStartDate(active.start_date)
     setEndDate(active.end_date)
     setPartyTitle(active.party_title ?? '')
+    setPartySubtitle(active.party_subtitle ?? '')
     setPartyDate(toDatetimeLocal(active.party_date))
     setPartyPlace(active.party_place ?? '')
     setPartyNote(active.party_note ?? '')
@@ -105,6 +107,7 @@ export function AdminSettingsPage() {
         start_date: startDate,
         end_date: endDate,
         party_title: partyTitle.trim() || null,
+        party_subtitle: partySubtitle.trim() || null,
         party_date: partyDate ? new Date(partyDate).toISOString() : null,
         party_place: partyPlace.trim() || null,
         party_note: partyNote.trim() || null,
@@ -295,7 +298,15 @@ export function AdminSettingsPage() {
             <Input
               value={partyTitle}
               onChange={(e) => setPartyTitle(e.target.value)}
-              placeholder="예: 포트럭 파티, 시상식"
+              placeholder="예: WITH BIBLE POTLUCK"
+            />
+          </Field>
+          <Field label="서브타이틀" hint="홈 초대장에 굵은 글씨로 보입니다.">
+            <Textarea
+              value={partySubtitle}
+              onChange={(e) => setPartySubtitle(e.target.value)}
+              rows={2}
+              placeholder="예: 말씀으로 함께하고, 음식으로 나누는 우리들의 축하 파티"
             />
           </Field>
           <Field label="일시">

@@ -189,6 +189,7 @@ export function AdminProjectsPage() {
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
   const [endDate, setEndDate] = useState('')
   const [partyTitle, setPartyTitle] = useState('')
+  const [partySubtitle, setPartySubtitle] = useState('')
   const [partyDate, setPartyDate] = useState('')
   const [partyPlace, setPartyPlace] = useState('')
   const [partyNote, setPartyNote] = useState('')
@@ -244,6 +245,7 @@ export function AdminProjectsPage() {
         startDate,
         endDate,
         partyTitle: partyTitle.trim() || null,
+        partySubtitle: partySubtitle.trim() || null,
         partyDate: partyDate || null,
         partyPlace: partyPlace.trim() || null,
         partyNote: partyNote.trim() || null,
@@ -307,7 +309,13 @@ export function AdminProjectsPage() {
           <Input
             value={partyTitle}
             onChange={(e) => setPartyTitle(e.target.value)}
-            placeholder="마지막 보상 이름 (예: 시상식, 포트럭 파티)"
+            placeholder="마지막 보상 이름 (예: WITH BIBLE POTLUCK)"
+          />
+          <Textarea
+            value={partySubtitle}
+            onChange={(e) => setPartySubtitle(e.target.value)}
+            rows={2}
+            placeholder="서브타이틀 (예: 말씀으로 함께하고, 음식으로 나누는 우리들의 축하 파티)"
           />
           <Input
             type="datetime-local"
