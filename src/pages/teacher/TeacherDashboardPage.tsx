@@ -1,16 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { Card } from '@/components/ui/Card'
-import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Button } from '@/components/ui/Button'
+import { Textarea } from '@/components/ui/Textarea'
+import { ClassJourneyPanel } from '@/components/ClassJourneyPanel'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
-import { getClassById } from '@/services/classService'
-import { getClassProgress, getStudentStatuses } from '@/services/progressService'
-import { listFeed } from '@/services/readingService'
+import { getClassById, listClassStudents } from '@/services/classService'
+import {
+  getClassProgress,
+  getStudentStatuses,
+  getPersonalProgress,
+  getClassCommunityWarmth,
+} from '@/services/progressService'
+import { listFeed, listClassLogs } from '@/services/readingService'
+import {
+  createAnnouncement,
+  listAnnouncements,
+  deleteAnnouncement,
+} from '@/services/announcementService'
 import { getDDayLabel, todayISO } from '@/utils/dday'
-import type { StudentStatus } from '@/types'
+import { calcClassStreak } from '@/utils/schedule'
+import type { Profile, StudentStatus } from '@/types'
 
 const statusLabel = {
   green: '🟢',
@@ -21,6 +33,11 @@ const statusLabel = {
 function daysSinceLast(lastReadingDate: string | null): number {
   if (!lastReadingDate) return 999
   return differenceInCalendarDays(parseISO(todayISO()), parseISO(lastReadingDate))
+}
+
+function cheerTemplate(name: string) {
+  const short = name.trim() || '친구'
+  return `${short}아 😊 오늘부터 다시 우리 반이랑 함께 읽어보자!\n하루 놓쳐도 괜찮아. 오늘부터 다시 시작하면 돼! 📖`
 }
 
 function StaffTeacherHome({
@@ -37,9 +54,16 @@ function StaffTeacherHome({
         <h1 className="page-title mt-1">교사 메뉴</h1>
         {projectEnd ? <p className="mt-2 text-muted">{getDDayLabel(projectEnd)}</p> : null}
         <p className="mt-2 text-sm text-muted">
-          읽기와 인증은 홈 탭에서, 여기서는 공지와 반별 현황을 관리해요.
+          담임 반이 배정되면 우리반 현황·명단·공지사항을 여기서 관리할 수 있어요.
         </p>
       </div>
+
+      <Card className="border-sky/20 bg-sky-soft/40">
+        <p className="text-sm leading-relaxed text-navy">
+          지금은 반 미배정 상태예요. 관리자에게 담임 반을 배정받거나, 교사 코드로 반에
+          연결해 주세요. 공지는 자기 반 친구들에게만 보입니다.
+        </p>
+      </Card>
 
       <div className="flex gap-2">
         <Link to="/feed" className="flex-1">
@@ -47,19 +71,12 @@ function StaffTeacherHome({
             피드 보기 {recentCount > 0 ? `· ${recentCount}` : ''}
           </Button>
         </Link>
-        <Link to="/teacher/announce" className="flex-1">
+        <Link to="/progress" className="flex-1">
           <Button className="w-full" variant="secondary">
-            전교 공지
+            전체 반 진행
           </Button>
         </Link>
       </div>
-
-      <Link to="/progress">
-        <Card className="hover:border-sage/40">
-          <p className="font-semibold text-navy">전체 반 진행 보기</p>
-          <p className="mt-1 text-sm text-muted">반별 달성률을 한눈에 확인할 수 있어요.</p>
-        </Card>
-      </Link>
     </div>
   )
 }
@@ -70,15 +87,43 @@ export function TeacherDashboardPage() {
   const [className, setClassName] = useState('담당 반')
   const [progress, setProgress] = useState({
     achievementRate: 0,
-    participationRate: 0,
     studentCount: 0,
     todayCheckins: 0,
-    weekCheckins: 0,
+    participatedCount: 0,
   })
+  const [personal, setPersonal] = useState({
+    covered: 0,
+    target: 0,
+    rate: 0,
+    goalLabel: '',
+  })
+  const [classStreak, setClassStreak] = useState(0)
+  const [warmth, setWarmth] = useState({
+    warmth: 0,
+    checkins: 0,
+    reactions: 0,
+    comments: 0,
+    readAlongs: 0,
+  })
+  const [todayFriends, setTodayFriends] = useState<Profile[]>([])
   const [students, setStudents] = useState<StudentStatus[]>([])
   const [recentCount, setRecentCount] = useState(0)
+  const [noticeContent, setNoticeContent] = useState('')
+  const [notices, setNotices] = useState<{ id: string; content: string }[]>([])
+  const [noticeError, setNoticeError] = useState<string | null>(null)
+  const [noticeLoading, setNoticeLoading] = useState(false)
+  const [cheerFocus, setCheerFocus] = useState<string | null>(null)
 
   const hasClass = Boolean(profile.class_id)
+
+  const refreshNotices = async () => {
+    if (!project || !profile.class_id) return
+    const rows = await listAnnouncements({
+      projectId: project.id,
+      classId: profile.class_id,
+    })
+    setNotices(rows.map((r) => ({ id: r.id, content: r.content })))
+  }
 
   useEffect(() => {
     void loadForUser(profile.class_id)
@@ -95,13 +140,71 @@ export function TeacherDashboardPage() {
       const cls = await getClassById(profile.class_id)
       setClassName(cls?.name ?? '담당 반')
       const p = await getClassProgress(project.id, profile.class_id, cls?.name ?? '담당 반')
-      setProgress(p)
-      setStudents(await getStudentStatuses(project.id, profile.class_id))
-      const feed = await listFeed({ projectId: project.id, classId: profile.class_id, limit: 10 })
+      setProgress({
+        achievementRate: p.achievementRate,
+        studentCount: p.studentCount,
+        todayCheckins: p.todayCheckins,
+        participatedCount: p.participatedCount,
+      })
+      const me = await getPersonalProgress(project.id, profile.id, profile.class_id)
+      setPersonal({
+        covered: me.covered,
+        target: me.target,
+        rate: me.rate,
+        goalLabel: me.goalLabel,
+      })
+      const statuses = await getStudentStatuses(project.id, profile.class_id)
+      setStudents(statuses)
+      const roster = await listClassStudents(profile.class_id)
+      const logs = await listClassLogs(
+        project.id,
+        roster.map((s) => s.id),
+      )
+      setClassStreak(calcClassStreak([...new Set(logs.map((l) => l.reading_date))]))
+      try {
+        setWarmth(await getClassCommunityWarmth(project.id, profile.class_id))
+      } catch {
+        setWarmth({ warmth: 0, checkins: 0, reactions: 0, comments: 0, readAlongs: 0 })
+      }
+      const today = todayISO()
+      const todayIds = new Set(
+        logs.filter((l) => l.reading_date === today).map((l) => l.user_id),
+      )
+      setTodayFriends(roster.filter((s) => todayIds.has(s.id)))
+      const feed = await listFeed({
+        projectId: project.id,
+        classId: profile.class_id,
+        limit: 10,
+      })
       setRecentCount(feed.length)
+      await refreshNotices()
     }
     void run()
   }, [project, profile])
+
+  const onSubmitNotice = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!project || !profile.class_id) return
+    const content = noticeContent.trim()
+    if (!content) return
+    setNoticeLoading(true)
+    setNoticeError(null)
+    try {
+      await createAnnouncement({
+        projectId: project.id,
+        classId: profile.class_id,
+        authorId: profile.id,
+        content,
+      })
+      setNoticeContent('')
+      setCheerFocus(null)
+      await refreshNotices()
+    } catch (err) {
+      setNoticeError(err instanceof Error ? err.message : '공지 작성 실패')
+    } finally {
+      setNoticeLoading(false)
+    }
+  }
 
   if (!hasClass) {
     return <StaffTeacherHome projectEnd={project?.end_date ?? null} recentCount={recentCount} />
@@ -112,42 +215,31 @@ export function TeacherDashboardPage() {
     .sort((a, b) => daysSinceLast(b.lastReadingDate) - daysSinceLast(a.lastReadingDate))
 
   return (
-    <div className="page pt-7">
-      <div>
-        <p className="caption-caps">with BIBLE · 교사</p>
-        <h1 className="page-title mt-1">{className}</h1>
-        {project ? <p className="mt-2 text-sm text-muted">{getDDayLabel(project.end_date)}</p> : null}
-        <p className="mt-1 text-sm text-muted">반 현황과 응원이 필요한 친구를 확인해요.</p>
-      </div>
+    <div className="page pt-6">
+      <p className="caption-caps">with BIBLE · 교사</p>
+      <p className="mt-1 text-sm text-muted">
+        학생과 같은 우리반 현황을 보고, 명단·독려·공지를 관리해요.
+      </p>
 
-      <Card className="border-none bg-navy text-white shadow-[0_12px_32px_rgba(23,32,51,0.22)]">
-        <p className="text-sm text-white/70">반 목표 달성률</p>
-        <p className="font-display mt-1 text-5xl tracking-tight">{progress.achievementRate}%</p>
-        <ProgressBar value={progress.achievementRate} className="mt-3 bg-white/15" />
-      </Card>
-
-      <Card className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-brand-50 px-3 py-3">
-          <p className="text-xs text-muted">전체 학생</p>
-          <p className="mt-1 text-xl font-semibold text-navy">{progress.studentCount}명</p>
-        </div>
-        <div className="rounded-2xl bg-brand-50 px-3 py-3">
-          <p className="text-xs text-muted">오늘 인증</p>
-          <p className="mt-1 text-xl font-semibold text-navy">{progress.todayCheckins}명</p>
-        </div>
-        <div className="rounded-2xl bg-brand-50 px-3 py-3">
-          <p className="text-xs text-muted">이번 주 참여</p>
-          <p className="mt-1 text-xl font-semibold text-navy">{progress.weekCheckins}명</p>
-        </div>
-        <div className="rounded-2xl bg-brand-50 px-3 py-3">
-          <p className="text-xs text-muted">참여율</p>
-          <p className="mt-1 text-xl font-semibold text-navy">{progress.participationRate}%</p>
-        </div>
-      </Card>
+      <ClassJourneyPanel
+        className={className}
+        progress={progress}
+        personalGoalLabel={personal.goalLabel}
+        personalCovered={personal.covered}
+        personalTarget={personal.target}
+        personalRate={personal.rate}
+        classStreak={classStreak}
+        warmth={warmth}
+        projectEndDate={project?.end_date ?? null}
+        todayFriends={todayFriends}
+        showPersonal={false}
+      />
 
       <Card className="border-coral/25 bg-coral/10">
         <h2 className="section-title text-base">응원이 필요한 친구</h2>
-        <p className="mt-1 text-xs text-muted">2일 이상 미인증 · 학생 화면에는 표시되지 않습니다.</p>
+        <p className="mt-1 text-xs text-muted">
+          2일 이상 미인증 · 학생 화면에는 표시되지 않습니다.
+        </p>
         <div className="mt-3 space-y-2">
           {needCheer.length === 0 ? (
             <p className="text-sm text-sage-dark">모두 잘 따라오고 있어요 🙌</p>
@@ -157,9 +249,9 @@ export function TeacherDashboardPage() {
               return (
                 <div
                   key={s.userId}
-                  className="flex items-center justify-between rounded-xl bg-panel/80 px-3 py-2 text-sm"
+                  className="flex items-center justify-between gap-2 rounded-xl bg-panel/80 px-3 py-2 text-sm"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-medium text-navy">{s.name}</p>
                     <p className="text-xs text-muted">
                       {s.lastReadingDate
@@ -167,11 +259,21 @@ export function TeacherDashboardPage() {
                         : '아직 인증 없음'}
                     </p>
                   </div>
-                  <Link to="/teacher/announce">
-                    <Button size="sm" variant="sage">
-                      응원하기
-                    </Button>
-                  </Link>
+                  <Button
+                    size="sm"
+                    variant="sage"
+                    type="button"
+                    onClick={() => {
+                      setCheerFocus(s.name)
+                      setNoticeContent(cheerTemplate(s.name))
+                      document.getElementById('teacher-notice')?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start',
+                      })
+                    }}
+                  >
+                    응원하기
+                  </Button>
                 </div>
               )
             })
@@ -179,35 +281,11 @@ export function TeacherDashboardPage() {
         </div>
       </Card>
 
-      <div className="flex gap-2">
-        <Link to="/class" className="flex-1">
-          <Button className="w-full" variant="outline">
-            우리반
-          </Button>
-        </Link>
-        <Link to="/progress" className="flex-1">
-          <Button className="w-full" variant="outline">
-            반별 현황
-          </Button>
-        </Link>
-      </div>
-
-      <div className="flex gap-2">
-        <Link to="/teacher/announce" className="flex-1">
-          <Button className="w-full" variant="secondary">
-            격려 메시지
-          </Button>
-        </Link>
-        <Link to="/feed" className="flex-1">
-          <Button className="w-full" variant="outline">
-            최근 인증 {recentCount}
-          </Button>
-        </Link>
-      </div>
-
       <Card>
-        <h2 className="font-semibold text-navy">학생별 상태</h2>
-        <p className="mt-1 text-xs text-muted">학생 화면에는 표시되지 않습니다.</p>
+        <h2 className="font-semibold text-navy">우리반 명단</h2>
+        <p className="mt-1 text-xs text-muted">
+          학생 {students.length}명 · 상태는 교사에게만 보입니다.
+        </p>
         <div className="mt-3 space-y-2">
           {students.length === 0 ? (
             <p className="text-sm text-muted">학생이 없습니다.</p>
@@ -230,6 +308,67 @@ export function TeacherDashboardPage() {
           )}
         </div>
       </Card>
+
+      <section id="teacher-notice" className="space-y-3 scroll-mt-4">
+        <div>
+          <h2 className="section-title text-base">공지사항</h2>
+          <p className="mt-1 text-sm text-muted">
+            {cheerFocus
+              ? `${cheerFocus} 친구에게 남길 격려 메시지를 다듬어 등록하세요. 우리 반 홈에만 보여요.`
+              : '우리 반 친구들 홈에만 보이는 공지를 남겨주세요.'}
+          </p>
+        </div>
+        <form onSubmit={onSubmitNotice} className="space-y-3">
+          <Card>
+            <Textarea
+              required
+              value={noticeContent}
+              onChange={(e) => setNoticeContent(e.target.value)}
+              placeholder={`우리 ${className}!\n이번 주도 함께 읽어봐요.`}
+              rows={4}
+            />
+          </Card>
+          {noticeError ? <p className="text-sm text-danger">{noticeError}</p> : null}
+          <Button type="submit" className="w-full" disabled={noticeLoading}>
+            {noticeLoading ? '등록 중…' : '공지 등록'}
+          </Button>
+        </form>
+        <div className="space-y-3">
+          {notices.length === 0 ? (
+            <p className="text-sm text-muted">아직 등록된 공지가 없습니다.</p>
+          ) : (
+            notices.map((item) => (
+              <Card key={item.id} className="space-y-2">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">{item.content}</p>
+                <button
+                  type="button"
+                  className="text-xs text-muted hover:text-danger"
+                  onClick={() =>
+                    void deleteAnnouncement(item.id).then(() =>
+                      setNotices((prev) => prev.filter((x) => x.id !== item.id)),
+                    )
+                  }
+                >
+                  삭제
+                </button>
+              </Card>
+            ))
+          )}
+        </div>
+      </section>
+
+      <div className="flex gap-2">
+        <Link to="/feed" className="flex-1">
+          <Button className="w-full" variant="outline">
+            최근 인증 {recentCount}
+          </Button>
+        </Link>
+        <Link to="/progress" className="flex-1">
+          <Button className="w-full" variant="outline">
+            반별 현황
+          </Button>
+        </Link>
+      </div>
     </div>
   )
 }

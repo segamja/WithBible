@@ -487,9 +487,15 @@ export function AdminUsersPage() {
   }
 
   const onResetPassword = async (user: AdminUserRow) => {
+    if (!user.email?.trim()) {
+      setError(
+        `"${user.name}" 계정에 이메일이 없어 비밀번호 로그인을 설정할 수 없습니다. 카카오 전용 계정이면 카카오로 로그인해야 합니다.`,
+      )
+      return
+    }
     const next = customPw[user.id]?.trim() || generateTempPassword()
     const ok = window.confirm(
-      `"${user.name}" 비밀번호를 초기화할까요?\n새 비밀번호: ${next}\n\n확인 후 사용자에게 전달해 주세요.`,
+      `"${user.name}" 비밀번호를 초기화할까요?\n이메일: ${user.email}\n새 비밀번호: ${next}\n\n확인 후 사용자에게 전달해 주세요.\n(이메일+비밀번호로 로그인)`,
     )
     if (!ok) return
     setError(null)
@@ -497,7 +503,7 @@ export function AdminUsersPage() {
     setBusyId(user.id)
     try {
       await resetAdminUserPassword(user.id, next)
-      setMessage(`「${user.name}」 새 비밀번호: ${next}`)
+      setMessage(`「${user.name}」 새 비밀번호: ${next} · 로그인 이메일: ${user.email}`)
       setCustomPw((prev) => ({ ...prev, [user.id]: '' }))
     } catch (err) {
       setError(err instanceof Error ? err.message : '비밀번호 초기화 실패')
@@ -527,7 +533,8 @@ export function AdminUsersPage() {
       </div>
       <p className="text-sm text-muted">
         역할·반은 바로 저장됩니다. 유령 계정(반 미배정·인증 없음 학생) 삭제와 비밀번호 초기화도 할 수
-        있어요. Supabase에 migration 016을 적용해야 삭제·초기화가 동작합니다.
+        있어요. 비밀번호 초기화는 이메일이 있는 계정만 가능하며, Supabase에 migration 016·018을
+        적용해야 새 비밀번호로 로그인이 됩니다.
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -623,7 +630,7 @@ export function AdminUsersPage() {
                     type="button"
                     size="sm"
                     variant="secondary"
-                    disabled={busyId === user.id}
+                    disabled={busyId === user.id || !user.email?.trim()}
                     onClick={() => void onResetPassword(user)}
                   >
                     비번 초기화

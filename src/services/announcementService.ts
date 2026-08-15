@@ -16,7 +16,11 @@ export async function listAnnouncements(params: {
     .limit(20)
 
   if (isUuid(params.classId)) {
-    query = query.or(`class_id.is.null,class_id.eq.${params.classId}`)
+    // 반 공지만 (전교/school-wide class_id null 제외)
+    query = query.eq('class_id', params.classId)
+  } else {
+    // classId 없으면 목록을 비움 — 전교 공지 작성/조회 중단
+    return []
   }
 
   const { data, error } = await query
@@ -33,7 +37,9 @@ export async function createAnnouncement(input: {
   const projectId = requireUuid(input.projectId, 'projectId')
   const authorId = requireUuid(input.authorId, 'authorId')
   const classId = emptyToNull(input.classId)
-  if (classId && !isUuid(classId)) throw new Error('잘못된 반 ID입니다.')
+  if (!classId || !isUuid(classId)) {
+    throw new Error('공지사항은 담당 반에만 등록할 수 있습니다.')
+  }
   const { data, error } = await supabase
     .from(Tables.announcements)
     .insert({

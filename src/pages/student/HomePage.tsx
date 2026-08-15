@@ -292,7 +292,7 @@ export function StudentHomePage() {
 
       {announcement ? (
         <Card>
-          <p className="text-sm font-medium text-sky-dark">반 공지</p>
+          <p className="text-sm font-medium text-sky-dark">공지사항</p>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{announcement}</p>
         </Card>
       ) : null}

@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link, Navigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Textarea } from '@/components/ui/Textarea'
@@ -10,6 +11,7 @@ import {
   deleteAnnouncement,
 } from '@/services/announcementService'
 
+/** 담임 반 공지 작성 (교사 탭과 동일). 반 미배정이면 교사 홈으로. */
 export function TeacherAnnouncePage() {
   const profile = useAuthStore((s) => s.profile)!
   const { project, loadForUser } = useProjectStore()
@@ -21,7 +23,7 @@ export function TeacherAnnouncePage() {
   const hasClass = Boolean(profile.class_id)
 
   const refresh = async () => {
-    if (!project) return
+    if (!project || !profile.class_id) return
     const rows = await listAnnouncements({
       projectId: project.id,
       classId: profile.class_id,
@@ -34,18 +36,22 @@ export function TeacherAnnouncePage() {
   }, [profile.class_id, loadForUser])
 
   useEffect(() => {
+    if (!hasClass) return
     void refresh().catch((e) => setError(e instanceof Error ? e.message : '공지 로드 실패'))
-  }, [project, profile.class_id])
+  }, [project, profile.class_id, hasClass])
+
+  if (!hasClass) {
+    return <Navigate to="/teacher" replace />
+  }
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!project) return
+    if (!project || !profile.class_id) return
     setLoading(true)
     setError(null)
     try {
       await createAnnouncement({
         projectId: project.id,
-        // 임원(반 없음) → 전교 공지 (class_id null)
         classId: profile.class_id,
         authorId: profile.id,
         content: content.trim(),
@@ -62,12 +68,13 @@ export function TeacherAnnouncePage() {
   return (
     <div className="page">
       <div>
-        <p className="caption-caps">Teacher</p>
-        <h1 className="page-title mt-1">{hasClass ? '격려 공지' : '전교 공지'}</h1>
+        <Link to="/teacher" className="text-sm font-medium text-sky-dark hover:text-navy">
+          ← 교사
+        </Link>
+        <p className="caption-caps mt-2">Teacher</p>
+        <h1 className="page-title mt-1">공지사항</h1>
         <p className="mt-2 text-sm text-muted">
-          {hasClass
-            ? '반 전체에게 따뜻한 메시지를 남겨주세요.'
-            : '모든 반 친구들에게 보이는 격려 메시지를 남겨주세요.'}
+          우리 반 친구들 홈에만 보이는 메시지를 남겨주세요.
         </p>
       </div>
 
@@ -77,11 +84,7 @@ export function TeacherAnnouncePage() {
             required
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder={
-              hasClass
-                ? `우리 ${profile.name} 반!\n이번 주도 함께 읽어봐요.`
-                : '고등부 친구들, 이번 주도 말씀과 함께해요.'
-            }
+            placeholder={`우리 ${profile.name} 반!\n이번 주도 함께 읽어봐요.`}
           />
         </Card>
         {error ? <p className="text-sm text-danger">{error}</p> : null}
