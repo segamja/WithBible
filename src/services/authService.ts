@@ -198,6 +198,25 @@ export async function updateProfile(
   return data as Profile
 }
 
+/** Kakao/OAuth avatar from auth metadata (if any). */
+export async function getAuthProviderAvatarUrl(): Promise<string | null> {
+  if (!isSupabaseConfigured) return null
+  const { data, error } = await supabase.auth.getUser()
+  if (error || !data.user) return null
+  const meta = data.user.user_metadata ?? {}
+  const candidates = [
+    meta.avatar_url,
+    meta.picture,
+    meta.profile_image,
+    meta.profile?.profile_image_url,
+    meta.kakao_account?.profile?.profile_image_url,
+  ]
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim().startsWith('http')) return c.trim()
+  }
+  return null
+}
+
 export function onAuthStateChange(callback: (userId: string | null) => void) {
   if (!isSupabaseConfigured) {
     callback(null)

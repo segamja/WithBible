@@ -25,3 +25,20 @@ export async function uploadCheckinPhoto(userId: string, file: File): Promise<st
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
   return data.publicUrl
 }
+
+/** Profile avatar under the same bucket (user folder RLS). Upserts fixed path. */
+export async function uploadProfilePhoto(userId: string, file: File): Promise<string> {
+  const ext = extensionOf(file)
+  const path = `${userId}/avatar/profile.${ext}`
+
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    cacheControl: '60',
+    upsert: true,
+    contentType: file.type || 'image/jpeg',
+  })
+  if (error) throw new Error(error.message)
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  // bust CDN/browser cache after replace
+  return `${data.publicUrl}?t=${Date.now()}`
+}
