@@ -27,13 +27,15 @@ import { AdminLoginPage } from '@/pages/admin/AdminLoginPage'
 import { AdminDashboardPage, AdminProjectsPage } from '@/pages/admin/AdminPages'
 import { AdminClassesPage, AdminUsersPage } from '@/pages/admin/AdminManagePages'
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage'
+import { OpsPage } from '@/pages/ops/OpsPage'
+import { StaffPage } from '@/pages/staff/StaffPage'
+import { ALL_ROLES } from '@/lib/roles'
 
 export default function App() {
   const init = useAuthStore((s) => s.init)
 
   useEffect(() => {
     void init()
-    // Drop cache-bust query after a successful load
     try {
       const url = new URL(window.location.href)
       if (url.searchParams.has('_v')) {
@@ -65,16 +67,16 @@ export default function App() {
       </Route>
 
       <Route element={<AppShell />}>
-        <Route element={<RoleGuard allow={['STUDENT', 'TEACHER']} />}>
+        <Route element={<RoleGuard allow={ALL_ROLES} />}>
           <Route path="/" element={<StudentHomePage />} />
-        </Route>
-
-        <Route element={<RoleGuard allow={['STUDENT', 'TEACHER', 'ADMIN']} />}>
           <Route path="/checkin" element={<CheckinPage />} />
           <Route path="/feed" element={<FeedPage scope="all" />} />
           <Route path="/notifications" element={<NotificationsPage />} />
-          <Route path="/class" element={<ClassPage />} />
           <Route path="/progress" element={<ClassesOverviewPage />} />
+        </Route>
+
+        <Route element={<RoleGuard allow={['STUDENT', 'TEACHER']} />}>
+          <Route path="/class" element={<ClassPage />} />
         </Route>
 
         <Route element={<RoleGuard allow={['TEACHER']} />}>
@@ -84,7 +86,15 @@ export default function App() {
           <Route path="/teacher/announce" element={<TeacherAnnouncePage />} />
         </Route>
 
-        <Route element={<RoleGuard allow={['ADMIN']} />}>
+        <Route element={<RoleGuard allow={['STAFF']} />}>
+          <Route path="/staff" element={<StaffPage />} />
+        </Route>
+
+        <Route element={<RoleGuard allow={['SUB_MASTER', 'MASTER']} />}>
+          <Route path="/ops" element={<OpsPage />} />
+        </Route>
+
+        <Route element={<RoleGuard allow={['MASTER']} />}>
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/settings" element={<AdminSettingsPage />} />
           <Route path="/admin/projects" element={<AdminProjectsPage />} />

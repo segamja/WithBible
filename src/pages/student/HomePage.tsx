@@ -16,6 +16,7 @@ import { listClassLogs, listFeed } from '@/services/readingService'
 import { getClassById, listClassStudents } from '@/services/classService'
 import type { ReadingLogWithMeta } from '@/types'
 import { departmentTitleOf } from '@/lib/branding'
+import { homeGreetingLine } from '@/lib/roles'
 import { getDDayLabel } from '@/utils/dday'
 import { calcPersonalStreak, getTodayReadingRange, greetingPartsForNow } from '@/utils/schedule'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
@@ -39,6 +40,10 @@ export function StudentHomePage() {
     readUpToLabel: '아직 인증한 장이 없어요',
   })
   const [announcement, setAnnouncement] = useState<string | null>(null)
+  const [cheerMessage, setCheerMessage] = useState<{
+    content: string
+    author?: string
+  } | null>(null)
   const [feed, setFeed] = useState<ReadingLogWithMeta[]>([])
   const [className, setClassName] = useState('우리 반')
   const [personalStreak, setPersonalStreak] = useState(0)
@@ -118,11 +123,22 @@ export function StudentHomePage() {
         setPersonalStreak(calcPersonalStreak(mine))
       }
 
-      const anns = await listAnnouncements({
+      const notices = await listAnnouncements({
         projectId: project.id,
+        kind: 'notice',
+      })
+      setAnnouncement(notices[0]?.content ?? null)
+      const cheers = await listAnnouncements({
+        projectId: project.id,
+        kind: 'cheer',
         classId: profile.class_id,
       })
-      setAnnouncement(anns[0]?.content ?? null)
+      const cheer = cheers[0]
+      setCheerMessage(
+        cheer
+          ? { content: cheer.content, author: cheer.profiles?.name }
+          : null,
+      )
       setFeed(await listFeed({ projectId: project.id, limit: 8 }))
     }
     void run()
@@ -169,9 +185,7 @@ export function StudentHomePage() {
               <span className="inline-block max-w-full break-keep">{greeting.name}&nbsp;👋</span>
             </h1>
             <p className="text-sm leading-relaxed text-muted">
-              {profile.role === 'TEACHER'
-                ? '오늘도 학생들과 함께 말씀을 읽어볼까요?'
-                : '오늘도 우리 반과 함께 말씀을 읽어볼까요?'}
+              {homeGreetingLine(profile.role)}
             </p>
           </div>
         </Card>
@@ -294,6 +308,16 @@ export function StudentHomePage() {
         <Card>
           <p className="text-sm font-medium text-sky-dark">공지사항</p>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{announcement}</p>
+        </Card>
+      ) : null}
+
+      {cheerMessage ? (
+        <Card>
+          <p className="text-sm font-medium text-navy">응원의 메시지</p>
+          {cheerMessage.author ? (
+            <p className="mt-1 text-xs text-muted">{cheerMessage.author}</p>
+          ) : null}
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{cheerMessage.content}</p>
         </Card>
       ) : null}
 

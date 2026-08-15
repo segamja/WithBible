@@ -1,4 +1,5 @@
 import type { Profile, UserRole } from '@/types'
+import { roleLabel as formatRoleLabel } from '@/lib/roles'
 
 const KEY = 'wb_saved_accounts'
 const SECRET_KEY = 'wb_saved_account_secrets'
@@ -16,10 +17,8 @@ export type SavedAccount = {
   hasPassword?: boolean
 }
 
-export function roleLabel(role: UserRole): string {
-  if (role === 'ADMIN') return '관리자'
-  if (role === 'TEACHER') return '교사'
-  return '학생'
+export function roleLabel(role: UserRole | string): string {
+  return formatRoleLabel(role)
 }
 
 function encodeSecret(value: string): string {

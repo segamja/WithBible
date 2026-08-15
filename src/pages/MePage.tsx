@@ -11,6 +11,7 @@ import { getPersonalProgress } from '@/services/progressService'
 import { getAuthProviderAvatarUrl, updateProfile } from '@/services/authService'
 import { uploadProfilePhoto } from '@/services/storageService'
 import { rememberAccount } from '@/lib/savedAccounts'
+import { roleLabel } from '@/lib/roles'
 
 export function MePage() {
   const profile = useAuthStore((s) => s.profile)!
@@ -192,7 +193,7 @@ export function MePage() {
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="rounded-2xl bg-brand-50 px-3 py-2.5">
             <p className="text-xs text-muted">역할</p>
-            <p className="mt-0.5 font-semibold text-navy">{profile.role}</p>
+            <p className="mt-0.5 font-semibold text-navy">{roleLabel(profile.role)}</p>
           </div>
           <div className="rounded-2xl bg-brand-50 px-3 py-2.5">
             <p className="text-xs text-muted">반</p>
@@ -250,6 +251,20 @@ export function MePage() {
       )}
 
       <div className="space-y-2">
+        {profile.role === 'MASTER' ? (
+          <Link to="/admin" className="block">
+            <Button variant="outline" className="w-full">
+              시스템 관리
+            </Button>
+          </Link>
+        ) : null}
+        {profile.role === 'SUB_MASTER' ? (
+          <Link to="/ops" className="block">
+            <Button variant="outline" className="w-full">
+              고등부 운영
+            </Button>
+          </Link>
+        ) : null}
         <Button
           variant="secondary"
           className="w-full"

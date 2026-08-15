@@ -97,8 +97,8 @@ export async function signUp(params: {
 }
 
 function authServiceNeedsOnboarding(profile: Profile): boolean {
-  if (profile.role === 'ADMIN' || profile.role === 'TEACHER') return false
-  return profile.role === 'STUDENT' && !profile.class_id
+  if (profile.role !== 'STUDENT') return false
+  return !profile.class_id
 }
 
 export async function signIn(email: string, password: string): Promise<Profile> {
@@ -228,14 +228,14 @@ export function onAuthStateChange(callback: (userId: string | null) => void) {
   })
 }
 
-/** True when a student session still needs class join. ADMIN/TEACHER never. */
+/** True when a student session still needs class join. Non-students never. */
 export function needsOnboarding(
   sessionUserId: string | null,
   profile: Profile | null,
 ): boolean {
   if (!sessionUserId) return false
   if (!profile) return true
-  if (profile.role === 'ADMIN' || profile.role === 'TEACHER') return false
-  if (profile.role === 'STUDENT' && !profile.class_id) return true
+  if (profile.role !== 'STUDENT') return false
+  if (!profile.class_id) return true
   return false
 }

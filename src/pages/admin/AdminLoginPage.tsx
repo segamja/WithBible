@@ -12,6 +12,7 @@ import {
   rememberAccount,
   type SavedAccount,
 } from '@/lib/savedAccounts'
+import { roleLabel } from '@/lib/roles'
 
 /**
  * Dedicated operator login (MyLevelUp `/admin/auth` style).
@@ -59,10 +60,10 @@ export function AdminLoginPage() {
 
   const finishAdminLogin = async (mail: string, pass: string, persistPassword: boolean) => {
     const profile = await login(mail, pass)
-    if (profile.role !== 'ADMIN') {
+    if (profile.role !== 'MASTER') {
       await logout().catch(() => undefined)
       throw new Error(
-        `이 계정은 ${profile.role} 입니다. 운영자(ADMIN)만 이 화면으로 로그인할 수 있어요.`,
+        `이 계정은 ${roleLabel(profile.role)} 입니다. 최고관리자만 이 화면으로 로그인할 수 있어요.`,
       )
     }
     rememberAccount(profile, 'email', persistPassword ? pass : null)
@@ -109,8 +110,8 @@ export function AdminLoginPage() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center bg-surface px-6 py-10">
       <p className="caption-caps">with BIBLE · 운영</p>
-      <h1 className="page-title mt-2">관리자 로그인</h1>
-      <p className="mt-2 text-sm text-muted">운영자 전용 · 이메일 계정으로 입장합니다.</p>
+      <h1 className="page-title mt-2">최고관리자 로그인</h1>
+      <p className="mt-2 text-sm text-muted">최고관리자 전용 · 이메일 계정으로 입장합니다.</p>
       <AppVersionBadge className="mt-3" />
 
       {!isSupabaseConfigured ? (
@@ -126,9 +127,11 @@ export function AdminLoginPage() {
           <SavedAccountList
             key={listKey}
             className="mt-6"
-            title="관리자 계정 선택"
+            title="최고관리자 계정 선택"
             hint="비밀번호를 기억해 둔 계정은 「바로 로그인」으로 한 번에 들어갑니다."
-            filter={(a) => a.role === 'ADMIN' && Boolean(a.email)}
+            filter={(a) =>
+              (a.role === 'MASTER' || (a.role as string) === 'ADMIN') && Boolean(a.email)
+            }
             onPick={pickAccount}
           />
 
@@ -180,7 +183,7 @@ export function AdminLoginPage() {
               size="lg"
               disabled={loading || !isSupabaseConfigured}
             >
-              {loading ? '로그인 중…' : '관리자로 입장'}
+              {loading ? '로그인 중…' : '최고관리자로 입장'}
             </Button>
           </form>
         </>
@@ -191,7 +194,7 @@ export function AdminLoginPage() {
           to="/login?switch=1"
           className="font-medium text-navy underline-offset-2 hover:underline"
         >
-          ← 학생·교사 계정으로 전환
+          ← 다른 계정으로 전환
         </Link>
       </p>
     </div>

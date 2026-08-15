@@ -1,4 +1,6 @@
-export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN'
+export type UserRole = 'MASTER' | 'SUB_MASTER' | 'STAFF' | 'TEACHER' | 'STUDENT'
+
+export type AnnouncementKind = 'notice' | 'cheer'
 
 export type ProjectStatus = 'draft' | 'active' | 'completed'
 
@@ -113,6 +115,7 @@ export interface Announcement {
   class_id: string | null
   author_id: string
   content: string
+  kind: AnnouncementKind
   created_at: string
 }
 

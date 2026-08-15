@@ -162,7 +162,7 @@ export function AdminSettingsPage() {
     return (
       <div className="page">
         <PageHeader
-          eyebrow="관리자"
+          eyebrow="최고관리자"
           title="프로젝트 설정"
           description="활성 프로젝트가 없습니다. 프로젝트 메뉴에서 먼저 생성하세요."
         />
@@ -174,7 +174,7 @@ export function AdminSettingsPage() {
   return (
     <div className="page">
       <PageHeader
-        eyebrow="관리자"
+        eyebrow="최고관리자"
         title="프로젝트 설정"
         description="부서 타이틀 · 프로젝트 · 기간 · 읽기 목표 · 마지막 보상을 한곳에서 관리합니다."
       />

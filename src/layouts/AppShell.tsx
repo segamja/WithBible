@@ -5,8 +5,7 @@ import type { UserRole } from '@/types'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { cn } from '@/utils/cn'
 
-export function roleHome(role: UserRole) {
-  if (role === 'ADMIN') return '/admin'
+export function roleHome(_role: UserRole) {
   return '/'
 }
 
@@ -59,7 +58,7 @@ export function AppShell() {
       )}
     >
       <Outlet />
-      <BottomNav role={profile.role} classId={profile.class_id} />
+      <BottomNav role={profile.role} />
     </div>
   )
 }

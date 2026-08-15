@@ -23,6 +23,7 @@ import {
 import { listStaffCodes, upsertStaffCode, type StaffCode } from '@/services/staffCodeService'
 import { useAuthStore } from '@/stores/authStore'
 import type { ClassRow, Profile, UserRole } from '@/types'
+import { roleLabel } from '@/lib/roles'
 
 export function AdminClassesPage() {
   const [classes, setClasses] = useState<ClassRow[]>([])
@@ -32,6 +33,8 @@ export function AdminClassesPage() {
   const [joinCode, setJoinCode] = useState('')
   const [teacherJoinCode, setTeacherJoinCode] = useState('')
   const [staffCodeInput, setStaffCodeInput] = useState('')
+  const [staffLabel, setStaffLabel] = useState('임원선생님')
+  const [staffTarget, setStaffTarget] = useState<'STAFF' | 'SUB_MASTER'>('STAFF')
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   /** Pending teacher selection per class (explicit save) */
@@ -88,9 +91,13 @@ export function AdminClassesPage() {
     setError(null)
     setMessage(null)
     try {
-      await upsertStaffCode(staffCodeInput || staffCodes[0]?.code || 'STAFF26')
+      await upsertStaffCode(
+        staffCodeInput || staffCodes[0]?.code || 'STAFF26',
+        staffLabel,
+        staffTarget,
+      )
       setStaffCodeInput('')
-      setMessage('임원 코드를 저장했습니다.')
+      setMessage('가입 코드를 저장했습니다.')
       await refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : '임원 코드 저장 실패')
@@ -164,7 +171,7 @@ export function AdminClassesPage() {
     }
   }
 
-  const teachers = users.filter((u) => u.role === 'TEACHER' || u.role === 'ADMIN')
+  const teachers = users.filter((u) => u.role === 'TEACHER' || u.role === 'MASTER')
 
   return (
     <div className="page">
@@ -174,7 +181,7 @@ export function AdminClassesPage() {
         </Link>
         <div className="mt-1 flex items-end justify-between gap-3">
           <div>
-            <p className="caption-caps">관리자</p>
+            <p className="caption-caps">최고관리자</p>
             <h1 className="page-title mt-1">반 관리</h1>
           </div>
           <Link
@@ -187,40 +194,61 @@ export function AdminClassesPage() {
       </div>
       <p className="text-sm text-muted">
         반은 <span className="font-medium text-navy">학생 코드</span>와{' '}
-        <span className="font-medium text-navy">교사 코드</span>가 따로 있습니다. 임원은 아래 임원
-        코드를 쓰고, 수동 배정은 사용자·역할에서도 가능합니다.
+        <span className="font-medium text-navy">교사 코드</span>가 따로 있습니다. 임원선생님·강도사님
+        코드는 아래에서 만듭니다. MASTER는 가입 코드로 만들지 않습니다.
       </p>
 
       <Card className="space-y-2 border-sage/25 bg-sage-soft text-sm">
         <p className="font-semibold text-navy">코드 종류</p>
         <ul className="list-disc space-y-1 pl-5 text-muted">
-          <li>학생 코드 → 학생으로 그 반 가입</li>
-          <li>교사 코드 → 담임 TEACHER + 그 반 (가입과 동시에 권한)</li>
-          <li>임원 코드 → 반 없는 TEACHER</li>
+          <li>학생 코드 → 학생</li>
+          <li>교사 코드 → 담임 선생님 + 그 반</li>
+          <li>임원 코드 → 임원선생님 (반 없음)</li>
+          <li>강도사님 코드 → 강도사님 (반 없음)</li>
         </ul>
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="font-semibold text-navy">임원 선생님 코드</h2>
+        <h2 className="font-semibold text-navy">임원·강도사님 코드</h2>
         <p className="text-sm text-muted">
-          반이 없는 임원 선생님이 카카오/가입 시 입력하는 코드입니다. (운영자 ADMIN은 SQL로만 승격)
+          카카오/가입 시 이 코드를 입력하면 해당 역할이 부여됩니다. 최고관리자는 여기서 역할을
+          지정하세요.
         </p>
         {staffCodes.map((s) => (
           <p key={s.id} className="rounded-xl bg-brand-50 px-3 py-2 font-semibold tracking-wide text-navy">
             {s.code}
-            <span className="ml-2 text-xs font-normal text-muted">· {s.label}</span>
+            <span className="ml-2 text-xs font-normal text-muted">
+              · {s.label} · {roleLabel(s.target_role)}
+            </span>
           </p>
         ))}
-        <form onSubmit={onSaveStaffCode} className="flex gap-2">
-          <Input
-            value={staffCodeInput}
-            onChange={(e) => setStaffCodeInput(e.target.value.toUpperCase())}
-            placeholder="새 코드 (예: STAFF26)"
-            className="flex-1"
-          />
-          <Button type="submit" variant="secondary">
-            추가/갱신
-          </Button>
+        <form onSubmit={onSaveStaffCode} className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              value={staffCodeInput}
+              onChange={(e) => setStaffCodeInput(e.target.value.toUpperCase())}
+              placeholder="새 코드 (예: STAFF26)"
+              className="flex-1"
+            />
+            <Select
+              value={staffTarget}
+              onChange={(e) => setStaffTarget(e.target.value as 'STAFF' | 'SUB_MASTER')}
+            >
+              <option value="STAFF">임원선생님</option>
+              <option value="SUB_MASTER">강도사님</option>
+            </Select>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={staffLabel}
+              onChange={(e) => setStaffLabel(e.target.value)}
+              placeholder="표시 이름"
+              className="flex-1"
+            />
+            <Button type="submit" variant="secondary">
+              추가/갱신
+            </Button>
+          </div>
         </form>
       </Card>
 
@@ -402,7 +430,7 @@ export function AdminClassesPage() {
               </Select>
               {teachers.length === 0 ? (
                 <p className="text-xs text-danger">
-                  TEACHER 역할 사용자가 없습니다. 사용자 관리에서 역할을 먼저 바꿔주세요.
+                  선생님 역할 사용자가 없습니다. 사용자 관리에서 역할을 먼저 바꿔주세요.
                 </p>
               ) : null}
               <Button
@@ -520,7 +548,7 @@ export function AdminUsersPage() {
         </Link>
         <div className="mt-1 flex items-end justify-between gap-3">
           <div>
-            <p className="caption-caps">관리자</p>
+            <p className="caption-caps">최고관리자</p>
             <h1 className="page-title mt-1">사용자</h1>
           </div>
           <Link
@@ -532,9 +560,8 @@ export function AdminUsersPage() {
         </div>
       </div>
       <p className="text-sm text-muted">
-        역할·반은 바로 저장됩니다. 유령 계정(반 미배정·인증 없음 학생) 삭제와 비밀번호 초기화도 할 수
-        있어요. 비밀번호 초기화는 이메일이 있는 계정만 가능하며, Supabase에 migration 016·018을
-        적용해야 새 비밀번호로 로그인이 됩니다.
+        역할·반은 바로 저장됩니다. 유령 계정 삭제·비밀번호 초기화·역할 변경은 최고관리자만 할 수
+        있어요. Supabase에 migration 019를 적용해야 새 역할 체계가 동작합니다.
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -568,6 +595,7 @@ export function AdminUsersPage() {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold text-navy">{user.name}</p>
+                    <span className="text-[11px] text-muted">{roleLabel(user.role)}</span>
                     {user.is_ghost ? (
                       <span className="rounded-full bg-coral/15 px-2 py-0.5 text-[11px] font-semibold text-coral">
                         유령
@@ -584,17 +612,28 @@ export function AdminUsersPage() {
               <div className="grid grid-cols-2 gap-2">
                 <Select
                   value={user.role}
-                  onChange={(e) =>
-                    void updateUserRole(user.id, e.target.value as UserRole)
-                      .then(refresh)
+                  onChange={(e) => {
+                    const next = e.target.value as UserRole
+                    void updateUserRole(user.id, next)
+                      .then(async () => {
+                        if (
+                          (next === 'STAFF' || next === 'SUB_MASTER' || next === 'MASTER') &&
+                          user.class_id
+                        ) {
+                          await assignUserToClass(user.id, null).catch(() => undefined)
+                        }
+                        await refresh()
+                      })
                       .catch((err) =>
                         setError(err instanceof Error ? err.message : '역할 변경 실패'),
                       )
-                  }
+                  }}
                 >
-                  <option value="STUDENT">STUDENT</option>
-                  <option value="TEACHER">TEACHER</option>
-                  <option value="ADMIN">ADMIN</option>
+                  <option value="STUDENT">학생</option>
+                  <option value="TEACHER">선생님</option>
+                  <option value="STAFF">임원선생님</option>
+                  <option value="SUB_MASTER">강도사님</option>
+                  <option value="MASTER">최고관리자</option>
                 </Select>
                 <Select
                   value={user.class_id ?? ''}

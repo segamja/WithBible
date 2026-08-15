@@ -84,7 +84,7 @@ export function SignupPage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm text-muted">가입코드 (학생/교사/임원)</label>
+            <label className="mb-1.5 block text-sm text-muted">가입코드 (학생/선생님/임원선생님)</label>
             <Input
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
@@ -96,15 +96,15 @@ export function SignupPage() {
             </p>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm text-muted">임원 코드 (선택)</label>
+            <label className="mb-1.5 block text-sm text-muted">임원·강도사님 코드 (선택)</label>
             <Input
               value={staffCode}
               onChange={(e) => setStaffCode(e.target.value.toUpperCase())}
-              placeholder="STAFF26 (학생 코드와 함께 쓸 때만)"
+              placeholder="STAFF26"
               autoCapitalize="characters"
             />
             <p className="mt-1 text-xs text-muted">
-              담임은 교사 코드(T-WB-학년-반)만 넣으면 TEACHER+반이 됩니다.
+              담임은 교사 코드(T-…)만 넣으면 됩니다. 최고관리자는 가입 코드로 만들지 않습니다.
             </p>
           </div>
           {error ? <p className="text-sm text-danger">{error}</p> : null}

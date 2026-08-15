@@ -53,7 +53,9 @@ export function ClassOnboardingPage() {
       success.joinKind === 'teacher_class'
         ? '교사 권한과 반이 함께 연결됐어요.'
         : success.joinKind === 'staff'
-          ? '임원으로 등록됐어요. 반 현황은 담임 선생님 화면입니다.'
+          ? success.role === 'SUB_MASTER'
+            ? '강도사님으로 등록됐어요. 하단 운영 탭에서 공지와 현황을 볼 수 있어요.'
+            : '임원선생님으로 등록됐어요. 하단 임원 탭에서 응원 메시지를 남길 수 있어요.'
           : '이제 우리 반과 함께 말씀을 읽어보세요.'
 
     return (
@@ -95,7 +97,7 @@ export function ClassOnboardingPage() {
         <Card className="space-y-3">
           <div>
             <label className="mb-1.5 block text-sm text-muted">
-              가입코드 (학생 / 담임 교사 / 임원)
+              가입코드 (학생 / 담임 선생님 / 임원선생님 / 강도사님)
             </label>
             <Input
               value={joinCode}

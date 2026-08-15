@@ -36,8 +36,8 @@ function mapRpcError(message: string): string {
   if (message.includes('ALREADY_STAFF')) {
     return '이미 임원/교사로 등록된 계정입니다.'
   }
-  if (message.includes('ALREADY_ADMIN')) {
-    return '관리자 계정은 가입코드로 변경할 수 없어요.'
+  if (message.includes('ALREADY_MASTER') || message.includes('ALREADY_ADMIN')) {
+    return '이 계정은 가입코드로 역할을 바꿀 수 없어요.'
   }
   if (message.includes('NOT_STUDENT')) {
     return '학생 계정만 반 가입코드만으로 연결할 수 있어요.'

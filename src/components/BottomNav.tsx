@@ -18,7 +18,6 @@ interface NavItem {
   icon: typeof Home
 }
 
-/** 시안: 홈 · 인증 · 우리반 · 피드 · 마이 */
 const studentNav: NavItem[] = [
   { to: '/', label: '홈', icon: Home },
   { to: '/checkin', label: '인증', icon: Award },
@@ -27,8 +26,7 @@ const studentNav: NavItem[] = [
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
-/** 홈은 학생과 동일(`/`), 기존 교사 대시보드는 «교사» 탭 */
-const teacherWithClassNav: NavItem[] = [
+const teacherNav: NavItem[] = [
   { to: '/', label: '홈', icon: Home },
   { to: '/checkin', label: '인증', icon: Award },
   { to: '/class', label: '우리반', icon: Users },
@@ -36,36 +34,45 @@ const teacherWithClassNav: NavItem[] = [
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
-const teacherStaffNav: NavItem[] = [
+const staffNav: NavItem[] = [
   { to: '/', label: '홈', icon: Home },
   { to: '/checkin', label: '인증', icon: Award },
   { to: '/feed', label: '피드', icon: Newspaper },
-  { to: '/teacher', label: '교사', icon: LayoutDashboard },
+  { to: '/staff', label: '임원', icon: LayoutDashboard },
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
-const adminNav: NavItem[] = [
-  { to: '/admin', label: '현황', icon: LayoutDashboard },
+const opsNav: NavItem[] = [
+  { to: '/', label: '홈', icon: Home },
   { to: '/checkin', label: '인증', icon: Award },
   { to: '/feed', label: '피드', icon: Newspaper },
-  { to: '/progress', label: '반현황', icon: ChartColumn },
+  { to: '/ops', label: '운영', icon: ChartColumn },
   { to: '/me', label: '마이', icon: UserRound },
 ]
 
-function navForRole(role: UserRole, classId: string | null): NavItem[] {
-  if (role === 'ADMIN') return adminNav
-  if (role === 'TEACHER') return classId ? teacherWithClassNav : teacherStaffNav
+const masterNav: NavItem[] = [
+  { to: '/', label: '홈', icon: Home },
+  { to: '/checkin', label: '인증', icon: Award },
+  { to: '/feed', label: '피드', icon: Newspaper },
+  { to: '/admin', label: '관리', icon: LayoutDashboard },
+  { to: '/me', label: '마이', icon: UserRound },
+]
+
+function navForRole(role: UserRole): NavItem[] {
+  if (role === 'MASTER') return masterNav
+  if (role === 'SUB_MASTER') return opsNav
+  if (role === 'STAFF') return staffNav
+  if (role === 'TEACHER') return teacherNav
   return studentNav
 }
 
 export function BottomNav({
   role,
-  classId = null,
 }: {
   role: UserRole
   classId?: string | null
 }) {
-  const items = navForRole(role, classId)
+  const items = navForRole(role)
   const location = useLocation()
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line/25 bg-panel/90 backdrop-blur-xl">
@@ -79,14 +86,22 @@ export function BottomNav({
         {items.map((item) => {
           const Icon = item.icon
           const end =
-            item.to === '/' || item.to === '/teacher' || item.to === '/admin'
+            item.to === '/' ||
+            item.to === '/teacher' ||
+            item.to === '/admin' ||
+            item.to === '/ops' ||
+            item.to === '/staff'
           const adminHubActive =
             item.to === '/admin' &&
             (location.pathname === '/admin' ||
               location.pathname === '/admin/classes' ||
               location.pathname === '/admin/users' ||
-              location.pathname === '/admin/projects')
-          const active = adminHubActive
+              location.pathname === '/admin/projects' ||
+              location.pathname === '/admin/settings')
+          const opsHubActive =
+            item.to === '/ops' &&
+            (location.pathname === '/ops' || location.pathname.startsWith('/ops/'))
+          const active = adminHubActive || opsHubActive
             ? true
             : end
               ? location.pathname === item.to

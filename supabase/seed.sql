@@ -59,7 +59,7 @@ insert into public.wb_project_classes (
 on conflict (project_id, class_id) do nothing;
 
 -- After first admin signs up from With Bible app, run:
--- update public.wb_profiles set role = 'ADMIN', class_id = null where email = 'admin@example.com';
+-- update public.wb_profiles set role = 'MASTER', class_id = null where email = 'admin@example.com';
 -- Imparts use staff code STAFF26 (see migration 007). Class teachers:
 -- update public.wb_classes set teacher_id = '<teacher-uuid>' where name = '2반';
 -- update public.wb_profiles set role = 'TEACHER', class_id = '22222222-2222-2222-2222-222222222202' where email = 'teacher@example.com';

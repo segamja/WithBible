@@ -19,6 +19,7 @@ import {
 import { getAdminOverview } from '@/services/progressService'
 import type { BibleBook, Project } from '@/types'
 import { getDDayLabel } from '@/utils/dday'
+import { MessageBoard } from '@/components/MessageBoard'
 
 export function AdminDashboardPage() {
   const profile = useAuthStore((s) => s.profile)!
@@ -52,7 +53,7 @@ export function AdminDashboardPage() {
   return (
     <div className="page">
       <div className="space-y-1.5">
-        <p className="caption-caps">관리자</p>
+        <p className="caption-caps">최고관리자</p>
         <h1 className="page-title">전체 현황</h1>
         {project ? (
           <>
@@ -83,6 +84,11 @@ export function AdminDashboardPage() {
         <Link to="/admin/users">
           <Button className="w-full" variant="outline" size="sm">
             사용자
+          </Button>
+        </Link>
+        <Link to="/progress">
+          <Button className="w-full" variant="outline" size="sm">
+            반별 현황
           </Button>
         </Link>
       </div>
@@ -135,6 +141,29 @@ export function AdminDashboardPage() {
           })}
         </div>
       </Card>
+
+      {project ? (
+        <>
+          <MessageBoard
+            projectId={project.id}
+            authorId={profile.id}
+            kind="notice"
+            title="공지사항"
+            hint="고등부 전체 홈에 보이는 공식 공지입니다."
+            placeholder="복음서 읽기 안내를 남겨주세요."
+            canWrite
+          />
+          <MessageBoard
+            projectId={project.id}
+            authorId={profile.id}
+            kind="cheer"
+            title="응원의 메시지"
+            hint="모든 학생 홈에 보이는 격려 글입니다."
+            placeholder="우리 고등부 친구들, 오늘도 말씀 안에서 힘내요!"
+            canWrite
+          />
+        </>
+      ) : null}
     </div>
   )
 }
@@ -250,7 +279,7 @@ export function AdminProjectsPage() {
   return (
     <div className="page">
       <div>
-        <p className="caption-caps">관리자</p>
+        <p className="caption-caps">최고관리자</p>
         <h1 className="page-title mt-1">프로젝트</h1>
       </div>
 

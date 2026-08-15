@@ -15,6 +15,7 @@ import type {
   ReadingLogWithMeta,
   UserRole,
 } from '@/types'
+import { canGiveTeacherCheer } from '@/lib/roles'
 import { format, parseISO } from 'date-fns'
 import { cn } from '@/utils/cn'
 
@@ -53,7 +54,7 @@ export function ReadingFeedCard({
   const [commentError, setCommentError] = useState<string | null>(null)
   const [showComments, setShowComments] = useState(comments.length > 0)
 
-  const isTeacher = currentUserRole === 'TEACHER' || currentUserRole === 'ADMIN'
+  const isTeacher = canGiveTeacherCheer(currentUserRole)
   const reactionButtons: ReactionDef[] = isTeacher
     ? [...STUDENT_REACTIONS, TEACHER_REACTION]
     : STUDENT_REACTIONS
