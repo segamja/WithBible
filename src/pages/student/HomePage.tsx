@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { getClassProgress, getPersonalProgress, getClassCommunityWarmth } from '@/services/progressService'
 import { CheerTodayCard } from '@/components/CheerTodayCard'
+import { NoticeHomeCard } from '@/components/NoticeHomeCard'
 import { FeedbackDialog } from '@/components/FeedbackDialog'
 import { listAnnouncements, listTodayCheers, type AnnouncementRow } from '@/services/announcementService'
 import { getPlaygroundTeaser } from '@/services/playgroundService'
@@ -43,7 +44,7 @@ export function StudentHomePage() {
     goalLabel: '',
     readUpToLabel: '아직 인증한 장이 없어요',
   })
-  const [announcement, setAnnouncement] = useState<string | null>(null)
+  const [notices, setNotices] = useState<AnnouncementRow[]>([])
   const [cheers, setCheers] = useState<AnnouncementRow[]>([])
   const [feed, setFeed] = useState<ReadingLogWithMeta[]>([])
   const [className, setClassName] = useState('우리 반')
@@ -135,11 +136,14 @@ export function StudentHomePage() {
         setPersonalStreak(calcPersonalStreak(mine))
       }
 
-      const notices = await listAnnouncements({
-        projectId: project.id,
-        kind: 'notice',
-      })
-      setAnnouncement(notices[0]?.content ?? null)
+      setNotices(
+        (
+          await listAnnouncements({
+            projectId: project.id,
+            kind: 'notice',
+          })
+        ).slice(0, 3),
+      )
       setCheers(await listTodayCheers(project.id, profile.class_id))
       setFeed(await listFeed({ projectId: project.id, limit: 8 }))
     }
@@ -368,12 +372,7 @@ export function StudentHomePage() {
         </Card>
       ) : null}
 
-      {announcement ? (
-        <Card>
-          <p className="text-sm font-medium text-sky-dark">공지사항</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{announcement}</p>
-        </Card>
-      ) : null}
+      <NoticeHomeCard notices={notices} />
 
       <CheerTodayCard cheers={cheers} />
 

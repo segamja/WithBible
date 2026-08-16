@@ -9,6 +9,7 @@ import {
   type AnnouncementRow,
 } from '@/services/announcementService'
 import type { AnnouncementKind } from '@/types'
+import { formatSeoulDateTime } from '@/utils/seoul'
 
 export function MessageBoard({
   projectId,
@@ -113,9 +114,10 @@ export function MessageBoard({
           ) : (
             list.map((item) => (
               <Card key={item.id} className="space-y-2">
-                {item.profiles?.name ? (
-                  <p className="text-xs text-muted">{item.profiles.name}</p>
-                ) : null}
+                <p className="text-xs text-muted">
+                  {item.profiles?.name ? `${item.profiles.name} · ` : ''}
+                  {formatSeoulDateTime(item.created_at)}
+                </p>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">{item.content}</p>
                 {canWrite ? (
                   <button
