@@ -14,4 +14,10 @@ export const Tables = {
   readAlongs: 'wb_read_alongs',
   notifications: 'wb_notifications',
   feedback: 'wb_feedback',
+  chatterPosts: 'wb_chatter_posts',
+  chatterComments: 'wb_chatter_comments',
+  chatterReactions: 'wb_chatter_reactions',
+  playgroundContents: 'wb_playground_contents',
+  playgroundHistory: 'wb_playground_history',
+  playgroundResponses: 'wb_playground_responses',
 } as const

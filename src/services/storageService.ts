@@ -42,3 +42,19 @@ export async function uploadProfilePhoto(userId: string, file: File): Promise<st
   // bust CDN/browser cache after replace
   return `${data.publicUrl}?t=${Date.now()}`
 }
+
+/** Optional chatter photo; same user-folder RLS as check-in photos. */
+export async function uploadChatterPhoto(userId: string, file: File): Promise<string> {
+  const ext = extensionOf(file)
+  const path = `${userId}/chatter-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType: file.type || 'image/jpeg',
+  })
+  if (error) throw new Error(error.message)
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  return data.publicUrl
+}

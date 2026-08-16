@@ -53,6 +53,7 @@ export async function updateReadingLog(
     reflection: string
     visibility: ReadingLog['visibility']
     book_id: string
+    image_url?: string | null
   }>,
 ): Promise<ReadingLog> {
   const { data, error } = await supabase
@@ -62,8 +63,24 @@ export async function updateReadingLog(
     .eq('user_id', userId)
     .select('*')
     .single()
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('오늘 같은 범위로 이미 인증했습니다. 다른 범위를 선택해주세요.')
+    }
+    throw new Error(error.message)
+  }
   return data as ReadingLog
+}
+
+export async function getReadingLog(id: string): Promise<ReadingLog | null> {
+  if (!isUuid(id)) return null
+  const { data, error } = await supabase
+    .from(Tables.readingLogs)
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return (data as ReadingLog | null) ?? null
 }
 
 export async function deleteReadingLog(id: string, userId: string): Promise<void> {

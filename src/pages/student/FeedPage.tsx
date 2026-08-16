@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ReadingFeedCard } from '@/components/ReadingFeedCard'
+import { ChatterBoard } from '@/components/ChatterBoard'
+import { PlaygroundPanel } from '@/components/PlaygroundPanel'
 import { Card } from '@/components/ui/Card'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
@@ -18,13 +20,97 @@ import {
 } from '@/services/commentService'
 import { countUnreadNotifications } from '@/services/notificationService'
 import type { FeedComment, ReadingLogWithMeta, ReactionCounts } from '@/types'
+import { cn } from '@/utils/cn'
+
+const FEED_TABS = [
+  { id: 'logs', label: '말씀인증' },
+  { id: 'chatter', label: '왁자지껄' },
+  { id: 'playground', label: '놀이터' },
+] as const
+
+type FeedTab = (typeof FEED_TABS)[number]['id']
+
+function tabFromParam(value: string | null): FeedTab {
+  if (value === 'chatter' || value === 'playground') return value
+  return 'logs'
+}
 
 export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
+  const profile = useAuthStore((s) => s.profile)!
+  const [params, setParams] = useSearchParams()
+  const tab = tabFromParam(params.get('tab'))
+  const [unread, setUnread] = useState(0)
+
+  useEffect(() => {
+    void countUnreadNotifications(profile.id)
+      .then(setUnread)
+      .catch(() => setUnread(0))
+  }, [profile.id])
+
+  const title = FEED_TABS.find((t) => t.id === tab)?.label ?? '말씀인증'
+
+  return (
+    <div className="page">
+      <header className="flex items-center justify-between gap-3">
+        {profile.profile_image ? (
+          <img
+            src={profile.profile_image}
+            alt=""
+            className="h-10 w-10 rounded-full object-cover ring-2 ring-panel"
+          />
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-soft text-sm font-semibold text-sky-dark">
+            {profile.name.slice(0, 1)}
+          </div>
+        )}
+        <h1 className="font-display text-lg text-navy">{title}</h1>
+        <Link
+          to="/notifications"
+          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-lg"
+          aria-label="알림"
+        >
+          🔔
+          {unread > 0 ? (
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-coral px-1 text-[10px] font-bold text-white">
+              {unread > 9 ? '9+' : unread}
+            </span>
+          ) : null}
+        </Link>
+      </header>
+
+      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-brand-50 p-1">
+        {FEED_TABS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => {
+              const next = new URLSearchParams(params)
+              if (item.id === 'logs') next.delete('tab')
+              else next.set('tab', item.id)
+              setParams(next, { replace: true })
+            }}
+            className={cn(
+              'rounded-xl py-2 text-sm font-semibold transition',
+              tab === item.id ? 'bg-panel text-navy shadow-sm' : 'text-muted',
+            )}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'logs' ? <LogsFeed scope={scope} /> : null}
+      {tab === 'chatter' ? <ChatterBoard /> : null}
+      {tab === 'playground' ? <PlaygroundPanel /> : null}
+    </div>
+  )
+}
+
+function LogsFeed({ scope }: { scope: 'class' | 'all' }) {
   const profile = useAuthStore((s) => s.profile)!
   const { project, classes, loadForUser } = useProjectStore()
   const [feed, setFeed] = useState<ReadingLogWithMeta[]>([])
   const [commentsByLog, setCommentsByLog] = useState<Record<string, FeedComment[]>>({})
-  const [unread, setUnread] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   const classNameById = useMemo(() => {
@@ -43,11 +129,6 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
     })
     setFeed(logs)
     setCommentsByLog(await listCommentsForLogs(logs.map((l) => l.id)))
-    try {
-      setUnread(await countUnreadNotifications(profile.id))
-    } catch {
-      setUnread(0)
-    }
   }, [project, profile.class_id, profile.id, scope])
 
   useEffect(() => {
@@ -67,34 +148,7 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
   }, [project, refresh])
 
   return (
-    <div className="page">
-      <header className="flex items-center justify-between gap-3">
-        {profile.profile_image ? (
-          <img
-            src={profile.profile_image}
-            alt=""
-            className="h-10 w-10 rounded-full object-cover ring-2 ring-panel"
-          />
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-soft text-sm font-semibold text-sky-dark">
-            {profile.name.slice(0, 1)}
-          </div>
-        )}
-        <h1 className="font-display text-lg text-navy">함께 읽는 피드</h1>
-        <Link
-          to="/notifications"
-          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-lg"
-          aria-label="알림"
-        >
-          🔔
-          {unread > 0 ? (
-            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-coral px-1 text-[10px] font-bold text-white">
-              {unread > 9 ? '9+' : unread}
-            </span>
-          ) : null}
-        </Link>
-      </header>
-
+    <>
       {error ? <p className="text-sm text-danger">{error}</p> : null}
       {feed.length === 0 ? (
         <CardEmpty />
@@ -176,7 +230,6 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
               setCommentsByLog((prev) => {
                 const list = prev[logId] ?? []
                 if (list.some((c) => c.id === row.id)) return prev
-                // same text already shown from prior insert
                 if (
                   list.some(
                     (c) => c.user_id === profile.id && c.content.trim() === content.trim(),
@@ -204,7 +257,7 @@ export function FeedPage({ scope = 'all' }: { scope?: 'class' | 'all' }) {
           />
         ))
       )}
-    </div>
+    </>
   )
 }
 

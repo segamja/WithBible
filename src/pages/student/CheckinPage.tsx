@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Camera, ImagePlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
-import { createReadingLog } from '@/services/readingService'
+import { createReadingLog, getReadingLog, updateReadingLog } from '@/services/readingService'
 import { uploadCheckinPhoto } from '@/services/storageService'
 import { getPersonalProgress, getReadingTargets } from '@/services/progressService'
 import type { BibleBook } from '@/types'
@@ -28,6 +28,8 @@ function clampToRange(n: number, range: BookRange) {
 
 export function CheckinPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const editId = searchParams.get('edit')
   const profile = useAuthStore((s) => s.profile)!
   const { project, myProjectClass, bibleBooks, loadForUser } = useProjectStore()
   const [bookId, setBookId] = useState('')
@@ -36,6 +38,7 @@ export function CheckinPage() {
   const [reflection, setReflection] = useState('')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [existingImage, setExistingImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
@@ -85,6 +88,31 @@ export function CheckinPage() {
         return
       }
 
+      if (editId) {
+        const log = await getReadingLog(editId)
+        if (!log || log.user_id !== profile.id) {
+          setError('내 인증만 수정할 수 있어요.')
+          return
+        }
+        if (!books.some((b) => b.id === log.book_id)) {
+          const extra = bibleBooks.find((b) => b.id === log.book_id)
+          if (extra) {
+            books.push(extra)
+            ranges[extra.id] = { start: 1, end: extra.chapter_count }
+            setBookRanges({ ...ranges, [extra.id]: { start: 1, end: extra.chapter_count } })
+          }
+        }
+        setGoalBooks(books)
+        setBookId(log.book_id)
+        setStartChapter(String(log.start_chapter))
+        setEndChapter(String(log.end_chapter))
+        setReflection(log.reflection ?? '')
+        setExistingImage(log.image_url)
+        setError(null)
+        return
+      }
+
+      setGoalBooks(books)
       const personal = await getPersonalProgress(project.id, profile.id, profile.class_id)
       const resume: Record<string, number> = {}
       for (const b of personal.byBook) {
@@ -112,7 +140,7 @@ export function CheckinPage() {
       setEndChapter(String(next))
     }
     void run().catch((e) => setError(e instanceof Error ? e.message : '목표 성경 로드 실패'))
-  }, [project, profile.class_id, profile.id, bibleBooks])
+  }, [project, profile.class_id, profile.id, bibleBooks, editId])
 
   useEffect(() => {
     return () => {
@@ -178,10 +206,13 @@ export function CheckinPage() {
     setError(null)
   }
 
+  const displayPhoto = photoPreview ?? existingImage
+
   const clearPhoto = () => {
     if (photoPreview) URL.revokeObjectURL(photoPreview)
     setPhotoFile(null)
     setPhotoPreview(null)
+    setExistingImage(null)
   }
 
   const onSubmit = async (e: FormEvent) => {
@@ -193,7 +224,7 @@ export function CheckinPage() {
       return
     }
     if (resolvedBookId !== bookId) setBookId(resolvedBookId)
-    if (!photoFile) {
+    if (!photoFile && !existingImage) {
       setError('성경 페이지 사진을 찍어 올려주세요.')
       return
     }
@@ -215,7 +246,21 @@ export function CheckinPage() {
     setLoading(true)
     setError(null)
     try {
-      const imageUrl = await uploadCheckinPhoto(profile.id, photoFile)
+      const imageUrl = photoFile
+        ? await uploadCheckinPhoto(profile.id, photoFile)
+        : existingImage
+      if (editId) {
+        await updateReadingLog(editId, profile.id, {
+          book_id: resolvedBookId,
+          start_chapter: start,
+          end_chapter: end,
+          reflection: reflection.trim(),
+          image_url: imageUrl,
+        })
+        setDone(true)
+        setTimeout(() => navigate('/feed'), 900)
+        return
+      }
       await createReadingLog(profile.id, {
         projectId: project.id,
         bookId: resolvedBookId,
@@ -228,7 +273,7 @@ export function CheckinPage() {
       setDone(true)
       setTimeout(() => navigate('/feed'), 900)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '인증 실패')
+      setError(err instanceof Error ? err.message : editId ? '수정 실패' : '인증 실패')
     } finally {
       setLoading(false)
     }
@@ -261,11 +306,17 @@ export function CheckinPage() {
 
   return (
     <div className="page">
-      <PageHeader title="오늘의 말씀 인증" centered onBack={() => navigate(-1)} />
+      <PageHeader
+        title={editId ? '인증 수정' : '오늘의 말씀 인증'}
+        centered
+        onBack={() => navigate(-1)}
+      />
 
       {done ? (
         <Card className="border-sage/25 bg-sage-soft">
-          <p className="font-medium text-sage-dark">인증 완료! 피드에서 바로 확인할 수 있어요.</p>
+          <p className="font-medium text-sage-dark">
+            {editId ? '수정했어요. 피드에서 확인할 수 있어요.' : '인증 완료! 피드에서 바로 확인할 수 있어요.'}
+          </p>
         </Card>
       ) : (
         <form onSubmit={onSubmit} className="space-y-4">
@@ -333,10 +384,10 @@ export function CheckinPage() {
           </Card>
 
           <div className="rounded-[1.5rem] border border-dashed border-line/70 bg-panel px-4 py-6 shadow-[0_4px_20px_rgba(23,32,51,0.03)]">
-            {photoPreview ? (
+            {displayPhoto ? (
               <div className="relative overflow-hidden rounded-2xl">
                 <img
-                  src={photoPreview}
+                  src={displayPhoto}
                   alt="인증 미리보기"
                   className="max-h-72 w-full object-cover"
                 />
@@ -394,11 +445,11 @@ export function CheckinPage() {
             />
           </div>
 
-          <Field label="오늘 말씀에서 마음에 남은 것" hint="선택 사항 · 비워 두어도 인증할 수 있어요">
+          <Field label="오늘 마음에 남은 한 줄" hint="선택 사항 · 성경 구절이 아니어도 괜찮아요">
             <Textarea
               value={reflection}
               onChange={(e) => setReflection(e.target.value)}
-              placeholder="오늘 말씀을 읽고 어떤 생각이나 깨달음이 있었나요?"
+              placeholder="오늘 말씀에서 가장 기억에 남은 것은?"
             />
           </Field>
 
@@ -409,7 +460,7 @@ export function CheckinPage() {
             size="lg"
             disabled={loading || goalBooks.length === 0}
           >
-            {loading ? '업로드 중…' : '말씀 인증하기'}
+            {loading ? (editId ? '저장 중…' : '업로드 중…') : editId ? '수정 저장하기' : '말씀 인증하기'}
           </Button>
         </form>
       )}

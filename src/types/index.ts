@@ -196,6 +196,72 @@ export interface StudentStatus {
   status: 'green' | 'yellow' | 'red'
 }
 
+export type ChatterReactionType = 'like' | 'love' | 'prayer' | 'fire' | 'cheer'
+
+export interface ChatterComment {
+  id: string
+  post_id: string
+  user_id: string
+  content: string
+  created_at: string
+  profiles?: { name: string } | null
+}
+
+export interface ChatterPost {
+  id: string
+  author_id: string
+  content: string
+  image_url: string | null
+  created_at: string
+  updated_at: string
+  profiles?: { name: string; profile_image: string | null } | null
+  reaction_counts?: ReactionCounts
+  my_reactions?: ChatterReactionType[]
+  comments?: ChatterComment[]
+}
+
+export type PlaygroundCategory =
+  | 'SCHOOL'
+  | 'FOOD'
+  | 'GAME'
+  | 'EMOTION'
+  | 'TEXT'
+  | 'THANKFUL'
+  | 'BIBLE_LIGHT'
+
+export type PlaygroundParticipationType = 'POLL' | 'EMOTION' | 'TEXT' | 'WORD_INPUT'
+
+export interface PlaygroundOption {
+  id: string
+  emoji?: string
+  label: string
+}
+
+export interface PlaygroundContent {
+  id: string
+  category: PlaygroundCategory
+  title: string
+  prompt: string
+  participation_type: PlaygroundParticipationType
+  options: PlaygroundOption[]
+  starting_word: string | null
+  allowed_days_of_week: string[]
+  safety_level: string
+  active: boolean
+  played_date: string
+}
+
+export interface PlaygroundResponse {
+  id: string
+  content_id: string
+  user_id: string
+  option_id: string | null
+  response_text: string | null
+  created_at: string
+  updated_at: string
+  profiles?: { name: string } | null
+}
+
 export interface CreateReadingInput {
   projectId: string
   bookId: string

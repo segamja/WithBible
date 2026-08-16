@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { MessageCircle } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -150,7 +151,7 @@ export function ReadingFeedCard({
       {log.reflection?.trim() ? (
         <blockquote className="rounded-2xl border border-line/40 bg-brand-50/80 px-4 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-            오늘 말씀에서 마음에 남은 것
+            오늘 마음에 남은 한 줄
           </p>
           <p className="mt-1.5 text-[15px] leading-relaxed text-navy">
             “{log.reflection.trim()}”
@@ -204,14 +205,26 @@ export function ReadingFeedCard({
             </button>
           )
         })}
-        {currentUserId === log.user_id && onDelete ? (
-          <button
-            type="button"
-            className="ml-auto self-center text-xs text-muted hover:text-danger"
-            onClick={() => onDelete(log.id)}
-          >
-            삭제
-          </button>
+        {currentUserId === log.user_id ? (
+          <div className="ml-auto flex items-center gap-3 self-center">
+            <Link
+              to={`/checkin?edit=${log.id}`}
+              className="text-xs font-medium text-sky-dark hover:text-navy"
+            >
+              수정
+            </Link>
+            {onDelete ? (
+              <button
+                type="button"
+                className="text-xs text-muted hover:text-danger"
+                onClick={() => {
+                  if (window.confirm('이 인증을 삭제할까요?')) void onDelete(log.id)
+                }}
+              >
+                삭제
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
 

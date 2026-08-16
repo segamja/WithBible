@@ -2,9 +2,9 @@ import { format, parseISO, startOfWeek, addDays } from 'date-fns'
 import { Check } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
-const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
 
-/** Mon–Sun of current week; filled days that have a reading date */
+/** Sun–Sat of current week; filled days that have a reading date */
 export function WeekStreak({
   readingDates,
   today = new Date(),
@@ -13,7 +13,7 @@ export function WeekStreak({
   today?: Date
 }) {
   const set = new Set(readingDates)
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 })
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 })
 
   return (
     <div className="flex items-center justify-between gap-1 pt-1">

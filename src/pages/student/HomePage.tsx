@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, Check, Users } from 'lucide-react'
+import { BookOpen, Check, ExternalLink, Users } from 'lucide-react'
 import { ChurchLogoHeader } from '@/components/ChurchLogoHeader'
 import { PartyBanner } from '@/components/PartyBanner'
 import { CompletionBanner } from '@/components/CompletionBanner'
@@ -14,12 +14,14 @@ import { getClassProgress, getPersonalProgress, getClassCommunityWarmth } from '
 import { CheerTodayCard } from '@/components/CheerTodayCard'
 import { FeedbackDialog } from '@/components/FeedbackDialog'
 import { listAnnouncements, listTodayCheers, type AnnouncementRow } from '@/services/announcementService'
+import { getPlaygroundTeaser } from '@/services/playgroundService'
 import { listClassLogs, listFeed } from '@/services/readingService'
 import { getClassById, listClassStudents } from '@/services/classService'
 import type { ReadingLogWithMeta } from '@/types'
 import { departmentTitleOf } from '@/lib/branding'
 import { homeGreetingLine } from '@/lib/roles'
 import { getDDayLabel, formatProjectRange } from '@/utils/dday'
+import { bibleChapterUrl } from '@/utils/bibleLink'
 import { calcPersonalStreak, getTodayReadingRange, greetingPartsForNow } from '@/utils/schedule'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 
@@ -50,10 +52,20 @@ export function StudentHomePage() {
   const [todayRange, setTodayRange] = useState({ start: 1, end: 1 })
   const [todayBookName, setTodayBookName] = useState('복음서')
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [playground, setPlayground] = useState<{
+    title: string
+    participantCount: number
+  } | null>(null)
 
   useEffect(() => {
     void loadForUser(profile.class_id)
   }, [profile.class_id, loadForUser])
+
+  useEffect(() => {
+    void getPlaygroundTeaser()
+      .then(setPlayground)
+      .catch(() => setPlayground(null))
+  }, [])
 
   useEffect(() => {
     if (!project) return
@@ -145,6 +157,7 @@ export function StudentHomePage() {
   const todayLabel = `${todayBookName} ${todayRange.start}${
     todayRange.end !== todayRange.start ? `–${todayRange.end}` : ''
   }장`
+  const bibleUrl = bibleChapterUrl(todayBookName, todayRange.start)
   const greeting = greetingPartsForNow(profile.name)
 
   const friendAvatars = feed
@@ -198,6 +211,18 @@ export function StudentHomePage() {
             {profile.class_id ? `${className} · ` : ''}
             {personal.readUpToLabel} · 목표 {personal.rate}%
           </p>
+          {bibleUrl ? (
+            <a
+              href={bibleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-12 min-h-12 w-full items-center justify-center gap-2 rounded-full bg-sky-soft text-[15px] font-semibold text-sky-dark transition hover:bg-sky/35 active:scale-[0.98]"
+            >
+              <BookOpen className="h-4 w-4 shrink-0" />
+              성경에서 이 장 열기
+              <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
+            </a>
+          ) : null}
           <Link to="/checkin" className="block">
             <Button className="w-full" size="lg">
               <Check className="h-4 w-4" />
@@ -210,6 +235,22 @@ export function StudentHomePage() {
           <p className="text-muted">진행 중인 프로젝트가 없습니다.</p>
         </Card>
       )}
+
+      {playground ? (
+        <Card className="space-y-2">
+          <p className="text-xs font-medium text-muted">오늘의 놀이터</p>
+          <p className="text-[15px] font-semibold text-navy">{playground.title}</p>
+          <p className="text-xs text-muted">
+            {playground.participantCount}명 참여 · 매일 새로운 내용으로 바뀌어요
+          </p>
+          <Link
+            to="/feed?tab=playground"
+            className="inline-flex min-h-9 items-center text-sm font-medium text-sky-dark hover:text-navy"
+          >
+            피드에서 참여하기
+          </Link>
+        </Card>
+      ) : null}
 
       {project && profile.class_id ? (
         <Card className="space-y-3">
@@ -260,10 +301,13 @@ export function StudentHomePage() {
         />
       ) : null}
 
-      {friendAvatars.length > 0 ? (
-        <Card className="space-y-3">
-          <p className="text-center text-sm font-medium text-navy">친구들이 함께 읽고 있어요</p>
-          <div className="flex items-center justify-center">
+      {project && feed.length > 0 ? (
+        <Card className="space-y-4">
+          <div>
+            <p className="text-sm font-medium text-muted">말씀인증</p>
+            <p className="mt-1 text-lg font-semibold text-navy">친구가 남긴 인증을 보러 가요</p>
+          </div>
+          {friendAvatars.length > 0 ? (
             <div className="flex -space-x-2">
               {friendAvatars.map((f) =>
                 f.image ? (
@@ -288,9 +332,38 @@ export function StudentHomePage() {
                 </div>
               ) : null}
             </div>
-          </div>
-          <Link to="/feed" className="block text-center text-sm font-medium text-sky-dark">
-            피드 보기
+          ) : null}
+          <ul className="divide-y divide-line/30">
+            {feed.slice(0, 2).map((log) => {
+              const name = log.profiles?.name ?? '친구'
+              const book = `${log.bible_books?.name ?? '성경'} ${log.start_chapter}${
+                log.end_chapter !== log.start_chapter ? `–${log.end_chapter}` : ''
+              }장`
+              return (
+                <li key={log.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                  {log.profiles?.profile_image ? (
+                    <img
+                      src={log.profiles.profile_image}
+                      alt=""
+                      className="h-9 w-9 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-soft text-xs font-semibold text-sky-dark">
+                      {name.slice(0, 1)}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-navy">{name}</p>
+                    <p className="truncate text-xs text-muted">{book}</p>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+          <Link to="/feed" className="block">
+            <Button className="w-full" variant="secondary">
+              피드 보기
+            </Button>
           </Link>
         </Card>
       ) : null}
