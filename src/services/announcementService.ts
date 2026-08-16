@@ -100,6 +100,16 @@ export async function createAnnouncement(input: {
   return data as Announcement
 }
 
+export async function updateAnnouncement(id: string, content: string): Promise<void> {
+  const text = content.trim()
+  if (!text) throw new Error('내용을 입력해주세요.')
+  const { error } = await supabase
+    .from(Tables.announcements)
+    .update({ content: text })
+    .eq('id', requireUuid(id, 'id'))
+  if (error) throw new Error(error.message)
+}
+
 export async function deleteAnnouncement(id: string): Promise<void> {
   const { error } = await supabase.from(Tables.announcements).delete().eq('id', id)
   if (error) throw new Error(error.message)

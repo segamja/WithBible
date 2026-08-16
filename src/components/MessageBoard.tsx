@@ -6,6 +6,7 @@ import {
   createAnnouncement,
   deleteAnnouncement,
   listAnnouncements,
+  updateAnnouncement,
   type AnnouncementRow,
 } from '@/services/announcementService'
 import type { AnnouncementKind } from '@/types'
@@ -38,6 +39,9 @@ export function MessageBoard({
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const canEditList = canWrite && keepHistory && kind === 'notice'
 
   const load = async () => {
     if (!keepHistory) return
@@ -118,19 +122,89 @@ export function MessageBoard({
                   {item.profiles?.name ? `${item.profiles.name} · ` : ''}
                   {formatSeoulDateTime(item.created_at)}
                 </p>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">{item.content}</p>
-                {canWrite ? (
-                  <button
-                    type="button"
-                    className="text-xs text-muted hover:text-danger"
-                    onClick={() =>
-                      void deleteAnnouncement(item.id).then(() =>
-                        setList((prev) => prev.filter((x) => x.id !== item.id)),
-                      )
-                    }
-                  >
-                    삭제
-                  </button>
+                {editingId === item.id ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      rows={4}
+                    />
+                    {error ? <p className="text-sm text-danger">{error}</p> : null}
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingId(null)
+                          setEditText('')
+                          setError(null)
+                        }}
+                      >
+                        취소
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={loading || !editText.trim()}
+                        onClick={() => {
+                          void (async () => {
+                            setLoading(true)
+                            setError(null)
+                            try {
+                              await updateAnnouncement(item.id, editText)
+                              setList((prev) =>
+                                prev.map((row) =>
+                                  row.id === item.id
+                                    ? { ...row, content: editText.trim() }
+                                    : row,
+                                ),
+                              )
+                              setEditingId(null)
+                              setEditText('')
+                            } catch (err) {
+                              setError(err instanceof Error ? err.message : '수정 실패')
+                            } finally {
+                              setLoading(false)
+                            }
+                          })()
+                        }}
+                      >
+                        {loading ? '저장 중…' : '저장'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{item.content}</p>
+                )}
+                {canWrite && editingId !== item.id ? (
+                  <div className="flex items-center gap-3">
+                    {canEditList ? (
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-sky-dark hover:text-navy"
+                        onClick={() => {
+                          setEditingId(item.id)
+                          setEditText(item.content)
+                          setError(null)
+                        }}
+                      >
+                        수정
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="text-xs text-muted hover:text-danger"
+                      onClick={() => {
+                        if (!window.confirm('이 공지를 삭제할까요? 홈에서도 바로 사라집니다.')) return
+                        void deleteAnnouncement(item.id).then(() =>
+                          setList((prev) => prev.filter((x) => x.id !== item.id)),
+                        )
+                      }}
+                    >
+                      삭제
+                    </button>
+                  </div>
                 ) : null}
               </Card>
             ))
