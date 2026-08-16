@@ -64,6 +64,7 @@ function parseContent(raw: unknown): PlaygroundContent | null {
       : [],
     safety_level: typeof row.safety_level === 'string' ? row.safety_level : 'SAFE',
     active: row.active !== false,
+    allow_change: row.allow_change === true,
     played_date: typeof row.played_date === 'string' ? row.played_date : '',
   }
 }
@@ -124,12 +125,17 @@ export async function upsertPlaygroundResponse(input: {
 
 export async function getPlaygroundTeaser(): Promise<{
   title: string
+  prompt: string
   participantCount: number
 } | null> {
   const today = await getTodayPlayground()
   if (!today) return null
   const list = await listPlaygroundResponses(today.id)
-  return { title: today.title, participantCount: list.length }
+  return {
+    title: today.title,
+    prompt: today.prompt,
+    participantCount: list.length,
+  }
 }
 
 export function subscribePlaygroundResponses(
@@ -158,14 +164,69 @@ export function subscribePlaygroundResponses(
 export function countByOption(
   responses: PlaygroundResponse[],
   options: PlaygroundOption[],
-): { id: string; label: string; emoji?: string; count: number }[] {
+): { id: string; label: string; emoji?: string; count: number; percent: number }[] {
   const map = new Map<string, number>()
+  let total = 0
   for (const row of responses) {
-    if (!row.option_id) continue
+    if (!row.option_id || row.option_id === 'peek') continue
     map.set(row.option_id, (map.get(row.option_id) ?? 0) + 1)
+    total += 1
   }
-  return options.map((opt) => ({
-    ...opt,
-    count: map.get(opt.id) ?? 0,
-  }))
+  return options.map((opt) => {
+    const count = map.get(opt.id) ?? 0
+    return {
+      ...opt,
+      count,
+      percent: total === 0 ? 0 : Math.round((count / total) * 100),
+    }
+  })
+}
+
+export async function listPlaygroundContents(): Promise<PlaygroundContent[]> {
+  const { data, error } = await supabase
+    .from(Tables.playgroundContents)
+    .select('*')
+    .order('active', { ascending: false })
+    .order('created_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? [])
+    .map((row) => parseContent({ ...row, played_date: '' }))
+    .filter((row): row is PlaygroundContent => Boolean(row))
+}
+
+export async function setPlaygroundActive(id: string, active: boolean): Promise<void> {
+  const { error } = await supabase
+    .from(Tables.playgroundContents)
+    .update({ active })
+    .eq('id', requireUuid(id, 'id'))
+  if (error) throw new Error(error.message)
+}
+
+export async function createPlaygroundPoll(input: {
+  category: PlaygroundContent['category']
+  title: string
+  prompt: string
+  options: PlaygroundOption[]
+  days: string[]
+}): Promise<void> {
+  const { error } = await supabase.from(Tables.playgroundContents).insert({
+    category: input.category,
+    title: input.title.trim() || '오늘 하나만 골라봐',
+    prompt: input.prompt.trim(),
+    participation_type: 'POLL',
+    options: input.options,
+    allowed_days_of_week: input.days,
+    safety_level: 'SAFE',
+    active: true,
+    allow_change: false,
+  })
+  if (error) throw new Error(error.message)
+}
+
+export async function deletePlaygroundResponse(id: string): Promise<void> {
+  const { error } = await supabase
+    .from(Tables.playgroundResponses)
+    .delete()
+    .eq('id', requireUuid(id, 'id'))
+  if (error) throw new Error(error.message)
 }

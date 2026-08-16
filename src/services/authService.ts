@@ -19,8 +19,14 @@ function ensureConfigured() {
   }
 }
 
-/** Prefer VITE_APP_URL; fall back to current origin (no hardcoded hosts). */
+/** Localhost must stay on this origin. VITE_APP_URL would send Kakao back to production. */
 export function getAppOrigin(): string {
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    const origin = window.location.origin.replace(/\/$/, '')
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+      return origin
+    }
+  }
   const fromEnv = import.meta.env.VITE_APP_URL?.trim()
   if (fromEnv) return fromEnv.replace(/\/$/, '')
   if (typeof window !== 'undefined' && window.location?.origin) {

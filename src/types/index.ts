@@ -96,6 +96,13 @@ export interface ReadingLog {
   book_id: string
   start_chapter: number
   end_chapter: number
+  /** Today's official goal at check-in time; null on older rows. */
+  target_start_chapter?: number | null
+  target_end_chapter?: number | null
+  /** Feed together-count frozen at created_at. */
+  together_count_snapshot?: number | null
+  together_preview_snapshot?: ReadAlongPreview[] | null
+  together_goal_label_snapshot?: string | null
   reflection: string
   visibility: Visibility
   image_url: string | null
@@ -172,6 +179,11 @@ export interface ReadingLogWithMeta extends ReadingLog {
   read_along_count?: number
   read_along_preview?: ReadAlongPreview[]
   my_read_along?: boolean
+  /** People who completed that day's official goal (partial out, extra in). */
+  together_count?: number
+  together_preview?: ReadAlongPreview[]
+  /** Official goal range for this post's reading date, e.g. 마태복음 1–3장 */
+  together_goal_label?: string | null
   comments?: FeedComment[]
 }
 
@@ -194,6 +206,10 @@ export interface StudentStatus {
   lastReadingDate: string | null
   totalChapters: number
   status: 'green' | 'yellow' | 'red'
+  todayActualLabel: string | null
+  todayTargetLabel: string
+  todayGoalKind: 'none' | 'partial' | 'done' | 'done_extra'
+  todayExtraChapters: number
 }
 
 export type ChatterReactionType = 'like' | 'love' | 'prayer' | 'fire' | 'cheer'
@@ -228,6 +244,17 @@ export type PlaygroundCategory =
   | 'TEXT'
   | 'THANKFUL'
   | 'BIBLE_LIGHT'
+  | 'BALANCE'
+  | 'EMOJI'
+  | 'CHOICE'
+  | 'IMAGINE'
+  | 'DAILY'
+  | 'MUSIC'
+  | 'HOBBY'
+  | 'FRIEND'
+  | 'CREATIVE'
+  | 'FAITH'
+  | 'WEEKEND'
 
 export type PlaygroundParticipationType = 'POLL' | 'EMOTION' | 'TEXT' | 'WORD_INPUT'
 
@@ -248,6 +275,7 @@ export interface PlaygroundContent {
   allowed_days_of_week: string[]
   safety_level: string
   active: boolean
+  allow_change?: boolean
   played_date: string
 }
 
@@ -271,4 +299,6 @@ export interface CreateReadingInput {
   visibility: Visibility
   imageUrl?: string | null
   readingDate?: string
+  targetStartChapter?: number | null
+  targetEndChapter?: number | null
 }

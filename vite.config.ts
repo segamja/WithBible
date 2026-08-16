@@ -38,6 +38,7 @@ function appVersionPlugin(): Plugin {
     null,
     2,
   )
+  let command: 'build' | 'serve' = 'build'
 
   const writeVersionFile = (dir: string) => {
     fs.mkdirSync(dir, { recursive: true })
@@ -46,7 +47,8 @@ function appVersionPlugin(): Plugin {
 
   return {
     name: 'with-bible-app-version',
-    config() {
+    config(_cfg, env) {
+      command = env.command
       return {
         define: {
           __APP_VERSION__: JSON.stringify(info.version),
@@ -55,7 +57,8 @@ function appVersionPlugin(): Plugin {
       }
     },
     buildStart() {
-      // Copied to dist by Vite; also useful for local preview
+      // Dev restarts rewrote version.json while the tab kept the old bundle → reload loop.
+      if (command === 'serve') return
       writeVersionFile(path.resolve(rootDir, 'public'))
     },
     closeBundle() {

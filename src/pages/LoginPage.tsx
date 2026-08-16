@@ -60,7 +60,9 @@ export function LoginPage() {
   }, [])
 
   const finishLogin = async (mail: string, pass: string, persistPassword: boolean) => {
-    await clearStaleAppCaches()
+    if (import.meta.env.PROD) {
+      await clearStaleAppCaches()
+    }
     const profile = await login(mail, pass)
     rememberAccount(profile, 'email', persistPassword ? pass : null)
     const { onboardingRequired } = useAuthStore.getState()

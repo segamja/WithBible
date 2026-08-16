@@ -3,6 +3,7 @@ import { Tables } from '@/lib/tables'
 import { listClassLogs, listProjectLogs } from '@/services/readingService'
 import { listClassStudents, listClasses } from '@/services/classService'
 import {
+  getProject,
   getProjectClass,
   listProjectClasses,
   listProjectTargets,
@@ -16,6 +17,14 @@ import {
 import { todayISO } from '@/utils/dday'
 import { computeClassWarmth } from '@/lib/reactions'
 import { subDays } from 'date-fns'
+import {
+  compareActualToTarget,
+  formatOfficialRangeLabel,
+  formatRangeLabel,
+  getOfficialTodayParts,
+  pickActualForOfficial,
+  resolveTargetSpan,
+} from '@/utils/todayGoal'
 
 export async function getReadingTargets(
   projectId: string,
@@ -119,6 +128,16 @@ export async function getStudentStatuses(
     students.map((s) => s.id),
   )
   const targets = await getReadingTargets(projectId, classId)
+  const project = await getProject(projectId)
+  const today = todayISO()
+  const official = project
+    ? getOfficialTodayParts({
+        startDate: project.start_date,
+        endDate: project.end_date,
+        targets,
+      })
+    : []
+  const todayTargetLabel = formatOfficialRangeLabel(official)
 
   return students.map((student) => {
     const mine = logs.filter((l) => l.user_id === student.id)
@@ -127,12 +146,46 @@ export async function getStudentStatuses(
       .sort()
       .at(-1) ?? null
     const prog = progressAgainstTargets(mine, targets)
+    const todayLogs = mine.filter((l) => l.reading_date === today)
+    const actual = pickActualForOfficial(todayLogs, official)
+    let todayGoalKind: StudentStatus['todayGoalKind'] = 'none'
+    let todayExtraChapters = 0
+    let todayActualLabel: string | null = null
+    if (actual) {
+      todayActualLabel = formatRangeLabel(actual.bookName, actual.start, actual.end)
+      const part = official.find((p) => p.bookId === actual.bookId) ?? null
+      const logRow = todayLogs.find(
+        (l) =>
+          l.book_id === actual.bookId &&
+          l.start_chapter === actual.start &&
+          l.end_chapter === actual.end,
+      )
+      const target = resolveTargetSpan(
+        {
+          targetStart: logRow?.target_start_chapter,
+          targetEnd: logRow?.target_end_chapter,
+        },
+        part,
+      )
+      if (target) {
+        const cmp = compareActualToTarget(
+          { start: actual.start, end: actual.end },
+          target,
+        )
+        todayGoalKind = cmp.kind
+        todayExtraChapters = cmp.extra
+      }
+    }
     return {
       userId: student.id,
       name: student.name,
       lastReadingDate: last,
       totalChapters: prog.covered,
       status: participationStatus(last),
+      todayActualLabel,
+      todayTargetLabel,
+      todayGoalKind,
+      todayExtraChapters,
     }
   })
 }

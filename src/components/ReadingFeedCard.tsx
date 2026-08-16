@@ -17,7 +17,7 @@ import type {
   UserRole,
 } from '@/types'
 import { canGiveTeacherCheer } from '@/lib/roles'
-import { format, parseISO } from 'date-fns'
+import { formatPostedAtKst } from '@/utils/dday'
 import { cn } from '@/utils/cn'
 
 interface ReadingFeedCardProps {
@@ -29,7 +29,6 @@ interface ReadingFeedCardProps {
   currentUserId?: string
   currentUserRole?: UserRole
   onReaction: (logId: string, type: EncouragementType, active: boolean) => Promise<void>
-  onReadAlong: (logId: string, active: boolean) => Promise<void>
   onComment: (logId: string, content: string) => Promise<void>
   onDelete?: (logId: string) => Promise<void>
   onDeleteComment?: (commentId: string) => Promise<void>
@@ -44,7 +43,6 @@ export function ReadingFeedCard({
   currentUserId,
   currentUserRole = 'STUDENT',
   onReaction,
-  onReadAlong,
   onComment,
   onDelete,
   onDeleteComment,
@@ -63,10 +61,13 @@ export function ReadingFeedCard({
   const mySet = new Set(myReactions.length ? myReactions : log.my_reactions ?? [])
   const counts = log.reaction_counts ?? {}
   const togetherLabel = formatTogetherLabel(
-    (log.read_along_preview ?? []).map((p) => p.name),
-    log.read_along_count ?? 0,
+    (log.together_preview ?? []).map((p) => p.name),
+    log.together_count ?? 0,
   )
-  const myReadAlong = log.my_read_along ?? false
+  const togetherLine =
+    togetherLabel && log.together_goal_label
+      ? `${log.together_goal_label} · ${togetherLabel}`
+      : togetherLabel
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setBusy(true)
@@ -100,7 +101,7 @@ export function ReadingFeedCard({
     log.end_chapter !== log.start_chapter ? `-${log.end_chapter}` : ''
   }장`
   const authorName = log.profiles?.name ?? '친구'
-  const timeLabel = format(parseISO(log.created_at), 'a h:mm')
+  const { dateLabel, timeLabel } = formatPostedAtKst(log.created_at)
 
   const countLine = STUDENT_REACTIONS.filter((r) => (counts[r.type] ?? 0) > 0)
   const teacherCheerCount = counts.teacher_cheer ?? 0
@@ -125,7 +126,7 @@ export function ReadingFeedCard({
               <p className="truncate font-semibold text-ink">{authorName}</p>
               <p className="text-xs text-muted">
                 {classLabel ? `${classLabel} · ` : ''}
-                {timeLabel}
+                {dateLabel} · {timeLabel}
               </p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-sage/15 px-2.5 py-1 text-[11px] font-semibold text-sage-dark">
@@ -178,8 +179,8 @@ export function ReadingFeedCard({
         </div>
       )}
 
-      {togetherLabel ? (
-        <p className="text-sm font-medium text-sky-dark">🙌 {togetherLabel}</p>
+      {togetherLine ? (
+        <p className="text-sm font-medium text-sky-dark">🙌 {togetherLine}</p>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-1 border-t border-line/30 pt-2.5">
@@ -227,27 +228,6 @@ export function ReadingFeedCard({
           </div>
         ) : null}
       </div>
-
-      {currentUserId && currentUserId !== log.user_id ? (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() =>
-            void run('read-along', () => onReadAlong(log.id, myReadAlong))
-          }
-          className={cn(
-            'inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold transition active:scale-[0.99]',
-            myReadAlong
-              ? 'bg-sky-soft text-sky-dark'
-              : 'border border-line/60 bg-panel text-navy hover:bg-brand-50',
-          )}
-        >
-          🙌 나도 읽었어요
-          {(log.read_along_count ?? 0) > 0 ? (
-            <span className="tabular-nums opacity-80">{log.read_along_count}</span>
-          ) : null}
-        </button>
-      ) : null}
 
       <div className="flex items-center gap-2">
         <button

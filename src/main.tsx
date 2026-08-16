@@ -5,7 +5,13 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.tsx'
 
-registerSW({ immediate: true })
+if (import.meta.env.PROD) {
+  registerSW({ immediate: true })
+} else if ('serviceWorker' in navigator) {
+  void navigator.serviceWorker.getRegistrations().then((regs) =>
+    Promise.all(regs.map((reg) => reg.unregister())),
+  )
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

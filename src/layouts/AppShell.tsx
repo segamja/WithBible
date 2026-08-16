@@ -57,6 +57,11 @@ export function AppShell() {
         wide ? 'max-w-4xl' : 'max-w-lg',
       )}
     >
+      {import.meta.env.DEV ? (
+        <p className="bg-sage px-4 py-1 text-center text-[11px] font-semibold text-navy">
+          로컬 개발 중 · 배포 앱이 아닙니다
+        </p>
+      ) : null}
       <Outlet />
       <BottomNav role={profile.role} />
     </div>

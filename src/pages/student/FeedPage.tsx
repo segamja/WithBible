@@ -11,7 +11,6 @@ import {
   listFeed,
   subscribeFeedChanges,
   toggleReaction,
-  toggleReadAlong,
 } from '@/services/readingService'
 import {
   addComment,
@@ -190,33 +189,6 @@ function LogsFeed({ scope }: { scope: 'class' | 'all' }) {
                       0,
                     ),
                     has_teacher_cheer: (counts.teacher_cheer ?? 0) > 0,
-                  }
-                }),
-              )
-            }}
-            onReadAlong={async (logId, active) => {
-              await toggleReadAlong(logId, profile.id, active)
-              setFeed((prev) =>
-                prev.map((item) => {
-                  if (item.id !== logId) return item
-                  const count = Math.max(
-                    0,
-                    (item.read_along_count ?? 0) + (active ? -1 : 1),
-                  )
-                  let preview = [...(item.read_along_preview ?? [])]
-                  if (active) {
-                    preview = preview.filter((p) => p.user_id !== profile.id)
-                  } else if (
-                    !preview.some((p) => p.user_id === profile.id) &&
-                    preview.length < 2
-                  ) {
-                    preview = [...preview, { user_id: profile.id, name: profile.name }]
-                  }
-                  return {
-                    ...item,
-                    my_read_along: !active,
-                    read_along_count: count,
-                    read_along_preview: preview,
                   }
                 }),
               )

@@ -16,8 +16,36 @@ export function getDDayNumber(endDate: string, today = new Date()): number {
   return differenceInCalendarDays(end, now)
 }
 
+/** Calendar day in Korea, not UTC (UTC still yesterday until 09:00 KST). */
+export function kstDayKey(date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}
+
 export function todayISO(date = new Date()): string {
-  return date.toISOString().slice(0, 10)
+  return kstDayKey(date)
+}
+
+/** Posted date + time as Korea wall-clock (e.g. 8월 17일 · 오전 1:04). */
+export function formatPostedAtKst(iso: string): { dateLabel: string; timeLabel: string } {
+  const d = new Date(iso)
+  return {
+    dateLabel: new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      month: 'long',
+      day: 'numeric',
+    }).format(d),
+    timeLabel: new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(d),
+  }
 }
 
 /** Project start–end as a Korean calendar range (e.g. 8월 3일 – 8월 31일). */

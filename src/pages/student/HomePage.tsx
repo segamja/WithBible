@@ -10,20 +10,28 @@ import { Card } from '@/components/ui/Card'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
-import { getClassProgress, getPersonalProgress, getClassCommunityWarmth } from '@/services/progressService'
+import { getClassProgress, getPersonalProgress, getClassCommunityWarmth, getReadingTargets } from '@/services/progressService'
 import { CheerTodayCard } from '@/components/CheerTodayCard'
 import { NoticeHomeCard } from '@/components/NoticeHomeCard'
 import { FeedbackDialog } from '@/components/FeedbackDialog'
 import { listAnnouncements, listTodayCheers, type AnnouncementRow } from '@/services/announcementService'
 import { getPlaygroundTeaser } from '@/services/playgroundService'
-import { listClassLogs, listFeed } from '@/services/readingService'
+import { listClassLogs, listFeed, getLiveTodayTogether } from '@/services/readingService'
 import { getClassById, listClassStudents } from '@/services/classService'
 import type { ReadingLogWithMeta } from '@/types'
 import { departmentTitleOf } from '@/lib/branding'
 import { homeGreetingLine } from '@/lib/roles'
-import { getDDayLabel, formatProjectRange } from '@/utils/dday'
+import { todayISO, getDDayLabel, formatProjectRange } from '@/utils/dday'
 import { bibleChapterUrl } from '@/utils/bibleLink'
-import { calcPersonalStreak, getTodayReadingRange, greetingPartsForNow } from '@/utils/schedule'
+import { calcPersonalStreak, greetingPartsForNow } from '@/utils/schedule'
+import {
+  compareActualToTarget,
+  formatGoalStatusCopy,
+  formatOfficialRangeLabel,
+  getOfficialTodayParts,
+  pickActualForOfficial,
+  resolveTargetSpan,
+} from '@/utils/todayGoal'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 
 export function StudentHomePage() {
@@ -52,9 +60,19 @@ export function StudentHomePage() {
   const [myDates, setMyDates] = useState<string[]>([])
   const [todayRange, setTodayRange] = useState({ start: 1, end: 1 })
   const [todayBookName, setTodayBookName] = useState('복음서')
+  const [todayLabel, setTodayLabel] = useState('복음서')
+  const [todayTogether, setTodayTogether] = useState<{ count: number; goalLabel: string }>({
+    count: 0,
+    goalLabel: '',
+  })
+  const [todayGoalCopy, setTodayGoalCopy] = useState<{
+    primary: string
+    secondary: string
+  } | null>(null)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [playground, setPlayground] = useState<{
     title: string
+    prompt: string
     participantCount: number
   } | null>(null)
 
@@ -81,23 +99,36 @@ export function StudentHomePage() {
         readUpToLabel: me.readUpToLabel,
       })
 
-      const currentBook = me.byBook.find((b) => b.covered < b.target) ?? me.byBook[0]
-      if (currentBook) {
-        const nextChapter = Math.min(currentBook.covered + 1, currentBook.endChapter)
-        setTodayBookName(currentBook.bookName)
-        setTodayRange({ start: nextChapter, end: nextChapter })
+      const targets = await getReadingTargets(project.id, profile.class_id)
+      const official = getOfficialTodayParts({
+        startDate: project.start_date,
+        endDate: project.end_date,
+        targets,
+      })
+      const firstOfficial = official[0]
+      if (firstOfficial) {
+        setTodayBookName(firstOfficial.bookName)
+        setTodayRange({ start: firstOfficial.start, end: firstOfficial.end })
+        setTodayLabel(formatOfficialRangeLabel(official))
       } else if (myProjectClass) {
-        setTodayBookName(myProjectClass.bible_books?.name ?? '복음서')
-        setTodayRange(
-          getTodayReadingRange({
-            startDate: project.start_date,
-            endDate: project.end_date,
-            targetStart: myProjectClass.target_start_chapter,
-            targetEnd: myProjectClass.target_end_chapter,
-          }),
+        const name = myProjectClass.bible_books?.name ?? '복음서'
+        setTodayBookName(name)
+        setTodayRange({
+          start: myProjectClass.target_start_chapter,
+          end: myProjectClass.target_end_chapter,
+        })
+        setTodayLabel(
+          `${name} ${myProjectClass.target_start_chapter}–${myProjectClass.target_end_chapter}장`,
         )
       }
 
+      try {
+        setTodayTogether(await getLiveTodayTogether(project.id))
+      } catch {
+        setTodayTogether({ count: 0, goalLabel: '' })
+      }
+
+      let myLogs: Awaited<ReturnType<typeof listClassLogs>> = []
       if (profile.class_id) {
         const cls = await getClassById(profile.class_id)
         setClassName(cls?.name ?? '우리 반')
@@ -123,17 +154,59 @@ export function StudentHomePage() {
           project.id,
           students.map((s) => s.id),
         )
-        const mine = logs.filter((l) => l.user_id === profile.id).map((l) => l.reading_date)
+        myLogs = logs.filter((l) => l.user_id === profile.id)
+        const mine = myLogs.map((l) => l.reading_date)
         setMyDates(mine)
         setPersonalStreak(calcPersonalStreak(mine))
       } else {
         setClassName('전체')
         setRate(0)
         setProgressMeta({ studentCount: 0, todayCheckins: 0, participatedCount: 0 })
-        const logs = await listClassLogs(project.id, [profile.id])
-        const mine = logs.map((l) => l.reading_date)
+        myLogs = await listClassLogs(project.id, [profile.id])
+        const mine = myLogs.map((l) => l.reading_date)
         setMyDates(mine)
         setPersonalStreak(calcPersonalStreak(mine))
+      }
+
+      const todayLogs = myLogs.filter((l) => l.reading_date === todayISO())
+      const actual = pickActualForOfficial(todayLogs, official)
+      if (actual) {
+        const part = official.find((p) => p.bookId === actual.bookId) ?? null
+        const logRow = todayLogs.find(
+          (l) =>
+            l.book_id === actual.bookId &&
+            l.start_chapter === actual.start &&
+            l.end_chapter === actual.end,
+        )
+        const target = resolveTargetSpan(
+          {
+            targetStart: logRow?.target_start_chapter,
+            targetEnd: logRow?.target_end_chapter,
+          },
+          part,
+        )
+        if (target) {
+          const cmp = compareActualToTarget(
+            { start: actual.start, end: actual.end },
+            target,
+          )
+          setTodayGoalCopy(
+            formatGoalStatusCopy({
+              bookName: actual.bookName,
+              actualEnd: actual.end,
+              kind: cmp.kind,
+              remaining: cmp.remaining,
+              extra: cmp.extra,
+            }),
+          )
+        } else {
+          setTodayGoalCopy({
+            primary: `${actual.bookName} ${actual.end}장까지 읽었어요.`,
+            secondary: '',
+          })
+        }
+      } else {
+        setTodayGoalCopy(null)
       }
 
       setNotices(
@@ -158,9 +231,6 @@ export function StudentHomePage() {
       )
     : 0
 
-  const todayLabel = `${todayBookName} ${todayRange.start}${
-    todayRange.end !== todayRange.start ? `–${todayRange.end}` : ''
-  }장`
   const bibleUrl = bibleChapterUrl(todayBookName, todayRange.start)
   const greeting = greetingPartsForNow(profile.name)
 
@@ -210,11 +280,24 @@ export function StudentHomePage() {
             </span>
           </div>
           <h2 className="font-display text-[1.65rem] text-navy">{todayLabel}</h2>
+          {todayTogether.goalLabel ? (
+            <p className="text-sm font-medium text-sky-dark">
+              🙌 지금 {todayTogether.count}명이 {todayTogether.goalLabel} 목표를 함께 읽었어요
+            </p>
+          ) : null}
           <p className="text-xs text-muted">읽는 기간 · {formatProjectRange(project.start_date, project.end_date)}</p>
           <p className="text-xs text-muted">
             {profile.class_id ? `${className} · ` : ''}
             {personal.readUpToLabel} · 목표 {personal.rate}%
           </p>
+          {todayGoalCopy ? (
+            <div className="rounded-2xl bg-sage-soft/80 px-3.5 py-2.5 text-sm text-navy">
+              <p className="font-medium">{todayGoalCopy.primary}</p>
+              {todayGoalCopy.secondary ? (
+                <p className="mt-0.5 text-xs text-sage-dark">{todayGoalCopy.secondary}</p>
+              ) : null}
+            </div>
+          ) : null}
           {bibleUrl ? (
             <a
               href={bibleUrl}
@@ -242,16 +325,16 @@ export function StudentHomePage() {
 
       {playground ? (
         <Card className="space-y-2">
-          <p className="text-xs font-medium text-muted">오늘의 놀이터</p>
-          <p className="text-[15px] font-semibold text-navy">{playground.title}</p>
+          <p className="text-xs font-medium text-muted">오늘 하나만 골라봐</p>
+          <p className="text-[15px] font-semibold text-navy">{playground.prompt}</p>
           <p className="text-xs text-muted">
-            {playground.participantCount}명 참여 · 매일 새로운 내용으로 바뀌어요
+            {playground.participantCount}명이 골랐어요
           </p>
           <Link
             to="/feed?tab=playground"
             className="inline-flex min-h-9 items-center text-sm font-medium text-sky-dark hover:text-navy"
           >
-            피드에서 참여하기
+            하나 고르러 가기
           </Link>
         </Card>
       ) : null}

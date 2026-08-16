@@ -10,10 +10,18 @@ import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
-import { createReadingLog, getReadingLog, updateReadingLog } from '@/services/readingService'
+import { createReadingLog, getReadingLog, updateReadingLog, getLiveTodayTogether } from '@/services/readingService'
 import { uploadCheckinPhoto } from '@/services/storageService'
 import { getPersonalProgress, getReadingTargets } from '@/services/progressService'
 import type { BibleBook } from '@/types'
+import {
+  compareActualToTarget,
+  formatGoalStatusCopy,
+  formatOfficialRangeLabel,
+  getOfficialTodayParts,
+  officialPartForBook,
+  type OfficialRangePart,
+} from '@/utils/todayGoal'
 
 type BookRange = { start: number; end: number }
 
@@ -46,6 +54,12 @@ export function CheckinPage() {
   const [bookRanges, setBookRanges] = useState<Record<string, BookRange>>({})
   /** 책별 이어서 읽을 시작 장 (마지막 인증 장의 다음) */
   const [resumeByBook, setResumeByBook] = useState<Record<string, number>>({})
+  const [officialParts, setOfficialParts] = useState<OfficialRangePart[]>([])
+  const [todayTogether, setTodayTogether] = useState<{ count: number; goalLabel: string }>({
+    count: 0,
+    goalLabel: '',
+  })
+  const [doneCopy, setDoneCopy] = useState<{ primary: string; secondary: string } | null>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
 
@@ -57,6 +71,18 @@ export function CheckinPage() {
     if (!project) return
     const run = async () => {
       const targets = await getReadingTargets(project.id, profile.class_id)
+      setOfficialParts(
+        getOfficialTodayParts({
+          startDate: project.start_date,
+          endDate: project.end_date,
+          targets,
+        }),
+      )
+      try {
+        setTodayTogether(await getLiveTodayTogether(project.id))
+      } catch {
+        setTodayTogether({ count: 0, goalLabel: '' })
+      }
       const books: BibleBook[] = targets.map((t) => {
         const full = bibleBooks.find((b) => b.id === t.bookId)
         return (
@@ -246,6 +272,9 @@ export function CheckinPage() {
     setLoading(true)
     setError(null)
     try {
+      const snapshot = officialPartForBook(officialParts, resolvedBookId)
+      const targetStart = snapshot?.start ?? null
+      const targetEnd = snapshot?.end ?? null
       const imageUrl = photoFile
         ? await uploadCheckinPhoto(profile.id, photoFile)
         : existingImage
@@ -256,22 +285,50 @@ export function CheckinPage() {
           end_chapter: end,
           reflection: reflection.trim(),
           image_url: imageUrl,
+          target_start_chapter: targetStart,
+          target_end_chapter: targetEnd,
         })
-        setDone(true)
-        setTimeout(() => navigate('/feed'), 900)
-        return
+      } else {
+        await createReadingLog(profile.id, {
+          projectId: project.id,
+          bookId: resolvedBookId,
+          startChapter: start,
+          endChapter: end,
+          reflection: reflection.trim(),
+          visibility: 'public',
+          imageUrl,
+          targetStartChapter: targetStart,
+          targetEndChapter: targetEnd,
+        })
       }
-      await createReadingLog(profile.id, {
-        projectId: project.id,
-        bookId: resolvedBookId,
-        startChapter: start,
-        endChapter: end,
-        reflection: reflection.trim(),
-        visibility: 'public',
-        imageUrl,
-      })
+      const submittedBookName =
+        goalBooks.find((b) => b.id === resolvedBookId)?.name ??
+        myProjectClass?.bible_books?.name ??
+        '복음서'
+      if (snapshot) {
+        const cmp = compareActualToTarget(
+          { start, end },
+          { start: snapshot.start, end: snapshot.end },
+        )
+        setDoneCopy(
+          formatGoalStatusCopy({
+            bookName: submittedBookName,
+            actualEnd: end,
+            kind: cmp.kind,
+            remaining: cmp.remaining,
+            extra: cmp.extra,
+          }),
+        )
+      } else {
+        setDoneCopy({
+          primary: `${submittedBookName} ${end}장까지 읽었어요.`,
+          secondary: editId
+            ? '수정했어요. 피드에서 확인할 수 있어요.'
+            : '인증 완료! 피드에서 바로 확인할 수 있어요.',
+        })
+      }
       setDone(true)
-      setTimeout(() => navigate('/feed'), 900)
+      setTimeout(() => navigate('/feed'), 1600)
     } catch (err) {
       setError(err instanceof Error ? err.message : editId ? '수정 실패' : '인증 실패')
     } finally {
@@ -295,6 +352,8 @@ export function CheckinPage() {
     resumeAt != null && resumeAt > (bookRanges[bookId]?.start ?? 1)
       ? `이어서 읽기 · 지난번 다음인 ${resumeAt}장부터 자동 선택됨`
       : null
+  const officialGoalLabel =
+    officialParts.length > 0 ? formatOfficialRangeLabel(officialParts) : null
 
   if (!project) {
     return (
@@ -315,13 +374,27 @@ export function CheckinPage() {
       {done ? (
         <Card className="border-sage/25 bg-sage-soft">
           <p className="font-medium text-sage-dark">
-            {editId ? '수정했어요. 피드에서 확인할 수 있어요.' : '인증 완료! 피드에서 바로 확인할 수 있어요.'}
+            {doneCopy?.primary ??
+              (editId
+                ? '수정했어요. 피드에서 확인할 수 있어요.'
+                : '인증 완료! 피드에서 바로 확인할 수 있어요.')}
           </p>
+          {doneCopy?.secondary ? (
+            <p className="mt-1 text-sm text-navy">{doneCopy.secondary}</p>
+          ) : null}
         </Card>
       ) : (
         <form onSubmit={onSubmit} className="space-y-4">
           <Card className="space-y-3">
             <p className="caption-caps">Today&apos;s Reading</p>
+            {officialGoalLabel ? (
+              <p className="text-xs font-medium text-muted">오늘 목표 · {officialGoalLabel}</p>
+            ) : null}
+            {todayTogether.goalLabel ? (
+              <p className="text-sm font-medium text-sky-dark">
+                🙌 지금 {todayTogether.count}명이 오늘 목표를 함께 읽었어요
+              </p>
+            ) : null}
             <p className="font-display text-xl text-navy">{rangeLabel}</p>
 
             <Select

@@ -21,6 +21,7 @@ export function VersionUpdateBanner() {
   const armed = useRef(false)
 
   useEffect(() => {
+    if (import.meta.env.DEV) return
     const check = async () => {
       if (checking.current || armed.current) return
       checking.current = true
@@ -51,7 +52,7 @@ export function VersionUpdateBanner() {
   }, [])
 
   useEffect(() => {
-    if (!pending) return
+    if (import.meta.env.DEV || !pending) return
     const started = Date.now()
     const tick = window.setInterval(() => {
       const left = Math.max(0, AUTO_RELOAD_MS - (Date.now() - started))
@@ -64,7 +65,7 @@ export function VersionUpdateBanner() {
     return () => window.clearInterval(tick)
   }, [pending])
 
-  if (!pending) return null
+  if (import.meta.env.DEV || !pending) return null
 
   return (
     <div

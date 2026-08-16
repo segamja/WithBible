@@ -98,6 +98,11 @@ export function AdminDashboardPage() {
             제안함{unreadFeedback > 0 ? ` ${unreadFeedback}` : ''}
           </Button>
         </Link>
+        <Link to="/admin/playground">
+          <Button className="w-full" variant="outline" size="sm">
+            놀이터
+          </Button>
+        </Link>
         <Link to="/progress">
           <Button className="w-full" variant="outline" size="sm">
             반별 현황

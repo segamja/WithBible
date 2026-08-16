@@ -17,13 +17,8 @@ import {
 import { listFeed, listClassLogs, cheerStudentLatestLog } from '@/services/readingService'
 import { todayISO } from '@/utils/dday'
 import { calcClassStreak } from '@/utils/schedule'
+import { teacherGoalStatusLabel } from '@/utils/todayGoal'
 import type { Profile, StudentStatus } from '@/types'
-
-const statusLabel = {
-  green: '🟢',
-  yellow: '🟡',
-  red: '🔴',
-}
 
 function daysSinceLast(lastReadingDate: string | null): number {
   if (!lastReadingDate) return 999
@@ -235,7 +230,7 @@ export function TeacherDashboardPage() {
       <Card>
         <h2 className="font-semibold text-navy">우리반 명단</h2>
         <p className="mt-1 text-xs text-muted">
-          학생 {students.length}명 · 상태는 교사에게만 보입니다.
+          학생 {students.length}명 · 오늘 읽음 / 오늘 목표 · 상태는 교사에게만 보입니다.
         </p>
         <div className="mt-3 space-y-2">
           {students.length === 0 ? (
@@ -244,16 +239,20 @@ export function TeacherDashboardPage() {
             students.map((s) => (
               <div
                 key={s.userId}
-                className="flex items-center justify-between border-b border-line/70 py-2 text-sm last:border-0"
+                className="flex items-start justify-between gap-3 border-b border-line/70 py-2 text-sm last:border-0"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium">{s.name}</p>
                   <p className="text-xs text-muted">
-                    {s.lastReadingDate ? `최근 ${s.lastReadingDate}` : '미인증'} · 누적{' '}
-                    {s.totalChapters}장
+                    오늘 읽음 {s.todayActualLabel ?? '아직'} · 오늘 목표 {s.todayTargetLabel}
                   </p>
                 </div>
-                <span>{statusLabel[s.status]}</span>
+                <span className="shrink-0 text-xs font-semibold text-navy">
+                  {teacherGoalStatusLabel({
+                    kind: s.todayGoalKind,
+                    extra: s.todayExtraChapters,
+                  })}
+                </span>
               </div>
             ))
           )}
