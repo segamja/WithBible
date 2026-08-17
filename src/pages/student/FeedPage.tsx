@@ -23,7 +23,7 @@ import { cn } from '@/utils/cn'
 
 const FEED_TABS = [
   { id: 'logs', label: '말씀인증' },
-  { id: 'chatter', label: '왁자지껄' },
+  { id: 'chatter', label: '시끌벅적' },
   { id: 'playground', label: '놀이터' },
 ] as const
 

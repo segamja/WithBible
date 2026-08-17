@@ -3,10 +3,15 @@ import { Tables } from '@/lib/tables'
 import type {
   ChatterComment,
   ChatterPost,
+  ChatterReactionCounts,
   ChatterReactionType,
-  ReactionCounts,
 } from '@/types'
+import { chatterSafetyMessage } from '@/utils/chatterSafety'
 import { requireUuid } from '@/utils/uuid'
+
+export const CHATTER_POST_MAX = 200
+export const CHATTER_POST_DB_MAX = 500
+export const CHATTER_REPLY_MAX = 80
 
 type ReactionRow = { post_id: string; user_id: string; type: ChatterReactionType }
 
@@ -31,7 +36,7 @@ function attachMeta(
 
   return posts.map((post) => {
     const rows = reactionsByPost.get(post.id) ?? []
-    const reaction_counts: ReactionCounts = {}
+    const reaction_counts: ChatterReactionCounts = {}
     const my_reactions: ChatterReactionType[] = []
     for (const row of rows) {
       reaction_counts[row.type] = (reaction_counts[row.type] ?? 0) + 1
@@ -48,13 +53,29 @@ function attachMeta(
   })
 }
 
+function missingSchema(message: string, needle: string): boolean {
+  const lower = message.toLowerCase()
+  return lower.includes(needle.toLowerCase()) || lower.includes('schema cache')
+}
+
 export async function listChatterPosts(currentUserId: string): Promise<ChatterPost[]> {
   const uid = requireUuid(currentUserId, 'userId')
-  const { data, error } = await supabase
+  const select = '*, profiles:wb_profiles(name, profile_image)'
+
+  let { data, error } = await supabase
     .from(Tables.chatterPosts)
-    .select('*, profiles:wb_profiles(name, profile_image)')
+    .select(select)
+    .is('hidden_at', null)
     .order('created_at', { ascending: false })
     .limit(80)
+
+  if (error && /hidden_at/i.test(error.message)) {
+    ;({ data, error } = await supabase
+      .from(Tables.chatterPosts)
+      .select(select)
+      .order('created_at', { ascending: false })
+      .limit(80))
+  }
   if (error) throw new Error(error.message)
 
   const posts = (data ?? []) as ChatterPost[]
@@ -87,19 +108,21 @@ export async function listChatterPosts(currentUserId: string): Promise<ChatterPo
 export async function createChatterPost(input: {
   authorId: string
   content: string
-  imageUrl?: string | null
 }): Promise<ChatterPost> {
   const authorId = requireUuid(input.authorId, 'authorId')
   const content = input.content.trim()
-  if (!content) throw new Error('내용을 입력해주세요.')
-  if (content.length > 500) throw new Error('글은 500자 이내로 작성해주세요.')
+  if (!content) throw new Error('한마디를 입력해주세요.')
+  if (content.length > CHATTER_POST_MAX) {
+    throw new Error(`글은 ${CHATTER_POST_MAX}자 이내로 작성해주세요.`)
+  }
+  const blocked = chatterSafetyMessage(content)
+  if (blocked) throw new Error(blocked)
 
   const { data, error } = await supabase
     .from(Tables.chatterPosts)
     .insert({
       author_id: authorId,
       content,
-      image_url: input.imageUrl ?? null,
     })
     .select('*, profiles:wb_profiles(name, profile_image)')
     .single()
@@ -120,8 +143,12 @@ export async function updateChatterPost(
   const postId = requireUuid(id, 'postId')
   const uid = requireUuid(authorId, 'authorId')
   const text = content.trim()
-  if (!text) throw new Error('내용을 입력해주세요.')
-  if (text.length > 500) throw new Error('글은 500자 이내로 작성해주세요.')
+  if (!text) throw new Error('한마디를 입력해주세요.')
+  if (text.length > CHATTER_POST_DB_MAX) {
+    throw new Error(`글은 ${CHATTER_POST_DB_MAX}자 이내로 작성해주세요.`)
+  }
+  const blocked = chatterSafetyMessage(text)
+  if (blocked) throw new Error(blocked)
 
   const { error } = await supabase
     .from(Tables.chatterPosts)
@@ -135,6 +162,36 @@ export async function deleteChatterPost(id: string): Promise<void> {
   const postId = requireUuid(id, 'postId')
   const { error } = await supabase.from(Tables.chatterPosts).delete().eq('id', postId)
   if (error) throw new Error(error.message)
+}
+
+export async function hideChatterPost(id: string): Promise<void> {
+  const postId = requireUuid(id, 'postId')
+  const { error } = await supabase
+    .from(Tables.chatterPosts)
+    .update({ hidden_at: new Date().toISOString() })
+    .eq('id', postId)
+  if (error) {
+    if (/hidden_at/i.test(error.message)) {
+      throw new Error('숨기기는 027 마이그레이션 후에 열려요.')
+    }
+    throw new Error(error.message)
+  }
+}
+
+export async function reportChatterPost(postId: string, reporterId: string): Promise<void> {
+  const pid = requireUuid(postId, 'postId')
+  const uid = requireUuid(reporterId, 'reporterId')
+  const { error } = await supabase.from(Tables.chatterReports).insert({
+    post_id: pid,
+    reporter_id: uid,
+  })
+  if (error?.code === '23505') throw new Error('이미 알려주셨어요.')
+  if (error) {
+    if (missingSchema(error.message, 'wb_chatter_reports')) {
+      throw new Error('신고 기능은 027 마이그레이션 후에 열려요.')
+    }
+    throw new Error(error.message)
+  }
 }
 
 export async function toggleChatterReaction(
@@ -160,7 +217,12 @@ export async function toggleChatterReaction(
     user_id: uid,
     type,
   })
-  if (error && error.code !== '23505') throw new Error(error.message)
+  if (error && error.code !== '23505') {
+    if (/type_check|check constraint/i.test(error.message)) {
+      throw new Error('새 반응은 027 마이그레이션 후에 열려요.')
+    }
+    throw new Error(error.message)
+  }
 }
 
 export async function addChatterComment(input: {
@@ -171,8 +233,10 @@ export async function addChatterComment(input: {
   const postId = requireUuid(input.postId, 'postId')
   const userId = requireUuid(input.userId, 'userId')
   const content = input.content.trim()
-  if (!content) throw new Error('댓글을 입력해주세요.')
-  if (content.length > 80) throw new Error('댓글은 80자 이내로 작성해주세요.')
+  if (!content) throw new Error('답글을 입력해주세요.')
+  if (content.length > CHATTER_REPLY_MAX) throw new Error('답글은 80자 이내로 작성해주세요.')
+  const blocked = chatterSafetyMessage(content)
+  if (blocked) throw new Error(blocked)
 
   const { data, error } = await supabase
     .from(Tables.chatterComments)

@@ -17,6 +17,7 @@ export const Tables = {
   chatterPosts: 'wb_chatter_posts',
   chatterComments: 'wb_chatter_comments',
   chatterReactions: 'wb_chatter_reactions',
+  chatterReports: 'wb_chatter_reports',
   playgroundContents: 'wb_playground_contents',
   playgroundHistory: 'wb_playground_history',
   playgroundResponses: 'wb_playground_responses',

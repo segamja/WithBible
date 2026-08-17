@@ -212,7 +212,16 @@ export interface StudentStatus {
   todayExtraChapters: number
 }
 
-export type ChatterReactionType = 'like' | 'love' | 'prayer' | 'fire' | 'cheer'
+export type ChatterReactionType =
+  | 'like'
+  | 'love'
+  | 'prayer'
+  | 'fire'
+  | 'cheer'
+  | 'laugh'
+  | 'clap'
+
+export type ChatterReactionCounts = Partial<Record<ChatterReactionType, number>>
 
 export interface ChatterComment {
   id: string
@@ -228,10 +237,11 @@ export interface ChatterPost {
   author_id: string
   content: string
   image_url: string | null
+  hidden_at?: string | null
   created_at: string
   updated_at: string
   profiles?: { name: string; profile_image: string | null } | null
-  reaction_counts?: ReactionCounts
+  reaction_counts?: ChatterReactionCounts
   my_reactions?: ChatterReactionType[]
   comments?: ChatterComment[]
 }
