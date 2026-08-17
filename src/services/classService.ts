@@ -103,6 +103,34 @@ export async function listClassStudents(classId: string): Promise<Profile[]> {
   return (data ?? []) as Profile[]
 }
 
+/** Students plus homeroom/class teachers — used for class cumulative progress. */
+export async function listClassProgressMembers(classId: string): Promise<Profile[]> {
+  if (!isUuid(classId)) return []
+  const [{ data, error }, cls] = await Promise.all([
+    supabase
+      .from(Tables.profiles)
+      .select('*')
+      .eq('class_id', classId)
+      .in('role', ['STUDENT', 'TEACHER'])
+      .order('name'),
+    getClassById(classId),
+  ])
+  if (error) throw new Error(error.message)
+
+  const members = [...((data ?? []) as Profile[])]
+  const teacherId = cls?.teacher_id
+  if (teacherId && isUuid(teacherId) && !members.some((m) => m.id === teacherId)) {
+    const { data: teacher, error: teacherError } = await supabase
+      .from(Tables.profiles)
+      .select('*')
+      .eq('id', teacherId)
+      .maybeSingle()
+    if (teacherError) throw new Error(teacherError.message)
+    if (teacher) members.push(teacher as Profile)
+  }
+  return members
+}
+
 export async function listUsers(): Promise<Profile[]> {
   const { data, error } = await supabase.from(Tables.profiles).select('*').order('created_at', {
     ascending: false,

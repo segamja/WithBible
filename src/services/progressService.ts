@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { Tables } from '@/lib/tables'
 import { listClassLogs, listProjectLogs } from '@/services/readingService'
-import { listClassStudents, listClasses } from '@/services/classService'
+import { listClassProgressMembers, listClassStudents, listClasses } from '@/services/classService'
 import {
   getProject,
   getProjectClass,
@@ -75,22 +75,22 @@ export async function getClassProgress(
   classId: string,
   className: string,
 ): Promise<ClassProgress> {
-  const students = await listClassStudents(classId)
-  const studentIds = students.map((s) => s.id)
-  const logs = await listClassLogs(projectId, studentIds)
+  const members = await listClassProgressMembers(classId)
+  const memberIds = members.map((s) => s.id)
+  const logs = await listClassLogs(projectId, memberIds)
   const targets = await getReadingTargets(projectId, classId)
   const targetChapters = progressAgainstTargets([], targets).target
 
-  // 반 진행률 = 학생별 개인 달성률(%)의 산술평균
+  // 반 진행률 = 학생·소속 선생님 개인 달성률(%)의 산술평균
   let sumRate = 0
   let sumCovered = 0
-  for (const student of students) {
-    const mine = logs.filter((l) => l.user_id === student.id)
+  for (const member of members) {
+    const mine = logs.filter((l) => l.user_id === member.id)
     const prog = progressAgainstTargets(mine, targets)
     sumRate += prog.rate
     sumCovered += prog.covered
   }
-  const n = students.length
+  const n = members.length
   const achievementRate = n === 0 ? 0 : Math.round(sumRate / n)
   const coveredChapters = n === 0 ? 0 : Math.round(sumCovered / n)
 
@@ -357,14 +357,14 @@ export async function getClassCommunityWarmth(
   readAlongs: number
   warmth: number
 }> {
-  const students = await listClassStudents(classId)
-  const studentIds = students.map((s) => s.id)
-  if (studentIds.length === 0) {
+  const members = await listClassProgressMembers(classId)
+  const memberIds = members.map((s) => s.id)
+  if (memberIds.length === 0) {
     return { checkins: 0, reactions: 0, comments: 0, readAlongs: 0, warmth: 0 }
   }
 
   const today = todayISO()
-  const logs = await listClassLogs(projectId, studentIds)
+  const logs = await listClassLogs(projectId, memberIds)
   const todayLogs = logs.filter((l) => l.reading_date === today)
   const logIds = todayLogs.map((l) => l.id)
   const checkins = new Set(todayLogs.map((l) => l.user_id)).size

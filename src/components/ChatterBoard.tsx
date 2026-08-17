@@ -117,7 +117,7 @@ export function ChatterBoard() {
   if (missing) {
     return (
       <div className="rounded-[1.25rem] bg-panel px-5 py-10 text-center shadow-[0_4px_20px_rgba(23,32,51,0.04)]">
-        <p className="font-medium text-navy">시끌벅적을 준비 중이에요</p>
+        <p className="font-medium text-navy">한마디를 준비 중이에요</p>
         <p className="mt-1 text-sm text-muted">관리자가 023 마이그레이션을 실행하면 열려요.</p>
       </div>
     )
@@ -302,7 +302,7 @@ function LetterComposer({
                   }
                 }}
                 maxLength={CHATTER_POST_MAX}
-                placeholder="한마디 남겨봐..."
+                placeholder="편하게 끄적끄적..."
                 aria-label="한마디 남기기"
                 className="min-w-0 flex-1 bg-transparent pb-0.5 text-[15px] text-navy outline-none placeholder:text-muted/55"
               />
