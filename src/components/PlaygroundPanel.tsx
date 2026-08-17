@@ -149,11 +149,11 @@ export function PlaygroundPanel() {
   if (missing || !content || isWord) {
     return (
       <div className="space-y-4">
-        <YesterdayRecap recap={yesterday} />
         <Card className="py-10 text-center">
           <p className="font-medium text-navy">오늘은 질문을 준비하는 중이에요</p>
           <p className="mt-1 text-sm text-muted">조금 뒤에 다시 들어와 볼까요?</p>
         </Card>
+        <YesterdayRecap recap={yesterday} />
       </div>
     )
   }
@@ -166,7 +166,6 @@ export function PlaygroundPanel() {
 
   return (
     <div className="space-y-4">
-      <YesterdayRecap recap={yesterday} />
       <Card className="space-y-4">
         <div>
           <p className="text-xs font-medium text-muted">🎮 놀이터</p>
@@ -293,6 +292,8 @@ export function PlaygroundPanel() {
           )}
         </Card>
       ) : null}
+
+      <YesterdayRecap recap={yesterday} />
     </div>
   )
 }
@@ -305,49 +306,15 @@ function YesterdayRecap({
   if (!recap) return null
   const optionCounts = countByOption(recap.responses, recap.content.options)
   const voted = optionCounts.filter((o) => o.count > 0)
-  const maxPercent = voted.length === 0 ? 0 : Math.max(...voted.map((o) => o.percent))
+  if (voted.length === 0) return null
+  const maxPercent = Math.max(...voted.map((o) => o.percent))
   const winners = voted.filter((o) => o.percent === maxPercent)
-  const maxCount = Math.max(1, ...optionCounts.map((o) => o.count))
+  const line =
+    winners.length === 1
+      ? `어제 1등 · ${winners[0].emoji ? `${winners[0].emoji} ` : ''}${winners[0].label} ${winners[0].percent}%`
+      : `어제 공동 1등 · ${winners.map((w) => `${w.emoji ? `${w.emoji} ` : ''}${w.label}`).join(', ')} ${maxPercent}%`
 
   return (
-    <Card className="space-y-3">
-      <div>
-        <p className="text-sm font-semibold text-navy">어제 친구들은 이렇게 골랐어요</p>
-        <p className="mt-1 text-sm leading-snug text-muted">{recap.content.prompt}</p>
-      </div>
-      {voted.length === 0 ? (
-        <p className="text-sm text-muted">어제 참여한 친구가 아직 없어요.</p>
-      ) : (
-        <>
-          {winners.length === 1 ? (
-            <p className="rounded-2xl bg-sage-soft px-3 py-2 text-sm font-semibold text-navy">
-              1등 · {winners[0].emoji ? `${winners[0].emoji} ` : ''}
-              {winners[0].label} {winners[0].percent}%
-            </p>
-          ) : (
-            <p className="rounded-2xl bg-sage-soft px-3 py-2 text-sm font-semibold text-navy">
-              공동 1등 · {winners.map((w) => `${w.emoji ? `${w.emoji} ` : ''}${w.label} ${w.percent}%`).join(' · ')}
-            </p>
-          )}
-          {optionCounts.map((opt) => (
-            <div key={opt.id} className="space-y-1">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-navy">
-                  {opt.emoji ? `${opt.emoji} ` : ''}
-                  {opt.label}
-                </span>
-                <span className="tabular-nums font-medium text-navy">{opt.percent}%</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-brand-50">
-                <div
-                  className="h-full rounded-full bg-sky/70"
-                  style={{ width: `${Math.round((opt.count / maxCount) * 100)}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </>
-      )}
-    </Card>
+    <p className="px-1 text-sm font-medium text-muted">{line}</p>
   )
 }
