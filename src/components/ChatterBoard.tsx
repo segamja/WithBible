@@ -26,7 +26,6 @@ import {
 } from '@/services/chatterService'
 import type { ChatterPost, ChatterReactionCounts, ChatterReactionType } from '@/types'
 import { cn } from '@/utils/cn'
-import { todayChatterPrompt } from '@/utils/chatterPrompt'
 import { chatterSafetyMessage } from '@/utils/chatterSafety'
 import { formatPostedAtKst } from '@/utils/dday'
 
@@ -47,7 +46,6 @@ export function ChatterBoard() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [missing, setMissing] = useState(false)
-  const prompt = todayChatterPrompt()
 
   const refresh = useCallback(async () => {
     try {
@@ -127,10 +125,7 @@ export function ChatterBoard() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="font-display text-[17px] text-navy">그냥 한마디 하고 가!</p>
-        <p className="mt-1 text-sm leading-relaxed text-muted">오늘의 한마디 · {prompt}</p>
-      </div>
+      <p className="font-display text-[17px] text-navy">그냥 한마디 하고 가!</p>
 
       <LetterComposer
         value={content}
