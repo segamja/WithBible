@@ -309,12 +309,15 @@ function YesterdayRecap({
   if (voted.length === 0) return null
   const maxPercent = Math.max(...voted.map((o) => o.percent))
   const winners = voted.filter((o) => o.percent === maxPercent)
-  const line =
+  const result =
     winners.length === 1
-      ? `어제 1등 · ${winners[0].emoji ? `${winners[0].emoji} ` : ''}${winners[0].label} ${winners[0].percent}%`
-      : `어제 공동 1등 · ${winners.map((w) => `${w.emoji ? `${w.emoji} ` : ''}${w.label}`).join(', ')} ${maxPercent}%`
+      ? `어제 1등. ${winners[0].emoji ? `${winners[0].emoji} ` : ''}${winners[0].label} ${winners[0].percent}%`
+      : `어제 공동 1등. ${winners.map((w) => `${w.emoji ? `${w.emoji} ` : ''}${w.label}`).join(', ')} ${maxPercent}%`
 
   return (
-    <p className="px-1 text-sm font-medium text-muted">{line}</p>
+    <Card className="space-y-1 py-4">
+      <p className="text-sm font-semibold text-navy">어제 친구들은 이렇게 골랐어요</p>
+      <p className="text-sm text-navy">{result}</p>
+    </Card>
   )
 }
