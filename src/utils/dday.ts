@@ -30,6 +30,11 @@ export function todayISO(date = new Date()): string {
   return kstDayKey(date)
 }
 
+export function yesterdayISO(date = new Date()): string {
+  const noonKst = new Date(`${todayISO(date)}T12:00:00+09:00`)
+  return kstDayKey(new Date(noonKst.getTime() - 24 * 60 * 60 * 1000))
+}
+
 /** Posted date + time as Korea wall-clock (e.g. 8월 17일 · 오전 1:04). */
 export function formatPostedAtKst(iso: string): { dateLabel: string; timeLabel: string } {
   const d = new Date(iso)

@@ -7,6 +7,7 @@ import type {
   PlaygroundResponse,
 } from '@/types'
 import { requireUuid } from '@/utils/uuid'
+import { yesterdayISO } from '@/utils/dday'
 
 function isMissingTable(error: { message?: string; code?: string } | null): boolean {
   const msg = (error?.message ?? '').toLowerCase()
@@ -76,6 +77,42 @@ export async function getTodayPlayground(): Promise<PlaygroundContent | null> {
     throw new Error(error.message)
   }
   return parseContent(data)
+}
+
+export async function getYesterdayPlayground(): Promise<{
+  content: PlaygroundContent
+  responses: PlaygroundResponse[]
+} | null> {
+  const playedDate = yesterdayISO()
+  const { data: history, error: historyError } = await supabase
+    .from(Tables.playgroundHistory)
+    .select('content_id')
+    .eq('played_date', playedDate)
+    .maybeSingle()
+  if (historyError) {
+    if (isMissingTable(historyError)) return null
+    throw new Error(historyError.message)
+  }
+  if (!history?.content_id) return null
+
+  const { data: row, error } = await supabase
+    .from(Tables.playgroundContents)
+    .select('*')
+    .eq('id', history.content_id)
+    .maybeSingle()
+  if (error) {
+    if (isMissingTable(error)) return null
+    throw new Error(error.message)
+  }
+  const content = parseContent({ ...row, played_date: playedDate })
+  if (
+    !content ||
+    (content.participation_type !== 'POLL' && content.participation_type !== 'EMOTION')
+  ) {
+    return null
+  }
+  const responses = await listPlaygroundResponses(content.id)
+  return { content, responses }
 }
 
 export async function listPlaygroundResponses(
