@@ -16,7 +16,9 @@ import type { PlaygroundContent, PlaygroundResponse } from '@/types'
 import { isMaster } from '@/lib/roles'
 import { cn } from '@/utils/cn'
 
-export function PlaygroundPanel() {
+function playgroundParticipantCount(responses: PlaygroundResponse[]): number {
+  return responses.filter((r) => r.option_id !== 'peek').length
+}
   const profile = useAuthStore((s) => s.profile)!
   const [content, setContent] = useState<PlaygroundContent | null>(null)
   const [responses, setResponses] = useState<PlaygroundResponse[]>([])
@@ -173,6 +175,9 @@ export function PlaygroundPanel() {
           <h2 className="mt-2 font-display text-[1.45rem] leading-snug text-navy">
             {content.prompt}
           </h2>
+          <p className="mt-2 text-sm text-muted">
+            {playgroundParticipantCount(responses)}명이 참여했어요
+          </p>
         </div>
 
         {isChoice ? (
@@ -316,7 +321,9 @@ function YesterdayRecap({
 
   return (
     <Card className="space-y-1 py-4">
-      <p className="text-sm font-semibold text-navy">어제 친구들은 이렇게 골랐어요</p>
+      <p className="text-sm font-semibold text-navy">
+        어제 친구들은 이렇게 골랐어요 · {playgroundParticipantCount(recap.responses)}명
+      </p>
       <p className="text-sm leading-snug text-muted">{recap.content.prompt}</p>
       <p className="text-sm text-navy">{result}</p>
     </Card>
