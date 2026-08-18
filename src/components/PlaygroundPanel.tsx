@@ -317,6 +317,7 @@ function YesterdayRecap({
   return (
     <Card className="space-y-1 py-4">
       <p className="text-sm font-semibold text-navy">어제 친구들은 이렇게 골랐어요</p>
+      <p className="text-sm leading-snug text-muted">{recap.content.prompt}</p>
       <p className="text-sm text-navy">{result}</p>
     </Card>
   )
