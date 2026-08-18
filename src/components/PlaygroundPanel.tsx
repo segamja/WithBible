@@ -19,6 +19,8 @@ import { cn } from '@/utils/cn'
 function playgroundParticipantCount(responses: PlaygroundResponse[]): number {
   return responses.filter((r) => r.option_id !== 'peek').length
 }
+
+export function PlaygroundPanel() {
   const profile = useAuthStore((s) => s.profile)!
   const [content, setContent] = useState<PlaygroundContent | null>(null)
   const [responses, setResponses] = useState<PlaygroundResponse[]>([])
